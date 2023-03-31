@@ -1,0 +1,63 @@
+{"pxui_version": "0.1",
+  "asset_directory": "",
+  "image_edge": [5,5,5,5],
+  
+ "elements": {
+ 
+   "text": {"font": ["PIXEL_FONT", "pixel"]},
+ 
+   "view": {"transition": ["FADE", 0.15]},
+
+   "button": {
+     "element_offset": [0,-1],
+     "element_clicked_offset": [0, 0],
+     "element_hover_offset": [0,-1],
+     "element_highlight_offset": [0,-1]
+   },
+
+   "button2":{
+     "type": "button"
+   },
+
+   "transparent_button": {
+     "type": "button",
+     "element_hover_offset": [0, -1],
+     "element_clicked_offset": [0, -1],
+     "element_highlight_offset": [0,-1]
+   },
+
+   "toggle": {},
+   
+   "slider": {},
+
+   "text_field": {
+     "prompt_color": [220, 180, 160],
+     "highlight_color": [100, 170, 85]
+   },
+
+   "list": {
+     "highlight_material": ["COL",[39, 61, 39]],
+     "highlight_focus_material": ["COL",[100, 180, 75]],
+     "default_text_height": 18
+   },
+
+   "overlay_list": {
+     "type": "list",
+     "highlight_material": ["AVG_COL",[0,0,10]],
+     "highlight_focus_material": ["AVG_COL",[0,0,15]],
+     "default_text_height": 18
+   },
+
+   "scroll": {
+     "default_image": ["AVG_COL",[0,0,30]],
+     "hover_image": ["AVG_COL",[0,0,40]],
+     "padding": 3
+   }
+ },
+
+  "constants": {
+    "background_color": [69, 101, 69],
+    "background_color_dark": [59, 81, 59],
+    "background_color_light": [89, 121, 89]
+  }
+}

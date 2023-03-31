@@ -1,0 +1,35 @@
+{"pxui_version": "0.1",
+  "asset_directory": "",
+ "elements": {
+
+   "button": {},
+
+   "toggle": {},
+
+   "text_field": {
+     "highlight_color": [150, 150, 150],
+     "cursor_color": [100, 100, 100],
+     "cursor_offset": 1
+   },
+
+   "text": {
+     "color": [50,50,50]
+   },
+
+   "list": {
+     "highlight_color": [230,230,230],
+     "highlight_color2": [240,240,240]
+   },
+
+   "scroll": {
+     "base_image": ["COL",[150, 150, 150]],
+     "handle_image": ["COL",[100, 100, 100]]
+   }
+ },
+
+  "constants": {
+    "background_color": [210,210,210],
+    "background_color_dark": [190,190,190],
+    "background_color_light": [230,230,230]
+  }
+}
