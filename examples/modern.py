@@ -31,11 +31,11 @@ hover_material = avg_col((0, 0, 30))
 
 # Create styles
 button_style = ember.style.ButtonStyle(
-    default_image=default_material,
-    hover_image=hover_material,
-    click_image=avg_col((0, -20, 50)),
-    highlight_image=avg_col((0, -20, 50)),
-    highlight_clicked_image=avg_col((0, -30, 50)),
+    material=default_material,
+    hover_material=hover_material,
+    click_material=avg_col((0, -20, 50)),
+    focus_material=avg_col((0, -20, 50)),
+    focus_click_material=avg_col((0, -30, 50)),
     material_transition=ember.transition.SurfaceFade(duration=0.2)
 )
 button_style.set_as_default()

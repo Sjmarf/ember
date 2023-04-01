@@ -9,10 +9,44 @@ import logging
 import pygame
 
 
-def load(style: Literal['stone', 'plastic', 'white', 'dark'], parts: Union[list[str], None] = None) -> dict:
+def load(style: Literal['stone', 'plastic', 'white', 'dark'] = 'dark',
+         parts: Union[list[str], None] = None) -> dict:
     logging.debug(f"Loading style {style}")
     path = _c.package.joinpath(f'default_styles/{style}/data.json')
     return from_json(str(path), parts=parts, _ignore_ver=True)
+
+
+def decode_element(data,styles):
+    obj = None
+    if data[0] == "Color":
+        obj = ember.material.Color
+    elif data[0] == "AverageColor":
+        obj = ember.material.AverageColor
+    elif data[0] == "Style":
+        return styles[data[1]]
+    elif data[0] == "Fade":
+        obj = ember.transition.Fade
+    elif data[0] == "SurfaceFade":
+        obj = ember.transition.SurfaceFade
+    elif data[0] == "Slide":
+        obj = ember.transition.Slide
+    elif data[0] == "PixelFont":
+        return ember.font.PixelFont(filename=_c.package.joinpath(f'fonts/{data[1]}'))
+    elif data[0] == "Font":
+        return ember.font.Font(pygame.font.SysFont(data[1], data[2]))
+    elif data[0] == "RoundedRect":
+        if type(data[1][0]) is list and type(data[1][0]) is str:
+            return ember.material.shape.RoundedRect(material=decode_element(data[1], styles),
+                                                    radius=data[2] if len(data) >= 3 else 20)
+        else:
+            return ember.material.shape.RoundedRect(color=data[1],
+                                                    radius=data[2] if len(data) >= 3 else 20)
+
+    if obj:
+        if type(data[1]) is dict:
+            return obj(**data[1])
+        else:
+            return obj(data[1])
 
 
 def from_json(filepath: Union[str, dict], set_as_default=True, parts: Union[list[str], None] = None,
@@ -122,24 +156,9 @@ def from_json(filepath: Union[str, dict], set_as_default=True, parts: Union[list
                         kwargs[k] = path
 
         for k, v in value.items():
-            if type(v) is list and v[0] in {"COL", "AVG_COL", "STYLE", "FADE", "SURFACE_FADE",
-                                            "SLIDE", "PIXEL_FONT", "FONT"}:
-                if v[0] == "COL":
-                    v = ember.material.Color(v[1])
-                elif v[0] == "AVG_COL":
-                    v = ember.material.AverageColor(hsv_adjustment=v[1])
-                elif v[0] == "STYLE":
-                    v = styles[v[1]]
-                elif v[0] == "FADE":
-                    v = ember.transition.Fade(duration=v[1])
-                elif v[0] == "SURFACE_FADE":
-                    v = ember.transition.SurfaceFade(duration=v[1])
-                elif v[0] == "SLIDE":
-                    v = ember.transition.Slide(duration=v[1], direction=v[2])
-                elif v[0] == "PIXEL_FONT":
-                    v = ember.font.PixelFont(filename=_c.package.joinpath(f'fonts/{v[1]}'))
-                elif v[0] == "FONT":
-                    v = ember.font.Font(pygame.font.SysFont(v[1], v[2]))
+            if type(v) is list:
+                if output := decode_element(v, styles):
+                    v = output
             kwargs[k] = v
 
         style = style(**kwargs)
