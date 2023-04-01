@@ -1,5 +1,7 @@
 # Ember
 
+# WIP. This isn't meant to be used yet.
+
 Ember is a GUI library for [Pygame CE](https://github.com/pygame-community/pygame-ce). Learn how to get started on the docs page.
 
 Come chat with me @Sjmarf#1894 on the [Pygame Discord Server](https://discord.gg/pygame) if you need help or have any queries. We're open to contributions!
