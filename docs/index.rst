@@ -6,7 +6,13 @@
 Ember Documentation
 ===================================================
 
-Ember is a UI library built for `Pygame CE <https://github.com/pygame-community/pygame-ce>`_.
+**THIS LIBRARY AND THIS DOCUMENTATION AND ARE A WIP. DO NOT USE THIS LIBRARY (for now).**
+
+Ember is a UI library built for `Pygame CE <https://github.com/pygame-community/pygame-ce>`_. It allows you to build UIs using declarative syntax.
+
+Getting Started
+---------------
+Check out the :ref:`quick-start` to get started.
 
 
 Table of contents
@@ -14,6 +20,8 @@ Table of contents
 
 .. toctree::
    :maxdepth: 2
+
+   quick_start
 
 
 Indices and tables
