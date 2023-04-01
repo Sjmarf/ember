@@ -8,10 +8,6 @@ Come chat with me @Sjmarf#1894 on the [Pygame Discord Server](https://discord.gg
 
 # Installation
 
-```
-pip install ember
-```
-
 # Dependencies
 
 Requires:
