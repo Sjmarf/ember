@@ -6,9 +6,8 @@ VERSION: str = "0.1"
 is_ce: bool = False
 
 display_zoom: float = 1
-
-# TODO: rework how these are stored
 mouse_pos: tuple[int, int] = (0, 0)
+
 clock: Optional[pygame.time.Clock] = None
 delta_time: float = 1
 

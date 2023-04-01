@@ -1,42 +1,33 @@
 import pygame
-import os
-import sys
-
-try:
-    import ember
-except ModuleNotFoundError:
-    path = os.getcwd().replace(f"examples", "")
-    sys.path.append(path)
-    import ember
+import ember
 
 pygame.init()
-screen = pygame.display.set_mode((800,800))
-display = pygame.Surface((200,200))
+ember.init()
+ember.style.load()
+
+screen = pygame.display.set_mode((600, 600))
 clock = pygame.time.Clock()
 
-ember.init(clock)
-ember.set_display_zoom(4)
-ember.style.load("stone")
+ember.set_clock(clock)
 
 view = ember.View(
-    ember.VStack(
-        ember.TextField("The quick brown fox jumped over the lazy dog.", size=(150, 60)),
-        ember.TextField("Lorem ipsum dolor sit amet, consectetur adipiscing elit. ", size=(150, 60))
-    )
+    ember.Button("Hello world")
 )
 
-while True:
+is_running = True
+
+while is_running:
+
     for event in pygame.event.get():
         view.event(event)
-
         if event.type == pygame.QUIT:
-            pygame.quit()
-            raise SystemExit(0)
+            is_running = False
 
+    screen.fill((0,0,0))
     ember.update()
-    display.fill((20,20,20))
-    view.update(display)
-    screen.blit(pygame.transform.scale(display, (800,800)), (0, 0))
+    view.update(screen)
 
     clock.tick(60)
     pygame.display.flip()
+
+pygame.quit()

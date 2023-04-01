@@ -40,14 +40,18 @@ def update():
     _c.mouse_pos = mouse[0] // _c.display_zoom, mouse[1] // _c.display_zoom
 
 
-def init(clock, audio: Optional[bool] = None):
+def init(clock: Optional[_pygame.time.Clock] = None, audio: Optional[bool] = None):
     _c.audio_enabled = audio if audio is not None else (_pygame.mixer.get_init() is not None)
     pygame.scrap.init()
     _c.audio_muted = False
-    _c.clock = clock
+    _c.clock = clock if clock is not None else _c.clock
     _c.is_ce = getattr(_pygame, "IS_CE", False)
 
     _c.package = importlib.resources.files("ember")
+
+
+def set_clock(clock: pygame.time.Clock):
+    _c.clock = clock
 
 
 print('pxui 0.0.1')

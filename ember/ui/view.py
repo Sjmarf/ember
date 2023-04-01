@@ -48,6 +48,9 @@ class View:
                  transition_out: Optional[Transition] = None
                  ):
 
+        if not _c.clock:
+            raise Exception("You must use ember.set_clock() before initialising a view.")
+
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
         self.element_focused = focused
