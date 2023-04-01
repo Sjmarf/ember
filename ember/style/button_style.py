@@ -1,5 +1,5 @@
 import pygame
-from typing import Union, Optional
+from typing import Union, Optional, Sequence
 
 from ember import common as _c
 from ember.style.style import Style, MaterialType
@@ -12,12 +12,13 @@ from ember.style.load_material import load_material
 
 class ButtonStyle(Style):
     def __init__(self,
-                 default_image: MaterialType = None,
-                 click_image: MaterialType = None,
-                 hover_image: MaterialType = None,
-                 highlight_image: MaterialType = None,
-                 highlight_clicked_image: MaterialType = None,
-                 disabled_image: MaterialType = None,
+                 default_size: Sequence[int] = (300,80),
+                 material: MaterialType = None,
+                 click_material: MaterialType = None,
+                 hover_material: MaterialType = None,
+                 focus_material: MaterialType = None,
+                 focus_click_material: MaterialType = None,
+                 disabled_material: MaterialType = None,
 
                  click_down_sound: Optional[pygame.mixer.Sound] = None,
                  click_up_sound: Optional[pygame.mixer.Sound] = None,
@@ -31,16 +32,16 @@ class ButtonStyle(Style):
                  material_transition: Optional[Transition] = None
                  ):
 
-        default_image = load_material(default_image, None)
-        hover_image = load_material(hover_image, default_image)
-        highlight_image = load_material(highlight_image, hover_image)
+        material = load_material(material, None)
+        hover_material = load_material(hover_material, material)
+        focus_material = load_material(focus_material, hover_material)
 
-        self.images = [default_image,
-                       hover_image,
-                       load_material(click_image, default_image),
-                       load_material(disabled_image, default_image),
-                       highlight_image,
-                       load_material(highlight_clicked_image, highlight_image),
+        self.images = [material,
+                       hover_material,
+                       load_material(click_material, material),
+                       load_material(disabled_material, material),
+                       focus_material,
+                       load_material(focus_click_material, focus_material),
                        ]
 
         if _c.audio_enabled:
@@ -55,6 +56,8 @@ class ButtonStyle(Style):
 
         self.text_style = text_style
         self.material_transition = material_transition
+
+        self.default_size = default_size
 
     def set_as_default(self):
         _c.default_button_style = self

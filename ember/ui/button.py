@@ -25,15 +25,15 @@ class Button(Element, Interactive):
                  size: Optional[Sequence[int]] = None,
                  width: Optional[int] = None,
                  height: Optional[int] = None,
-                 
+
                  style: Optional[ButtonStyle] = None,
                  text_style: Optional[TextStyle] = None,
-                 
+
                  disabled: bool = False,
                  can_hold: bool = False,
                  hold_delay: float = 0.2,
                  hold_start_delay: float = 0.5,
-                 select_when_clicked: bool= False
+                 select_when_clicked: bool = False
                  ):
 
         self._disabled: bool = disabled
@@ -50,10 +50,10 @@ class Button(Element, Interactive):
         self.is_clicked: bool = False
 
         self.set_style(style)
-        
+
         text_style: TextStyle = self._style.text_style if text_style is None else text_style
         if len(element) == 1:
-            self.element = load_element(element[0], text_style=text_style) 
+            self.element = load_element(element[0], text_style=text_style)
         else:
             self.element: Element = HStack(*[load_element(i) for i in element])
 
@@ -62,18 +62,12 @@ class Button(Element, Interactive):
             if width is not None:
                 self.width = width
             else:
-                if type(self._style.images[0]) is StretchedSurface:
-                    self.width = self._style.images[0].surface.get_width()
-                else:
-                    self.width = 20
+                self.width = self.style.default_size[0]
 
             if height is not None:
                 self.height = height
             else:
-                if type(self._style.images[0]) is StretchedSurface:
-                    self.height = self._style.images[0].surface.get_height()
-                else:
-                    self.height = 20
+                self.height = self.style.default_size[1]
 
         else:
             self.width, self.height = size
@@ -147,9 +141,9 @@ class Button(Element, Interactive):
 
         self.material_controller.set_material(self._style.images[img_num])
         self.material_controller.render(self, surface,
-                                         (rect.x - surface.get_abs_offset()[0],
-                                          rect.y - surface.get_abs_offset()[1]),
-                                         rect.size, alpha)
+                                        (rect.x - surface.get_abs_offset()[0],
+                                         rect.y - surface.get_abs_offset()[1]),
+                                        rect.size, alpha)
 
         # Draw the element
         if self.element:
