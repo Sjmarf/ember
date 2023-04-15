@@ -1,10 +1,12 @@
 import pygame
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from ember import common as _c
-from ember.ui.view import View
 from ember.ui.element import Element
 from ember.ui.surface import Surface
+
+if TYPE_CHECKING:
+    from ember.ui.view import View
 
 from ember.transition.transition import Transition, ElementTransitionController, MaterialTransitionController
 from ember.material.material import Material
@@ -22,14 +24,14 @@ class Fade(Transition):
                        new_element: Element,
                        surface: pygame.Surface,
                        offset: tuple[int, int],
-                       root: View,
+                       root: "View",
                        alpha: int = 255):
 
         alpha = int(timer / self.duration * alpha)
         if old_element is not None:
-            old_element.render(surface, offset, root, alpha=alpha)
+            old_element._render(surface, offset, root, alpha=alpha)
         if new_element is not None:
-            new_element.render(surface, offset, root, alpha=(255 - alpha))
+            new_element._render(surface, offset, root, alpha=(255 - alpha))
 
     def render_material(self,
                         controller: "MaterialTransitionController",

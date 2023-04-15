@@ -1,6 +1,6 @@
 import pygame
 import logging
-from typing import Union, Literal, Optional
+from typing import Union, Literal, Optional, NoReturn
 
 from ember import common as _c
 from ember.ui.element import Element
@@ -8,7 +8,7 @@ from ember.ui.view import View
 from ember.ui.resizable import Resizable
 from ember.material.material import MaterialController
 
-from ember.size import Size, FIT
+from ember.size import Size, FIT, FILL
 
 
 class Box(Element, Resizable):
@@ -18,26 +18,21 @@ class Box(Element, Resizable):
                  width: Union[float, None] = None,
                  height: Union[float, None] = None,
                  background=None,
-                 self_selectable: bool = False,
+                 can_focus_self: bool = False,
                  resizable_side: Union[list[Literal["left", "right", "top", "bottom"]],
                                        Literal["left", "right", "top", "bottom"], None] = None,
                  resize_limits: tuple[int, int] = (50, 300)
                  ):
 
-        if size is None and width is None:
-            width = FIT if not element or element.width.mode != 2 else FILL
-        if size is None and height is None:
-            height = FIT if not element or element.height.mode != 2 else FILL
-
-        width = size[0] if width is None else width
-        height = size[1] if height is None else height
-        super().__init__(width, height)
+        super().__init__(size, width, height,
+                         default_size=(FIT if not element or element._width.mode != 2 else FILL,
+                                       FIT if not element or element._height.mode != 2 else FILL))
 
         self.background = background
         self.material_controller = MaterialController(self)
         self.material_controller.set_material(self.background)
 
-        self.self_selectable = self_selectable
+        self.can_focus_self = can_focus_self
         self.resizable_side = (resizable_side) if type(resizable_side) is str else resizable_side
         self.resize_limits = resize_limits
 
@@ -48,55 +43,61 @@ class Box(Element, Resizable):
         self._resizing = None
         self.set_element(element)
 
+    def __repr__(self):
+        return "<Box>"
+
     def set_element(self, element):
         self._element = element
-        self.calc_fit_size()
+        self._update_rect_chain_up()
         if element is not None:
-            self.selectable = element.selectable
-            self._element.set_parent(self)
+            self.selectable = element._can_focus
+            self._element._set_parent(self)
         else:
             self.selectable = False
 
-    def calc_fit_size(self):
-        if self.height.mode == 1:
+    def _update_rect_chain_up(self):
+        if self._height.mode == 1:
             if self._element:
-                self._fit_height = self._element.get_height(0)
+                self._fit_height = self._element.get_abs_height(0)
             else:
                 self._fit_height = 20
 
-        if self.width.mode == 1:
+        if self._width.mode == 1:
             if self._element:
-                self._fit_width = self._element.get_width(0)
+                self._fit_width = self._element.get_abs_width(0)
             else:
                 self._fit_width = 20
 
-        if hasattr(self.parent, "calc_fit_size"):
-            self.parent.calc_fit_size()
+        if self.parent:
+            self.parent._update_rect_chain_up()
+            self.root.check_size = True
 
-    def set_root(self, root):
+    def _set_root(self, root):
         self.root = root
         if self._element:
-            self._element.set_root(root)
+            self._element._set_root(root)
 
-    def update_rect(self, pos, max_size, root: "View",
-                    _ignore_fill_width: bool = False, _ignore_fill_height: bool = False):
+    def _update_rect_chain_down(self, surface: pygame.Surface, pos: tuple[float, float], max_size: tuple[float, float],
+                                root: "View", _ignore_fill_width: bool = False,
+                                _ignore_fill_height: bool = False) -> NoReturn:
 
-        super().update_rect(pos, max_size, root, _ignore_fill_width, _ignore_fill_height)
+        super()._update_rect_chain_down(surface, pos, max_size, root, _ignore_fill_width, _ignore_fill_height)
 
         if self._element:
-            self._element.update_rect(
-                (pos[0] + self.get_width(max_size[0]) / 2 - self._element.get_width(self.rect.w) / 2,
-                 pos[1] + self.get_height(max_size[1]) / 2 - self._element.get_height(self.rect.h) / 2),
+            self._element._update_rect_chain_down(
+                surface,
+                (pos[0] + self.get_abs_width(max_size[0]) / 2 - self._element.get_abs_width(self.rect.w) / 2,
+                 pos[1] + self.get_abs_height(max_size[1]) / 2 - self._element.get_abs_height(self.rect.h) / 2),
                 self.rect.size, root)
 
-    def update(self, root: View):
+    def _update(self, root: View):
         if self._element:
-            self._element.update_a(root)
+            self._element._update_a(root)
 
         if self.resizable_side and not self._resizing:
             self._is_hovering_resizable_edge()
 
-    def render(self, surface: pygame.Surface, offset: tuple[int, int], root: View, alpha: int = 255):
+    def _render(self, surface: pygame.Surface, offset: tuple[int, int], root: View, alpha: int = 255):
         rect = self.rect.move(*offset)
 
         if self.background:
@@ -106,9 +107,9 @@ class Box(Element, Resizable):
                                             rect.size, alpha)
 
         if self._element:
-            self._element.render_a(surface, offset, root, alpha=alpha)
+            self._element._render_a(surface, offset, root, alpha=alpha)
 
-    def event(self, event: int, root: View):
+    def _event(self, event: int, root: View):
         if self._hovering_resize_edge:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 self._resizing = True
@@ -122,18 +123,18 @@ class Box(Element, Resizable):
                 self._resize()
 
         if self._element is not None:
-            self._element.event(event, root)
+            self._element._event(event, root)
 
-    def focus(self, root: View, previous=None, key: str = 'select'):
+    def _focus_chain(self, root: View, previous=None, direction: str = 'in'):
         logging.debug(f"Selected Box")
-        if self.self_selectable:
+        if self.can_focus_self:
             return self
 
-        if key in {'up', 'down', 'left', 'right', 'forward'} or self._element is None:
+        if direction in {'up', 'down', 'left', 'right', 'forward', 'out'} or self._element is None:
             logging.debug(f"Exiting Box")
-            return self.parent.focus(root, self, key=key)
+            return self.parent._focus_chain(root, self, direction=direction)
         else:
-            return self._element.focus(root, None, key=key)
+            return self._element._focus_chain(root, None, direction=direction)
 
     def _get_element(self):
         return self._element

@@ -1,9 +1,21 @@
 import pygame
-from typing import Optional
-from ember.style import *
+from typing import Optional, Literal, TYPE_CHECKING
+from ember.common_styles import *
 
 VERSION: str = "0.1"
-is_ce: bool = False
+is_ce: bool = getattr(pygame, "IS_CE", False)
+
+
+class InheritType:
+    pass
+
+
+class DefaultType:
+    pass
+
+
+DEFAULT = DefaultType()
+INHERIT = InheritType()
 
 display_zoom: float = 1
 mouse_pos: tuple[int, int] = (0, 0)
@@ -20,11 +32,4 @@ event_ids: list = []
 audio_enabled: bool = False
 audio_muted: bool = False
 
-default_view_style: Optional[ViewStyle] = None
-default_text_style: Optional[TextStyle] = None
-default_button_style: Optional[ButtonStyle] = None
-default_text_field_style: Optional[TextFieldStyle] = None
-default_toggle_style: Optional[ToggleStyle] = None
-default_slider_style: Optional[SliderStyle] = None
-default_list_style: Optional[ListStyle] = None
-default_scroll_style: Optional[ScrollStyle] = None
+DEFAULT_STYLE: Literal['stone', 'plastic', 'white', 'dark'] = "plastic"

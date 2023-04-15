@@ -44,7 +44,7 @@ class SliderStyle(Style):
 
         if handle_width is None:
             if isinstance(base_image, StretchedSurface):
-                self.handle_width = default_image.surface.get_width()/default_image.surface.get_height()
+                self.handle_width = default_image.surface.get_width() / default_image.surface.get_height()
             else:
                 self.handle_width = 1
         else:

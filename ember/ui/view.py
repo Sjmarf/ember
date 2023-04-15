@@ -2,15 +2,17 @@ import pygame
 import logging
 import ember.event
 from ember import common as _c
+from ember import log
 from typing import Optional, Literal, Callable, TYPE_CHECKING
-from ember.transition.transition import Transition
-from ember.ui.text_field import TextField
-from ember.ui.slider import Slider
-
-from ember.ui.element import Element
 
 if TYPE_CHECKING:
     from ember.style.view_style import ViewStyle
+    from ember.transition.transition import Transition
+    from ember.ui.element import Element
+
+from ember.ui.text_field import TextField
+from ember.ui.slider import Slider
+from ember.ui.scroll import Scroll
 
 KEY_NAMES = {
     pygame.K_RIGHT: "right",
@@ -37,15 +39,15 @@ DPAD_NAMES = {
 
 class View:
     def __init__(self,
-                 element: Element,
-                 focused: Optional[Element] = None,
+                 element: "Element",
+                 focused: Optional["Element"] = None,
                  style: Optional["ViewStyle"] = None,
 
                  keyboard_nav: bool = True,
                  listen_for_exit: bool = True,
-                 transition: Optional[Transition] = None,
-                 transition_in: Optional[Transition] = None,
-                 transition_out: Optional[Transition] = None
+                 transition: Optional["Transition"] = None,
+                 transition_in: Optional["Transition"] = None,
+                 transition_out: Optional["Transition"] = None
                  ):
 
         if not _c.clock:
@@ -56,7 +58,7 @@ class View:
         self.element_focused = focused
         self.keyboard_nav = keyboard_nav
         self.listen_for_exit = listen_for_exit
-        
+
         self.style = style if style else _c.default_view_style
 
         if transition_in:
@@ -80,12 +82,12 @@ class View:
         self.style = style if style else _c.default_view_style
 
         self._element = element
-        element.parent = self
-        element.set_root(self)
+        element._set_parent(self)
+        element._set_root(self)
 
         if self.transition_in:
-            element.animation = self.transition_in.new_element_controller()
-            element.animation.new_element = element
+            element._transition = self.transition_in.new_element_controller()
+            element._transition.new_element = element
 
         _c.event_ids = ember.event.__dict__.values()
         self.joystick_cooldown = 0
@@ -97,16 +99,19 @@ class View:
 
         self._joy_axis_motion = [0, 0]
 
-        self.rect = pygame.Rect((0,0,0,0))
+        self.rect = pygame.Rect((0, 0, 0, 0))
+
+    def __repr__(self):
+        return "<View>"
 
     def update(self, surface: pygame.Surface, rect: pygame.rect.RectType = None,
                update_positions=True, update_elements=True, render=True):
         if update_positions:
             self._update_positions(surface, rect)
-        if update_elements:
-            self._element.update_a(root=self)
         if render:
             self._render(surface)
+        if update_elements:
+            self._element._update_a(root=self)
 
         if self.joystick_cooldown > 0:
             self.joystick_cooldown -= _c.delta_time * 5
@@ -118,16 +123,16 @@ class View:
         _c.delta_time = 1 / max(1, _c.clock.get_fps())
 
         if type(rect) is tuple:
-            pos = (rect[0] + rect[2] / 2 - self._element.get_width(rect[2]) / 2,
-                   rect[1] + rect[3] / 2 - self._element.get_height(rect[3]) / 2,
+            pos = (rect[0] + rect[2] / 2 - self._element.get_abs_width(rect[2]) / 2,
+                   rect[1] + rect[3] / 2 - self._element.get_abs_height(rect[3]) / 2,
                    *rect[2:])
         elif type(rect) is pygame.Rect:
-            pos = rect.centerx - self._element.get_width(rect.w) / 2, \
-                  rect.centery - self._element.get_height(rect.h) / 2, \
+            pos = rect.centerx - self._element.get_abs_width(rect.w) / 2, \
+                  rect.centery - self._element.get_abs_height(rect.h) / 2, \
                   *rect.size
         else:
-            pos = (surface.get_width() / 2 - self._element.get_width(surface.get_width()) / 2,
-                   surface.get_height() / 2 - self._element.get_height(surface.get_height()) / 2,
+            pos = (surface.get_width() / 2 - self._element.get_abs_width(surface.get_width()) / 2,
+                   surface.get_height() / 2 - self._element.get_abs_height(surface.get_height()) / 2,
                    *surface.get_size())
 
         self.rect.update(pos)
@@ -136,9 +141,20 @@ class View:
             self._prev_rect = pos
             self.check_size = True
 
-        if self.check_size:
-            self._element.update_rect(pos[:2], pos[2:], root=self)
-            # self.check_size = False
+        i = 0
+        while self.check_size:
+            log.size.line_break()
+            if i > 0:
+                log.size.info(self, f"Starting chain down again (iteration {i+1}).")
+            else:
+                log.size.info(self, f"Starting chain down.")
+            self.check_size = False
+            with log.size.indent:
+                self._element._update_rect_chain_down(surface, pos[:2], pos[2:], root=self)
+            log.size.info(self, "Chain finished.")
+            i += 1
+            if i > 30:
+                raise Exception("Maximimum chain-down count exceeded.")
 
         # Joystick controls
         if self.joystick_cooldown == 0:
@@ -153,7 +169,7 @@ class View:
 
     def _render(self, surface: pygame.Surface):
         if not self._block_rendering:
-            self._element.render_a(surface, (0, 0), root=self)
+            self._element._render_a(surface, (0, 0), root=self)
 
     def event(self, event: pygame.event.Event):
         if event.type == ember.event.TRANSITIONFINISHED:
@@ -166,10 +182,18 @@ class View:
 
         if event.type == pygame.KEYDOWN and self.keyboard_nav:
             if event.key == pygame.K_ESCAPE:
-                self._exit_pressed()
+                if self.element_focused is None:
+                    log.nav.info(self, "Escape key pressed, exiting menu.")
+                    self._exit_pressed()
+                else:
+                    log.nav.info(self, "Escape key pressed, moving up one layer.")
+                    with log.nav.indent:
+                        self.element_focused = self.element_focused._focus_chain(self, None, "out")
+                    log.nav.info(self, f'Focus chain ended. Focused {self.element_focused}.')
 
             if event.key in KEY_NAMES.keys():
-                if not (type(self.element_focused) in {Slider, TextField} and self.element_focused.is_active):  # noqa
+                if not (isinstance(self.element_focused, (Slider, TextField)) and self.element_focused.is_active):  # noqa
+                    log.nav.info(self, "Nav key pressed.")
                     if event.key == pygame.K_TAB and pygame.key.get_mods() & pygame.KMOD_SHIFT:
                         self._select_element("backward")
                     else:
@@ -192,21 +216,21 @@ class View:
             elif event.button in DPAD_NAMES:
                 self._select_element(DPAD_NAMES[event.button])
 
-        self._element.event(event, self)
+        self._element._event(event, self)
 
-    def set_element(self, element: Element):
+    def set_element(self, element: "Element"):
         self._element = element
-        element.set_parent(self)
-        element.set_root(self)
+        element._set_parent(self)
+        element._set_root(self)
 
     def focus_element(self, element):
         self.element_focused = element
 
-    def start_transition(self, transition: Transition = None):
+    def start_transition(self, transition: "Transition" = None):
         if transition or self.transition_out:
             transition = transition if transition else self.transition_out
-            self._element.animation = transition.new_element_controller()
-            self._element.animation.old_element = self._element
+            self._element._transition = transition.new_element_controller()
+            self._element._transition.old_element = self._element
 
     def _exit_pressed(self):
         if self.element_focused is not None:
@@ -229,39 +253,38 @@ class View:
 
     def _select_element(self, direction):
         if self.element_focused is None:
-            logging.debug(f'Selection is None. Selecting {self.element_focused}')
-            new_element = self._element.focus(self, None)
+            log.nav.info(self, f'Selection is None. Starting focus chain for {self._element} with direction'
+                               f' \'select\'.')
+            with log.nav.indent:
+                new_element = self._element._focus_chain(self, None)
         else:
-            logging.debug(f'Selecting {self.element_focused}')
-            new_element = self.element_focused.focus(self, None, key=direction)
+            log.nav.info(self, f"Starting focus chain for {self.element_focused} with direction '{direction}'.")
+            with log.nav.indent:
+                new_element = self.element_focused._focus_chain(self, None, direction=direction)
 
         if self.element_focused is not new_element:
             if self.element_focused is not None:
-                self.element_focused.unfocus()
+                self.element_focused._on_unfocus()
             self.element_focused = new_element
 
-        logging.debug(f'Element selection done. Selected {self.element_focused}')
+        log.nav.info(self, f'Focus chain ended. Focused {self.element_focused}.')
         event = pygame.event.Event(ember.event.ELEMENTFOCUSED, element=self.element_focused)
         pygame.event.post(event)
 
         # Determine if the element being selected is inside a VScroll
         if self.element_focused is not None:
             for element in self.element_focused.get_parent_tree():
-                if type(element).__name__ == "VScroll":
+                if isinstance(element, Scroll):
                     # If the element isn't fully visible in the frame, scroll to that element
-                    if not element.rect.contains(self.element_focused.rect):
-                        logging.debug("Moving VScroll so that selected element is visible")
-                        if self.element_focused.rect.y < element.rect.y:
-                            destination = element.scroll.val - element.rect.y + self.element_focused.rect.y - \
-                                          element.rect.h + self.element_focused.rect.h
-                        else:
-                            destination = element.scroll.val - element.rect.y + self.element_focused.rect.y
-                        element.scroll.play(stop=min(max(-element.over_scroll[0], destination),
-                                                     element._element.rect.h - element.rect.h + element.over_scroll[1]),
-                                            duration=0.2)
+                    element.scroll_to_element(self.element_focused)
 
-    def focus(self, root: 'View', previous: Element = None, key: int = 0):
-        logging.debug("Selected Root. Selection wasn't changed.")
+    def _update_rect_chain_up(self):
+        pass
+
+    def _focus_chain(self, root: 'View', previous: "Element" = None, direction: str = ""):
+        log.nav.info(self,"Reached Root. Focus wasn't changed.")
+        if direction == "out":
+            self._exit_pressed()
         return self.element_focused
 
     def _show_controller_keyboard(self):

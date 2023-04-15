@@ -1,6 +1,7 @@
 import pygame
 from typing import Optional
 from ember.material.material import Material
+from ember import log
 
 
 class Shape(Material):
@@ -26,7 +27,14 @@ class Shape(Material):
                 self._cache[element] = surface
 
         elif self._color:
-            if element not in self._cache or self._cache.get(element).get_size() != size:
+            if element not in self._cache or (cached_size := self._cache.get(element).get_size()) != size:
+                if element not in self._cache:
+                    log.material.info(self, element, f"Element not cached, building surface of size {size} and "
+                                                     f"color {self._color}...")
+                else:
+                    log.material.info(self, element,
+                                      f"Cached surface size {cached_size} != size {size}, rebuilding surface...")
+
                 surface = self._create_surface(size)
                 surface.fill(self._color, special_flags=pygame.BLEND_RGB_ADD)
                 surface.set_alpha(alpha)

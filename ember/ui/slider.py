@@ -66,7 +66,7 @@ class Slider(Element):
         return max(min(x / w * (self.max_value - self.min_value) + self.min_value,
                        self.max_value), self.min_value)
 
-    def update(self, root: "View"):
+    def _update(self, root: "View"):
         self.is_hovered = self.rect.collidepoint(_c.mouse_pos)
 
         if self.is_active:
@@ -90,7 +90,7 @@ class Slider(Element):
                         min(self.anim.val - _c.delta_time * (self.max_value - self.min_value), self.max_value),
                         self.min_value)
 
-    def render(self, surface: pygame.Surface, offset: tuple[int, int], root: "View", alpha: int = 255):
+    def _render(self, surface: pygame.Surface, offset: tuple[int, int], root: "View", alpha: int = 255):
         rect = self.rect.move(*offset)
 
         # Draw the base image
@@ -116,7 +116,7 @@ class Slider(Element):
                                                                * (self.rect.w - self.handle_width), rect.y),
                                                (self.handle_width, rect.h), alpha)
 
-    def event(self, event: int, root: "View"):
+    def _event(self, event: int, root: "View"):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.is_hovered:
                 self.is_active = True
@@ -134,7 +134,7 @@ class Slider(Element):
             if root.element_focused is self:
                 self.is_active = False
 
-    def unfocus(self):
+    def _on_unfocus(self):
         self.is_active_keyboard = False
 
     def _get_value(self):

@@ -22,6 +22,7 @@ Table of contents
    :maxdepth: 2
 
    quick_start
+   element
 
 
 Indices and tables

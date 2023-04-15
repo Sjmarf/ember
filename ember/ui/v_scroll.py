@@ -1,214 +1,171 @@
 import pygame
-import logging
-from typing import TYPE_CHECKING, Union, Literal, Optional
+from typing import TYPE_CHECKING, Optional, Sequence, NoReturn, Union
 
 if TYPE_CHECKING:
     from ember.ui.view import View
 
+from ember.common import INHERIT, InheritType
+
+from ember import log
 from ember import common as _c
 from ember.ui.element import Element
-from ember.style.load_style import load as load_style
-from ember.material.material import MaterialController
+from ember.material.material import MaterialController, Material
+from ember.size import FIT, SizeType
 
-from ember.utility.timer import BasicTimer
+from ember.style.scroll_style import ScrollStyle
+from ember.ui.scroll import Scroll
 
 
-class VScroll(Element):
-    def __init__(self, element: Optional[Element], size: Union[tuple[float, float], None] = (0, 0),
-                 width: Union[float, None] = None, height: Union[float, None] = None, style=None,
-                 background=None, self_selectable: bool = False, over_scroll: tuple[int, int] = (0, 0)):
+class VScroll(Scroll):
+    def __init__(self,
+                 element: Optional[Element],
+                 size: Sequence[SizeType] = (0, 0),
+                 width: SizeType = None,
+                 height: SizeType = None,
 
-        width = size[0] if width is None else width
-        height = size[1] if height is None else height
-        super().__init__(width, height)
+                 style: Optional[ScrollStyle] = None,
 
-        # Load the ScrollStyle object.
-        if style is None:
-            if _c.default_scroll_style is None:
-                load_style("plastic", parts=['scroll'])
-            self.style = _c.default_scroll_style
-        else:
-            self.style = style
+                 background: Optional[Material] = None,
+                 focus_self: bool = False,
+                 over_scroll: Union[InheritType, Sequence[int]] = INHERIT
+                 ):
 
-        self.subsurf = None
+        super().__init__(element, size, width, height, style, background, focus_self, over_scroll)
 
-        self.background = background
-        self.background_controller = MaterialController(self)
-        self.background_controller.set_material(self.background)
+    def __repr__(self):
+        return "<VScroll>"
 
-        self.scroll_background_controller = MaterialController(self)
-        self.scroll_handle_controller = MaterialController(self)
-
-        self.self_selectable = self_selectable
-        self.over_scroll = over_scroll
-
-        self._fit_width = 0
-        self._fit_height = 0
-
-        self.set_element(element)
-
-        self.scroll = BasicTimer(self.over_scroll[0] * -1)
-        self.can_scroll = False
-        self._scrollbar_y = 0
-        self._scrollbar_h = 0
-        self.scrollbar_hovered = False
-        self.scrollbar_grabbed = False
-        self._scrollbar_grabbed_y = 0
-
-    def _get_element(self):
-        return self._element
-
-    def set_element(self, element):
-        self._element = element
-        if element is not None:
-            self.selectable = element.selectable
-            self._element.set_parent(self)
-        else:
-            self.selectable = False
-
-    def calc_fit_size(self):
-        if self.height.mode == 1:
-            if self._element:
-                if self._element.height.mode == 2:
-                    raise ValueError("Cannot have elements of FILL height inside of a FIT height VScroll.")
-                self._fit_height = self._element.get_height(0)
-            else:
-                self._fit_height = 20
-
-        if self.width.mode == 1:
-            if self._element:
-                if self._element.width.mode == 2:
-                    raise ValueError("Cannot have elements of FILL width inside of a FIT width VScroll.")
-                self._fit_width = self._element.get_width(0)
-            else:
-                self._fit_width = 20
-
+    def update_element_rect(self):
         if self._element:
-            self.selectable = self._element.selectable
-        if hasattr(self.parent, "calc_fit_size"):
-            self.parent.calc_fit_size()
+            with log.size.indent:
+                padding = (self._style.padding if self.can_scroll else 0)
+                self._element._update_rect_chain_down(self.subsurf, (self.rect.x + (self.rect.w - padding) // 2 -
+                                                                     self._element.get_abs_width(self.rect.w-padding)
+                                                                     // 2, self.rect.y - self.scroll.val),
+                                                      (self.rect.w - padding,
+                                                      self.rect.h), self.root)
 
-    def update_rect(self, pos, max_size, root: "View",
-                    _ignore_fill_width: bool = False, _ignore_fill_height: bool = False):
-
-        super().update_rect(pos, max_size, root, _ignore_fill_width, _ignore_fill_height)
-
-    def update(self, root: "View"):
+    def _update(self, root: "View") -> NoReturn:
 
         if not self._element:
             return
 
-        if hasattr(self._element, "check_for_surface_update"):
-            self._element.check_for_surface_update()
-
-        # We use get_height for the element height because can_scroll needs to be used in the element update method
-        element_h = self._element.get_height(self.rect.h)
+        self._scrollbar_calc()
+        element_h = self._element.get_abs_height(self.rect.h)
         max_scroll = element_h - self.rect.h + self.over_scroll[1]
+
+        # Move the scrollbar if it's grabbed
+        if self.scrollbar_grabbed:
+            val = (_c.mouse_pos[1] - self.rect.y - self._scrollbar_grabbed_pos) / \
+                  (self.rect.h - self._scrollbar_size) * (max_scroll + self.over_scroll[0]) - self.over_scroll[0]
+
+            self.scroll.val = val
+            log.size.info(self, "Scrollbar is grabbed, starting chain down...")
+            self.update_element_rect()
+
+        if not self.can_scroll:
+            max_scroll = 0
+
+        self._clamp_scroll_position(max_scroll)
+
+        # Update the element
+        self._element._update_a(root)
+
+        if self.scroll.tick():
+            log.size.info(self, "Scroll is playing, starting chain down...")
+            self.update_element_rect()
+
+    def _scrollbar_calc(self):
+        element_h = self._element.get_abs_height(self.rect.h)
+        max_scroll = element_h - self.rect.h + self.over_scroll[1]
+
+        old_can_scroll = self.can_scroll
 
         # Scrollbar position and size calculations
         if not element_h:
             self.can_scroll = False
 
         else:
-            self._scrollbar_h = (self.rect.h / (element_h + self.over_scroll[0] + self.over_scroll[1])) * self.rect.h
-            self.can_scroll = self._scrollbar_h < self.rect.h
+            self._scrollbar_size = (self.rect.h / (element_h + self.over_scroll[0] + self.over_scroll[1])) * self.rect.h
+            self.can_scroll = self._scrollbar_size < self.rect.h
+            if old_can_scroll != self.can_scroll:
+                log.size.info(self, f"Scrollbar {'enabled' if self.can_scroll else 'disabled'}, starting chain down...")
+                self.update_element_rect()
 
             if self.can_scroll:
-                self._scrollbar_y = ((self.scroll.val + self.over_scroll[0]) / (max_scroll + self.over_scroll[0])) \
-                                    * (self.rect.h - self._scrollbar_h)
+                self._scrollbar_pos = ((self.scroll.val + self.over_scroll[0]) / (max_scroll + self.over_scroll[0])) \
+                                      * (self.rect.h - self._scrollbar_size)
 
-                rect = pygame.Rect(self.rect.topright[0] - self.style.scrollbar_width, self.rect.y + self._scrollbar_y,
-                                   self.style.scrollbar_width+1, self._scrollbar_h + 1)
+                rect = pygame.Rect(self.rect.right - self._style.scrollbar_size,
+                                   self.rect.y + self._scrollbar_pos,
+                                   self._style.scrollbar_size + 1, self._scrollbar_size + 1)
                 self.scrollbar_hovered = rect.collidepoint(_c.mouse_pos)
 
-            # Move the scrollbar if it's grabbed
-            if self.scrollbar_grabbed:
-                val = (_c.mouse_pos[1] - self.rect.y - self._scrollbar_grabbed_y) / \
-                      (self.rect.h - self._scrollbar_h) * (max_scroll + self.over_scroll[0]) - self.over_scroll[0]
+        self._clamp_scroll_position(max_scroll)
 
-                self.scroll.val = val
+    def _render_scrollbar(self, surface: pygame.Surface, rect: pygame.Rect, alpha: int) -> NoReturn:
 
-        # If the scrollbar is outside the limits, move it inside.
-        if not (-self.over_scroll[0] <= self.scroll.val <= max_scroll):
-            if self.can_scroll:
-                self.scroll.val = min(max(-self.over_scroll[0], self.scroll.val), max_scroll)
-            else:
-                self.scroll.val = -self.over_scroll[0]
-
-        # Update the element
-        self._element.update_rect((self.rect.x + self.rect.w // 2 - self._element.get_width(self.rect.w) // 2,
-                                   self.rect.y - self.scroll.val),
-                                  (self.rect.w - (self.style.padding if self.can_scroll else 0),
-                                   self.rect.h), root)
-        self._element.update_a(root)
-
-        self.scroll.tick()
-
-    def render(self, surface: pygame.Surface, offset: tuple[int, int], root: "View", alpha: int = 255):
-        rect = self.rect.move(*offset)
-
-        if self.subsurf is None or (*self.subsurf.get_abs_offset(), *self.subsurf.get_size()) != self.rect:
-            self.subsurf = surface.subsurface(self.rect)
-
-        if self.background:
-            self.background_controller.render(self, surface, (rect.x - surface.get_abs_offset()[0],
-                                                              rect.y - surface.get_abs_offset()[1]),
-                                              rect.size, alpha)
-
-        if not self._element:
-            return
-
-        # Render element
-        self._element.render_a(self.subsurf, offset, root, alpha=alpha)
+        max_scroll = self._element.rect.h - self.rect.h + self.over_scroll[1]
+        self._clamp_scroll_position(max_scroll)
 
         # Draw scrollbar
         if self.can_scroll:
-            self.background_controller.set_material(self.style.images[0])
-            self.background_controller.render(self, surface, (rect.x + rect.w - self.style.scrollbar_width, rect.y),
-                                              (self.style.scrollbar_width, rect.h), alpha)
+            self.base_controller.set_material(self._style.base_material)
+            self.base_controller.render(self, surface, (rect.x + rect.w - self._style.scrollbar_size, rect.y),
+                                        (self._style.scrollbar_size, rect.h), alpha)
 
-            img_num = 2 if self.scrollbar_hovered or self.scrollbar_grabbed else 1
-            self.scroll_handle_controller.set_material(self.style.images[img_num])
-            self.scroll_handle_controller.render(self, surface,
-                                                 (rect.topright[0] - self.style.scrollbar_width,
-                                                  rect.y + self._scrollbar_y),
-                                                 (self.style.scrollbar_width, self._scrollbar_h + 1),
-                                                 alpha)
+            if self.scrollbar_grabbed:
+                material = self._style.handle_click_material
+            elif self.scrollbar_hovered:
+                material = self._style.handle_hover_material
+            else:
+                material = self._style.handle_material
+            self.handle_controller.set_material(material, self._style.handle_material_transition)
+            self.handle_controller.render(self, surface,
+                                          (rect.right - self._style.scrollbar_size,
+                                           rect.y + round(self._scrollbar_pos)),
+                                          (round(self._style.scrollbar_size), round(self._scrollbar_size + 1)),
+                                          alpha)
 
-    def event(self, event: int, root: "View"):
-        if event.type == pygame.MOUSEWHEEL and self.can_scroll:
-            if self.rect.collidepoint(_c.mouse_pos):
-                self.scroll.val = min(max(-self.over_scroll[0], self.scroll.val - event.y * self.style.scroll_speed),
-                                      self._element.rect.h - self.rect.h + self.over_scroll[1])
-
+    def _event2(self, event: pygame.event.Event, root: "View") -> NoReturn:
         if self.scrollbar_hovered:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.scrollbar_grabbed = True
-                self._scrollbar_grabbed_y = _c.mouse_pos[1] - (self.rect.y + self._scrollbar_y)
+                self._scrollbar_grabbed_pos = _c.mouse_pos[1] - (self.rect.y + self._scrollbar_pos)
+                return True
 
-        if event.type == pygame.MOUSEBUTTONUP:
-            self.scrollbar_grabbed = False
+        if event.type == pygame.MOUSEWHEEL and self.can_scroll:
+            if self.rect.collidepoint(_c.mouse_pos):
+                self.scroll.val = pygame.math.clamp(self.scroll.val - event.y * self._style.scroll_speed,
+                                                    - self.over_scroll[0],
+                                                    self._element.rect.h - self.rect.h + self.over_scroll[1])
+                log.size.info(self, "Scrollwheel moved, starting chain down...")
+                self.update_element_rect()
 
-        if self._element is not None:
-            # Stops you from clicking on elements that are clipped out of the frame
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if not self.rect.collidepoint(_c.mouse_pos):
-                    return
-            self._element.event(event, root)
-
-    def focus(self, root: "View", previous=None, key: str = 'select'):
-        logging.debug(f"Selected VScroll")
-        if self.self_selectable:
-            return self
-
-        if key in {'up', 'down', 'left', 'right', 'forward'} or self._element is None:
-            logging.debug(f"Exiting VScroll")
-            return self.parent.focus(root, self, key=key)
+    def scroll_to_show_position(self, position: int, size: int = 0, offset: int = 0, duration: float = 0.1):
+        if not self.can_scroll:
+            self.scroll.val = 0
+            self.update_element_rect()
+            return
+        if position - offset <= self.rect.y:
+            position -= offset
+            destination = self.scroll.val - (self.rect.y - position)
+        elif position + size + offset > self.rect.bottom:
+            position += offset
+            destination = self.scroll.val - (self.rect.y - position) - self.rect.h + size
         else:
-            return self._element.focus(root, None, key=key)
+            return
 
-    element = property(
-        fget=_get_element,
-        fset=set_element,
-        doc="The element contained in the VScroll."
-    )
+        log.nav.info(self, f"Scrolling to position {position}.")
+
+        destination = pygame.math.clamp(destination,
+                                        -self.over_scroll[0],
+                                        self._element.get_abs_height(self.rect.h) - self.rect.h + self.over_scroll[1])
+        if self.scroll.play(stop=destination, duration=duration):
+            self.update_element_rect()
+        self._scrollbar_calc()
+
+    def scroll_to_element(self, element: Element) -> NoReturn:
+        if not self.rect.contains(element.rect):
+            log.nav.info(self, f"Scrolling so that {element} is visible.")
+            self.scroll_to_show_position(element.rect.y, element.rect.h)

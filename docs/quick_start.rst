@@ -23,7 +23,7 @@ Here's a basic Pygame structure:
             if event.type == pygame.QUIT:
                 is_running = False
 
-        screen.fill((0,0,0))
+        screen.fill((20, 20, 20))
         clock.tick(60)
         pygame.display.flip()
 
@@ -33,7 +33,7 @@ Let's add the lines required for Ember to function:
 
 .. code-block:: python
    :linenos:
-   :emphasize-lines: 2,3,6,11,21
+   :emphasize-lines: 2,5,6,11,22
 
     import pygame
     import ember
@@ -55,7 +55,7 @@ Let's add the lines required for Ember to function:
             if event.type == pygame.QUIT:
                 is_running = False
 
-        screen.fill((0,0,0))
+        screen.fill((20, 20, 20))
         ember.update()
 
         clock.tick(60)
@@ -63,9 +63,9 @@ Let's add the lines required for Ember to function:
 
     pygame.quit()
 
-Now, we'll create a :code:`View` object. A :code:`View` is just a menu. You can pass any Ui :ref:`UI element<element>` as the first parameter of the view. Lets add a :code:`View` with a :code:`Button`:
+Now, we'll create a :code:`View` object. A View is just a menu. You can pass any :ref:`UI element<ui-element>` as the first parameter of the View. Lets add a View with a :ref:`Button<ui-button>` element:
 
-See also:
+
 .. code-block:: python
    :linenos:
    :emphasize-lines: 13,14,15,22,28
@@ -95,7 +95,7 @@ See also:
             if event.type == pygame.QUIT:
                 is_running = False
 
-        screen.fill((0,0,0))
+        screen.fill((20, 20, 20))
         ember.update()
         view.update(screen)
 
@@ -105,3 +105,6 @@ See also:
     pygame.quit()
 
 If you run this code, you should see something like this:
+
+.. image:: _static/quick_start/image1.png
+  :width: 400

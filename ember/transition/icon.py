@@ -1,10 +1,12 @@
 import pygame
 import os
-from typing import Union, Optional
+from typing import Union, Optional, TYPE_CHECKING
 
 from ember import common as _c
 from ember.ui.element import Element
-from ember.ui.view import View
+
+if TYPE_CHECKING:
+    from ember.ui.view import View
 
 from ember.transition.transition import Transition, ElementTransitionController
 
@@ -50,12 +52,12 @@ class IconMorph(Transition):
                        new_element: Element,
                        surface: pygame.Surface,
                        offset: tuple[int, int],
-                       root: View,
+                       root: "View",
                        alpha: int = 255
                        ):
         
         frame = int((timer/self.duration)*controller.frame_count)
         if controller.direction == 1:
             frame = controller.frame_count - frame - 1
-        frame_surf = controller.sheet.subsurface((0,frame*controller.frame_height,controller.sheet.get_width(),controller.frame_height))
+        frame_surf = controller.sheet.subsurface((0, frame * controller.frame_height, controller.sheet.get_abs_width(), controller.frame_height))
         new_element.draw_surface(surface, offset, frame_surf)

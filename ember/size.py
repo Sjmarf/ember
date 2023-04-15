@@ -1,5 +1,4 @@
-from typing import Literal, Union
-
+from typing import Literal, Union, Sequence
 
 # Modes:
 # 0: absolute, 1: fit, 2: fill
@@ -32,7 +31,7 @@ class Size:
             message += 'FIT' if self.mode == 1 else 'FILL'
 
             if self.value != 0:
-                message += f"{'-' if self.value < 0 else '+'} {self.value}px"
+                message += f" {self.value}px"
 
             return message
 
@@ -74,7 +73,7 @@ class Size:
         else:
             return NotImplemented
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         if type(other) in {int, float}:
             if self.mode == 0:
                 return Size(self.value/other, self.percentage, mode=self.mode)
@@ -87,3 +86,4 @@ FIT = Size(0, mode=1)
 FILL = Size(0, mode=2)
 
 SizeType = Union[Size, int, None]
+SequenceSizeType = Union[SizeType, Sequence[SizeType], None]

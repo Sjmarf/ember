@@ -1,155 +1,201 @@
 import pygame
-from typing import Union, Optional, Sequence
+from typing import Union, Optional, Sequence, NoReturn
 
 from ember import common as _c
 import ember.event
+
 from ember.ui.view import View
 from ember.ui.h_stack import HStack
 from ember.ui.text import Text
-from ember.ui.icon import Icon
 from ember.ui.ui_object import Interactive
-from ember.ui.element import Element
+from ember.ui.element import Element, ElementStrType
 from ember.ui.load_element import load_element
 
+from ember.size import SizeType, SequenceSizeType
+
 from ember.style.button_style import ButtonStyle
-from ember.style.text_style import TextStyle
 from ember.style.load_style import load as load_style
-from ember.material.stretched_surface import StretchedSurface
 
 from ember.material.material import MaterialController
 
-
 class Button(Element, Interactive):
     def __init__(self,
-                 *element: Sequence[Union[None, str, Element]],
-                 size: Optional[Sequence[int]] = None,
-                 width: Optional[int] = None,
-                 height: Optional[int] = None,
+                 *element: Union[Sequence[ElementStrType], ElementStrType],
+                 size: SequenceSizeType = None,
+                 width: SizeType = None,
+                 height: SizeType = None,
 
                  style: Optional[ButtonStyle] = None,
-                 text_style: Optional[TextStyle] = None,
 
                  disabled: bool = False,
                  can_hold: bool = False,
                  hold_delay: float = 0.2,
                  hold_start_delay: float = 0.5,
-                 select_when_clicked: bool = False
+                 focus_when_clicked: bool = False
                  ):
+        """
+        :param element:
+        :param size:
+        :param width:
+        :param height:
+        :param style:
+        :param disabled:
+        :param can_hold:
+        :param hold_delay:
+        :param hold_start_delay:
+        :param focus_when_clicked:
+        """
 
-        self._disabled: bool = disabled
-        self._can_hold: bool = can_hold
-        self.select_when_clicked: bool = select_when_clicked
+        self.can_hold: bool = can_hold
+        """
+        If :code:`True`, the button will repeatedly post the :code:`BUTTONCLICKED` event every x 
+        seconds whilst the button is held down.
+        """
 
-        if can_hold:
-            self._hold_delay: float = hold_delay
-            self._hold_start_delay: float = hold_start_delay
-            self._is_held: bool = False
-            self._hold_timer: float = hold_start_delay
+        self.hold_delay: float = hold_delay
+        """
+        The delay (in seconds) between posting events, if the :code:`can_hold` attribute is :code:`True`.
+        """
+
+        self.hold_start_delay: float = hold_start_delay
+        """
+        The delay (in seconds) between the initial event and the first repeated event, 
+        if the :code:`can_hold` attribute is :code:`True`.
+        """
+
+        self.focus_when_clicked: bool = focus_when_clicked
+        """
+        If :code:`True`, the button will be focused when it is clicked.
+        """
 
         self.is_hovered: bool = False
+        """
+        Is :code:`True` when the mouse is hovered over the button. Read-only.
+        """
+
         self.is_clicked: bool = False
+        """
+        Is :code:`True` when the button is clicked down. Read-only.
+        """
+
+        self.material_controller: MaterialController = MaterialController(self)
+        """
+        The :ref:`MaterialController<material-controller>` object responsible for managing the Button's materials.
+        """
+
+        self._fit_width: float = 0
+        self._fit_height: float = 0
+        self._hold_timer: float = hold_start_delay
+        self._is_held: bool = False
+
+        self._element: Optional[Element] = None
 
         self.set_style(style)
 
-        text_style: TextStyle = self._style.text_style if text_style is None else text_style
-        if len(element) == 1:
-            self.element = load_element(element[0], text_style=text_style)
-        else:
-            self.element: Element = HStack(*[load_element(i) for i in element])
+        super().__init__(size, width, height, default_size=self.style.default_size)
+        self.set_element(*element)
 
-        # If None is passed as a size value, then use the first set size. If unavailable, use the style image size.
-        if size is None:
-            if width is not None:
-                self.width = width
-            else:
-                self.width = self.style.default_size[0]
-
-            if height is not None:
-                self.height = height
-            else:
-                self.height = self.style.default_size[1]
-
-        else:
-            self.width, self.height = size
-
-        self.material_controller = MaterialController(self)
-
-        super().__init__(self.width, self.height)
+        self._disabled: bool = disabled
 
     def __repr__(self):
-        return f"Button({self.element})"
+        return f"<Button({self._element})>"
 
-    def set_root(self, root):
+    def _set_root(self, root: View) -> NoReturn:
         self.root = root
-        if self.element:
-            self.element.set_root(root)
+        if self._element:
+            self._element._set_root(root)
 
-    def update_rect(self, pos, max_size, root: View,
-                    _ignore_fill_width: bool = False, _ignore_fill_height: bool = False):
+    def _update_rect_chain_down(self, surface: pygame.Surface, pos: tuple[float, float], max_size: tuple[float, float],
+                                root: "View", _ignore_fill_width: bool = False,
+                                _ignore_fill_height: bool = False) -> NoReturn:
 
-        super().update_rect(pos, max_size, root, _ignore_fill_width, _ignore_fill_height)
+        super()._update_rect_chain_down(surface, pos, max_size, root, _ignore_fill_width, _ignore_fill_height)
 
-        # Update the element
-        if self.element:
-            if self.is_clicked:
-                offset = self._style.element_clicked_offset
-            elif root.element_focused is self:
-                offset = self._style.element_highlight_offset
-            elif self.is_hovered:
-                offset = self._style.element_hover_offset
-            else:
-                offset = self._style.element_offset
-            self.element.update_rect(
-                (self.rect.x + self.rect.w // 2 - self.element.get_width(self.rect.w) // 2 + offset[0],
-                 self.rect.y + self.rect.h // 2 - self.element.get_height(self.rect.h) // 2 + offset[1]),
+        w = self.get_abs_width(max_size[0])
+        h = self.get_abs_height(max_size[1])
+        if self._element:
+            self._element._update_rect_chain_down(
+                surface,
+                (pos[0] + w / 2 - self._element.get_abs_width(w) / 2,
+                 pos[1] + h / 2 - self._element.get_abs_height(h) / 2),
                 self.rect.size, root)
 
-    def update(self, root: View):
+    def _update_rect_chain_up(self) -> NoReturn:
+        if self._width.mode == 1:
+            if self._element:
+                if self._element._width.mode == 2:
+                    raise ValueError("Cannot have elements of FILL width inside of a FIT width Button.")
+                self._fit_width = self._element.get_abs_width()
+            else:
+                self._fit_width = self._style.default_size[0]
+
+        if self._height.mode == 1:
+            if self._element:
+                if self._element._height.mode == 2:
+                    raise ValueError("Cannot have elements of FILL height inside of a FIT height Button.")
+                self._fit_height = self._element.get_abs_width()
+            else:
+                self._fit_height = self._style.default_size[1]
+
+        if self.parent:
+            self.parent._update_rect_chain_up()
+            self.root.check_size = True
+
+    def _update(self, root: View) -> NoReturn:
         self.is_hovered = self.rect.collidepoint(_c.mouse_pos)
 
         # If button is held down, perform action every x seconds
-        if self._can_hold and not self._disabled:
+        if self.can_hold and not self._disabled:
             if self.is_clicked:
                 self._hold_timer -= _c.delta_time
                 if self._hold_timer < 0:
                     self._is_held = True
-                    self._hold_timer = self._hold_delay
+                    self._hold_timer = self.hold_delay
 
                     if _c.audio_enabled and not _c.audio_muted:
-                        if (s := self._style.sounds[0]) is not None:
+                        if (s := self._style.click_down_sound) is not None:
                             s.play()
                     self._perform_event()
 
             else:
-                self._hold_timer = self._hold_start_delay
+                self._hold_timer = self.hold_start_delay
 
-        self.element.update_a(root)
+        if self._element:
+            self._element._update_a(root)
 
-    def render(self, surface: pygame.Surface, offset: tuple[int, int], root: View, alpha: int = 255):
+    def _render(self, surface: pygame.Surface, offset: tuple[int, int], root: View, alpha: int = 255) -> NoReturn:
         # Decide which image to draw
         rect = self.rect.move(*offset)
         if self._disabled:
-            img_num = 3
+            material = self.style.disabled_material
         elif self.is_clicked:
-            img_num = 5 if root.element_focused is self else 2
+            material = self.style.focus_click_material if root.element_focused is self else self.style.click_material
         elif root.element_focused is self:
-            img_num = 4
+            material = self.style.focus_material
         elif self.is_hovered:
-            img_num = 1
+            material = self.style.hover_material
         else:
-            img_num = 0
+            material = self.style.material
 
-        self.material_controller.set_material(self._style.images[img_num])
+        self.material_controller.set_material(material, transition=self._style.material_transition)
         self.material_controller.render(self, surface,
                                         (rect.x - surface.get_abs_offset()[0],
                                          rect.y - surface.get_abs_offset()[1]),
                                         rect.size, alpha)
 
-        # Draw the element
-        if self.element:
-            self.element.render_a(surface, offset, root, alpha=alpha)
+        if self._element:
+            if self.is_clicked:
+                offset2 = self._style.element_clicked_offset
+            elif root.element_focused is self:
+                offset2 = self._style.element_highlight_offset
+            elif self.is_hovered:
+                offset2 = self._style.element_hover_offset
+            else:
+                offset2 = self._style.element_offset
 
-    def event(self, event: int, root: View):
+            self._element._render_a(surface, (offset[0] + offset2[0], offset[1] + offset2[1]), root, alpha=alpha)
+
+    def _event(self, event: pygame.event.Event, root: View) -> NoReturn:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and not self._disabled:
             self.is_clicked = self.is_hovered
             if self.is_clicked:
@@ -158,7 +204,7 @@ class Button(Element, Interactive):
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             if self.is_hovered and self.is_clicked and not self._disabled:
                 self._click_up()
-                if self.select_when_clicked:
+                if self.focus_when_clicked:
                     root.element_focused = self
                     event = pygame.event.Event(ember.event.ELEMENTFOCUSED, element=self)
                     pygame.event.post(event)
@@ -170,7 +216,7 @@ class Button(Element, Interactive):
             self._click_down()
 
         elif event.type == pygame.KEYUP and event.key == pygame.K_RETURN:
-            if root.element_focused is self and not self._disabled:
+            if root.element_focused is self and not self._disabled and self.is_clicked:
                 self._click_up()
             self.is_clicked = False
 
@@ -186,16 +232,16 @@ class Button(Element, Interactive):
 
     def _click_down(self):
         if _c.audio_enabled and not _c.audio_muted:
-            if (s := self._style.sounds[0]) is not None:
+            if (s := self._style.click_down_sound) is not None:
                 s.play()
 
     def _click_up(self):
         if _c.audio_enabled and not _c.audio_muted:
-            if (s := self._style.sounds[1]) is not None:
-                if (s2 := self._style.sounds[0]) is not None:
+            if (s := self._style.click_up_sound) is not None:
+                if (s2 := self._style.click_down_sound) is not None:
                     s2.stop()
                 s.play()
-        if self._can_hold:
+        if self.can_hold:
             if self._is_held:
                 self._is_held = False
             else:
@@ -204,41 +250,67 @@ class Button(Element, Interactive):
             self._perform_event()
 
     def _perform_event(self):
-        text = self.element.text if type(self.element) is Text else None
-        icon = self.element.icon if type(self.element) is Icon else None
-        event = pygame.event.Event(ember.event.BUTTONCLICKED, element=self, text=text, icon=icon)
+        text = self._element.text if isinstance(self._element, Text) else None
+        event = pygame.event.Event(ember.event.BUTTONCLICKED, element=self, text=text)
         pygame.event.post(event)
 
-    def _set_disabled(self, value: bool):
+    def set_disabled(self, value: bool) -> NoReturn:
         self._disabled = value
         self.selectable = not value
-        if hasattr(self.parent, "calc_fit_size"):
-            self.parent.calc_fit_size()
+        if hasattr(self.parent, "update_rect_chain_up"):
+            self.parent._update_rect_chain_up()
         if self._disabled:
             if self.root:
                 if self.root.element_focused is self:
                     self.root.element_focused = None
 
-    def _get_disabled(self):
-        return self.disabled
+    def _set_style(self, style: Optional[ButtonStyle]) -> NoReturn:
+        self.set_style(style)
 
-    def _get_style(self):
-        return self._style
-
-    def set_style(self, style):
+    def set_style(self, style: Optional[ButtonStyle]) -> NoReturn:
+        """
+        Sets the ButtonStyle of the Button.
+        """
         if style is None:
             if _c.default_button_style is None:
-                load_style("plastic", parts=['button'])
-            self._style = _c.default_button_style
+                load_style(_c.DEFAULT_STYLE, parts=['button'])
+            self._style: ButtonStyle = _c.default_button_style
         else:
-            self._style = style
+            self._style: ButtonStyle = style
 
-    disabled = property(
-        fset=_set_disabled,
-        fget=_get_disabled
+    def _set_element(self, *element: Union[Sequence[ElementStrType], ElementStrType]) -> NoReturn:
+        self.set_element(element)
+
+    def set_element(self, *element: Union[Sequence[ElementStrType], ElementStrType]) -> NoReturn:
+        """
+        Replace the child element of the Button.
+        """
+        if not element or element == (None,):
+            self._element = None
+
+        else:
+            if len(element) > 1:
+                self._element: Optional[Element] = \
+                    HStack(*[load_element(i, text_style=self._style.text_style) for i in element])
+
+            elif isinstance(element[0], (Element, str)):
+                self._element: Optional[Element] = load_element(element[0], text_style=self._style.text_style)
+            else:
+                self._element: Optional[Element] = \
+                    HStack(*[load_element(i, text_style=self._style.text_style) for i in element[0]])
+
+            self._element._set_parent(self)
+
+        self._update_rect_chain_up()
+
+    element = property(
+        fget=lambda self: self._element,
+        fset=_set_element,
+        doc="The child element of the Button. Synonymous with the set_element() method."
     )
 
     style = property(
-        fset=set_style,
-        fget=_get_style
+        fget=lambda self: self._style,
+        fset=_set_style,
+        doc="The ButtonStyle of the Button. Synonymous with the set_style() method."
     )

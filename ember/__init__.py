@@ -2,6 +2,7 @@ import importlib.resources
 from typing import Union, Optional
 
 from ember import common as _c
+from ember.common import DEFAULT, INHERIT
 
 import ember.event
 from ember.event import *
@@ -45,7 +46,6 @@ def init(clock: Optional[_pygame.time.Clock] = None, audio: Optional[bool] = Non
     pygame.scrap.init()
     _c.audio_muted = False
     _c.clock = clock if clock is not None else _c.clock
-    _c.is_ce = getattr(_pygame, "IS_CE", False)
 
     _c.package = importlib.resources.files("ember")
 
@@ -54,4 +54,4 @@ def set_clock(clock: pygame.time.Clock):
     _c.clock = clock
 
 
-print('pxui 0.0.1')
+print('Ember 0.0.1')

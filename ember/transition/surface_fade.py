@@ -1,10 +1,12 @@
 import pygame
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from ember import common as _c
-from ember.ui.view import View
-from ember.ui.element import Element
-from ember.ui.surface import Surface
+
+if TYPE_CHECKING:
+    from ember.ui.view import View
+    from ember.ui.element import Element
+    from ember.ui.surface import Surface
 
 from ember.transition.transition import Transition, ElementTransitionController, MaterialTransitionController
 from ember.material.material import Material
@@ -17,25 +19,25 @@ class SurfaceFade(Transition):
     def render_element(self,
                        controller: ElementTransitionController,
                        timer: float,
-                       old_element: Surface,
-                       new_element: Surface,
+                       old_element,
+                       new_element,
                        surface: pygame.Surface,
                        offset: tuple[int, int],
-                       root: View,
+                       root: "View",
                        alpha: int = 255
                        ):
-        amount = timer / self.duration
+        amount = max(0, timer / self.duration)
 
         old_surf = old_element.get_surface()
         new_surf = new_element.get_surface()
 
         result = surface_fade(old_surf, new_surf, amount)
-        new_element.draw_surface(surface, offset, result)
+        new_element._draw_surface(surface, offset, result)
 
     def render_material(self,
                         controller: "MaterialTransitionController",
                         timer: float,
-                        element: Element,
+                        element: "Element",
                         old_material: Optional[Material],
                         new_material: Optional[Material],
                         surface: pygame.Surface,
@@ -66,9 +68,16 @@ class SurfaceFade(Transition):
 
 
 def surface_fade(old_surf, new_surf, amount):
+    if not old_surf:
+        new_surf.set_alpha(255*(1-amount))
+        return new_surf
+    elif not new_surf:
+        old_surf.set_alpha(255*amount)
+        return old_surf
+
     if old_surf.get_size() != new_surf.get_size():
-        largest_width = max(old_surf.get_width(), new_surf.get_width())
-        largest_height = max(old_surf.get_height(), new_surf.get_height())
+        largest_width = max(old_surf.get_abs_width(), new_surf.get_abs_width())
+        largest_height = max(old_surf.get_abs_height(), new_surf.get_abs_height())
 
         surf1 = pygame.Surface((largest_width, largest_height), pygame.SRCALPHA)
         surf2 = pygame.Surface((largest_width, largest_height), pygame.SRCALPHA)

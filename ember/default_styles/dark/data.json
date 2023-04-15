@@ -7,15 +7,47 @@
 
      "view": {"transition": ["Fade", 0.15]},
 
+     "stack": {},
+
      "button": {
-       "material": ["RoundedRect", [50,50,50], 20],
+       "material": ["RoundedRect", [30,30,30], 20],
+       "hover_material": ["RoundedRect", [40,40,40], 20],
+       "click_material": ["RoundedRect", [70,70,70], 20],
+       "disabled_material": ["RoundedRect", [15,15,15], 20],
        "material_transition": ["SurfaceFade", 0.1]
+     },
+
+     "text_field": {
+       "material": ["RoundedRect", [30,30,30], 20],
+       "hover_material": ["RoundedRect", [40,40,40], 20],
+       "active_material": ["RoundedRect", [70,70,70], 20],
+       "disabled_material": ["RoundedRect", [15,15,15], 20],
+       "material_transition": ["SurfaceFade", 0.1],
+       "default_scroll_size": [["FILL", 1, -20], ["FILL", 1, -20]]
+       },
+
+     "list": {
+       "highlight_material": ["AverageColor",[0,0,10]],
+       "highlight_focus_material": ["AverageColor",[0,0,20]],
+       "material_transition": ["SurfaceFade", 0.15],
+
+       "text_width": 200,
+       "text_height": 100
+     },
+
+     "scroll": {
+       "handle_material": ["RoundedRect", ["AverageColor",[0,0,30]], 4],
+       "handle_hover_material": ["RoundedRect", ["AverageColor",[0,0,40]], 4],
+       "padding": 25,
+       "scrollbar_size": 10,
+       "scroll_speed": 15,
+       "handle_material_transition": ["SurfaceFade", 0.15]
      }
    },
 
-    "constants": {
+   "constants": {
       "background_color": [69, 101, 69],
       "background_color_dark": [59, 81, 59],
       "background_color_light": [89, 121, 89]
-    }
+   }
 }

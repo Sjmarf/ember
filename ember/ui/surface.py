@@ -1,10 +1,12 @@
 import pygame
 import logging
-from typing import Union
+from typing import Union, TYPE_CHECKING
 
 from ember import common as _c
 from ember.ui.element import Element
-from ember.ui.view import View
+
+if TYPE_CHECKING:
+    from ember.ui.view import View
 
 from ember.size import FIT, FILL
 
@@ -18,23 +20,23 @@ class Surface(Element):
         self._fit_width = 0
         self._fit_height = 0
 
-        super().__init__(*size, selectable=False)
+        super().__init__(*size, can_focus=False)
         self.animation = None
         self.set_surface(surface)
 
     def __repr__(self):
-        return f"Surface"
+        return f"<Surface>"
 
-    def calc_fit_size(self):
-        if self.width.mode == 1:
+    def _update_rect_chain_up(self):
+        if self._width.mode == 1:
             if self.surface is not None:
-                self._fit_width = self.surface.get_width() * self.width.percentage + self.width.value
+                self._fit_width = self.surface.get_width() * self._width.percentage + self._width.value
             else:
                 self._fit_width = 20
 
-        if self.height.mode == 1:
+        if self._height.mode == 1:
             if self.surface is not None:
-                self._fit_height = self.surface.get_height() * self.height.percentage + self.height.value
+                self._fit_height = self.surface.get_height() * self._height.percentage + self._height.value
             else:
                 self._fit_height = 20
 
@@ -50,7 +52,7 @@ class Surface(Element):
         else:
             self.surface = None
 
-        self.calc_fit_size()
+        self._update_rect_chain_up()
 
     def get_surface(self, alpha: int = 255):
         if self.surface is not None:
@@ -66,6 +68,6 @@ class Surface(Element):
                                       rect.h / 2 - self.surface.get_height() / 2
                                       ))
 
-    def render(self, surface: pygame.Surface, offset: tuple[int, int],
-               root: View, alpha: int = 255):
+    def _render(self, surface: pygame.Surface, offset: tuple[int, int],
+                root: "View", alpha: int = 255):
         self.draw_surface(surface, offset, self.get_surface(alpha))

@@ -15,6 +15,14 @@ class RoundedRect(Shape):
         self.corner_surf: Optional[pygame.Surface] = None
         self.set_radius(radius)
 
+    def __repr__(self):
+        if self._color:
+            return "<RoundedRect({}, {}, {})>".format(*self._color)
+        elif self._material:
+            return f"<RoundedRect({self._material})>"
+        else:
+            return f"<RoundedRect>"
+
     def set_radius(self, radius: int = 20):
         self._radius = radius
         self.corner_surf = pygame.Surface((radius, radius), pygame.SRCALPHA)

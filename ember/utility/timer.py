@@ -17,12 +17,20 @@ class BasicTimer:
                 if self.val >= self.stop_at:
                     self.playing = False
                     self.val = self.stop_at
+                    return True
             else:
                 if self.val <= self.stop_at:
                     self.playing = False
                     self.val = self.stop_at
+                    return True
+
+        return self.playing
 
     def play(self, stop: float, duration: float = 1, speed: Optional[float] = None):
+        if duration == 0:
+            self.val = stop
+            return True
+
         self.playing = True
         self.stop_at = stop
         self.direction = -1 if self.val > stop else 1

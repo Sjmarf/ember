@@ -14,10 +14,10 @@ class Spacer(Element):
             size = (width, size[1])
         if height is not None:
             size = (size[0], height)
-        super().__init__(*size, selectable=False)
+        super().__init__(*size, can_focus=False)
 
-    def update(self, root: View):
+    def _update(self, root: View):
         pass
 
-    def render(self, surface: pygame.Surface, offset: tuple[int, int], root: View, alpha: int = 255):
+    def _render(self, surface: pygame.Surface, offset: tuple[int, int], root: View, alpha: int = 255):
         pass

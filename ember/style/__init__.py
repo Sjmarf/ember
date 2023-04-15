@@ -1,6 +1,9 @@
 from ember.style.load_style import from_json, load
 
+from ..common_styles import *
+
 from ember.style.view_style import ViewStyle
+from ember.style.stack_style import StackStyle
 from ember.style.button_style import ButtonStyle
 from ember.style.text_field_style import TextFieldStyle
 from ember.style.toggle_style import ToggleStyle

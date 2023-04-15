@@ -31,12 +31,12 @@ class Toggle(Element):
             if width is not None:
                 self.width = width
             else:
-                self.width = self.style.images[0].surface.get_width()
+                self.width = self.style.images[0].surface.get_abs_width()
 
             if height is not None:
                 self.height = height
             else:
-                self.height = self.style.images[0].surface.get_height()
+                self.height = self.style.images[0].surface.get_abs_height()
         else:
             self.width, self.height = size
 
@@ -44,23 +44,23 @@ class Toggle(Element):
         self.handle_width = 0
         self.active = active
 
-        self.anim = BasicTimer(self.style.images[0].surface.get_width() - self.style.images[1].surface.get_width()
+        self.anim = BasicTimer(self.style.images[0].surface.get_abs_width() - self.style.images[1].surface.get_abs_width()
                                if self.active else 0)
 
-    def update_rect(self, pos, max_size, root: "View",
-                    _ignore_fill_width: bool = False, _ignore_fill_height: bool = False):
+    def _update_rect_chain_down(self, surface, pos, max_size, root: "View",
+                                _ignore_fill_width: bool = False, _ignore_fill_height: bool = False):
 
-        super().update_rect(pos, max_size, root, _ignore_fill_width, _ignore_fill_height)
+        super()._update_rect_chain_down(surface, pos, max_size, root, _ignore_fill_width, _ignore_fill_height)
 
-    def update(self, root: View):
+    def _update(self, root: View):
         self.is_hovered = self.rect.collidepoint(_c.mouse_pos)
         self.anim.tick()
 
-    def render(self, surface: pygame.Surface, offset: tuple[int, int], root: View, alpha: int = 255):
+    def _render(self, surface: pygame.Surface, offset: tuple[int, int], root: View, alpha: int = 255):
         rect = self.rect.move(*offset)
 
         # Draw the base image
-        self.style.images[0].render(self, surface, rect.topleft, rect.size, alpha)
+        self.style.images[0]._render(self, surface, rect.topleft, rect.size, alpha)
 
         # Draw the handle image
         if root.element_focused is self:
@@ -70,11 +70,11 @@ class Toggle(Element):
         else:
             img_num = 1
 
-        self.handle_width = self.style.images[img_num].surface.get_width() / \
-                            self.style.images[img_num].surface.get_height() * rect.h
+        self.handle_width = self.style.images[img_num].surface.get_abs_width() / \
+                            self.style.images[img_num].surface.get_abs_height() * rect.h
 
-        self.style.images[img_num].render(self, surface, (rect.x + self.anim.val, rect.y),
-                                                  (self.handle_width, rect.h), alpha)
+        self.style.images[img_num]._render(self, surface, (rect.x + self.anim.val, rect.y),
+                                           (self.handle_width, rect.h), alpha)
 
     def set_active(self, state: bool, play_sound: bool = False):
         self.active = state
@@ -89,7 +89,7 @@ class Toggle(Element):
             if sound is not None:
                 sound.play()
 
-    def event(self, event: int, root: View):
+    def _event(self, event: int, root: View):
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.is_hovered:
                 self.set_active(not self.active, play_sound=True)

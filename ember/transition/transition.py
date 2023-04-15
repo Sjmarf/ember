@@ -43,9 +43,9 @@ class Transition(ElementTransitionType, MaterialTransitionType):
     @staticmethod
     def update_element(controller: "ElementTransitionController", root: "View"):
         if controller.old_element is not None:
-            controller.old_element.update(root)
+            controller.old_element._update(root)
         if controller.new_element is not None:
-            controller.new_element.update(root)
+            controller.new_element._update(root)
 
     def render_element(self,
                        controller: "ElementTransitionController",

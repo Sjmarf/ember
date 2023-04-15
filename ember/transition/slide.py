@@ -1,9 +1,11 @@
 import pygame
-from typing import Union, Literal, Callable
+from typing import Union, Literal, Callable, TYPE_CHECKING
 
 from ember import common as _c
 from ember.ui.element import Element
-from ember.ui.view import View
+
+if TYPE_CHECKING:
+    from ember.ui.view import View
 
 from ember.transition.transition import Transition, ElementTransitionController
 
@@ -24,7 +26,7 @@ class Slide(Transition):
                        new_element: Element,
                        surface: pygame.Surface,
                        offset: tuple[int, int],
-                       root: View,
+                       root: "View",
                        alpha: int = 255
                        ):
         progress = 1 - (timer / self.duration)
@@ -35,10 +37,10 @@ class Slide(Transition):
             width, height = old_element.rect.w + self.spacing, old_element.rect.h + self.spacing
             new_offset = (offset[0] + self.direction[0] * width * progress,
                           offset[1] + self.direction[1] * height * progress)
-            old_element.render(surface, new_offset, root, alpha=alpha)
+            old_element._render(surface, new_offset, root, alpha=alpha)
 
         if new_element is not None:
             width, height = new_element.rect.w + self.spacing, new_element.rect.h + self.spacing
             new_offset = (offset[0] + self.direction[0] * width * (progress - 1),
                           offset[1] + self.direction[1] * height * (progress - 1))
-            new_element.render(surface, new_offset, root, alpha=255 - alpha)
+            new_element._render(surface, new_offset, root, alpha=255 - alpha)

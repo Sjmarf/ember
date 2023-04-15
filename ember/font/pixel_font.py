@@ -28,6 +28,9 @@ class PixelFont(BaseFont):
             else:
                 size += 1
 
+        self.letters['\n'] = self.letters[' ']
+        self.letters['\r'] = self.letters[' ']
+
         size = 0
         variant = 0
 

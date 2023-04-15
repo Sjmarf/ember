@@ -1,15 +1,20 @@
 import pygame
-from typing import Union, Optional, TYPE_CHECKING, Literal
+from typing import Union, Optional, TYPE_CHECKING, Literal, Sequence, NoReturn
 
 from ember import common as _c
 import ember.event
 from ember.ui.element import Element
 from ember.ui.text import Text
+from ember.ui.v_scroll import VScroll
+from ember.ui.h_scroll import HScroll
+from ember.ui.scroll import Scroll
 from ember.ui.ui_object import Interactive
 from ember.style.text_field_style import TextFieldStyle
 from ember.style.load_style import load as load_style
 
-from ember.utility.timer import BasicTimer
+from ember import log
+
+from ember.size import SizeType, SequenceSizeType, FILL, FIT
 
 from ember.material.material import MaterialController
 
@@ -23,92 +28,145 @@ EXCLUDED_CHARS = ['']
 class TextField(Element, Interactive):
     def __init__(self,
                  text: Union[str, Text] = "",
-                 size: Optional[tuple[float, float]] = None,
-                 width: Optional[float] = None,
-                 height: Optional[float] = None,
+                 size: SequenceSizeType = None,
+                 width: SizeType = None,
+                 height: SizeType = None,
                  style: Optional[TextFieldStyle] = None,
 
                  prompt: Union[str, Text, None] = None,
                  disabled: bool = False,
                  hide_input: bool = False,
                  max_length: Optional[int] = None,
-                 allowed_characters: Optional[str] = None,
+                 allowed_characters: Union[str, Sequence[str], None] = None,
                  multiline: bool = False
                  ):
 
-        self.hide_input = hide_input
-        self.max_length = max_length
-        self.allowed_characters = allowed_characters
-        self.multiline = multiline
-        self._disabled = disabled
+        self.hide_input: bool = hide_input
+        """
+        When :code:`True`, letters will be replaced with bullet points (•), as in a password input.
+        """
 
-        self.is_hovered = False
-        self.is_active = False
-        self._repeating_key = None
-        self._text_y = 0
+        self.max_length: Optional[int] = max_length
+        """
+        The maximum length of the text. If set to :code:`None`, no limit is applied.
+        """
 
-        self.material_controller = MaterialController(self)
+        self.allowed_characters: Union[str, Sequence[str], None] = allowed_characters
+        """
+        A sequence or string of allowed characters. If set to :code:`None`, all characters will be allowed.
+        """
 
-        self._cursor_timer = 0
+        self.is_hovered: bool = False
+        """
+        Is :code:`True` when the mouse is hovered over the TextField. Read-only.
+        """
 
-        self._cursor_x = 0
-        self._cursor_index = 0
-        self._cursor_line = 0
+        self.is_active: bool = False
+        """
+        Is :code:`True` when the TextField is open. Read-only.
+        """
 
-        self._highlight_x = 0
-        self._highlight_index = 0
-        self._highlight_line = 0
+        self.material_controller: MaterialController = MaterialController(self)
+        """
+        The :ref:`MaterialController<material-controller>` object responsible for managing the TextField's materials.
+        """
 
-        self._highlighting = False
-        self._highlighted = False
+        self._multiline: bool = multiline
 
-        # Load the TextFieldStyle object.
-        if style is None:
-            if _c.default_text_field_style is None:
-                load_style("plastic", parts=['text_field'])
-            self.style = _c.default_text_field_style
-        else:
-            self.style = style
+        self._repeating_key: Optional[int] = None
 
-        self._repeated_key_timer = self.style.backspace_start_delay
+        self._cursor_timer: int = 0
+
+        self._cursor_x: int = 0
+        self._cursor_index: int = 0
+        self._cursor_line: int = 0
+
+        self._highlight_x: int = 0
+        self._highlight_index: int = 0
+        self._highlight_line: int = 0
+
+        self._highlighting: bool = False
+        self._highlighted: bool = False
+
+        self.set_style(style)
+
+        self._repeated_key_timer: float = self._style.key_repeat_start_delay
 
         # If a str is passed as the element, convert to a Text object.
-        if type(text) is str:
-            self._text_element = Text(text, color=self.style.text_color, width=ember.FILL)
+        if self._multiline:
+            text_style = text.style if isinstance(text, Text) else _c.default_text_style
+            element_size = (FILL - text_style.font.cursor.get_width() * 2, FIT)
         else:
-            self._text_element = text
+            element_size = (FIT, FIT)
 
-        if type(prompt) is str:
-            self._prompt = Text(prompt, color=self.style.text_color, width=ember.FILL)
+        if isinstance(text, str):
+            self._text_element: Text = Text(text, color=self._style.text_color, size=element_size, align="left")
         else:
-            self._prompt = prompt
+            self._text_element: Text = text
+            text.set_size(element_size)
+
+        self._text_element._set_parent(self)
+
+        if isinstance(prompt, str):
+            self._prompt: Text = Text(prompt, color=self._style.text_color, size=element_size)
+        else:
+            self._prompt: Text = prompt
+            if prompt:
+                prompt.set_size(element_size)
+
+        if self._prompt:
+            self._prompt._set_parent(self)
+
+        if self._multiline:
+            self._scroll: Scroll = VScroll(self._text_element, size=self._style.default_scroll_size)
+        else:
+            self._scroll: Scroll = HScroll(self._text_element, size=self._style.default_scroll_size,
+                                           over_scroll=[self._text_element._style.font.cursor.get_width()] * 2)
+
+        self._scroll_offset = (0, 0)
 
         self._update_text(self._text_element.text)
 
-        # If None is passed as a size value, then use the first set size. If unavailable, use the style image size.
-        if size is None:
-            if width is not None:
-                self.width = width
-            else:
-                self.width = self.style.images[0].surface.get_width()
+        if max_length is not None and len(self._text) > self.max_length:
+            raise ValueError(f"Text length ({len(self._text)}) is greater than max_length {self.max_length}.")
 
-            if height is not None:
-                self.height = height
-            else:
-                self.height = self.style.images[0].surface.get_height()
-        else:
-            self.width, self.height = size
-
-        super().__init__(self.width, self.height)
+        super().__init__(size, width, height, default_size=self._style.default_size)
+        self._disabled: bool = disabled
 
     def __repr__(self):
-        return f"TextField('{self._text}')"
+        return f"TextField({self._text_element})"
 
-    def unfocus(self):
+    def _on_unfocus(self) -> NoReturn:
         if self.is_active:
             self._deselect(self.root)
 
-    def update(self, root: "View"):
+    def _set_root(self, root: "View") -> NoReturn:
+        self.root = root
+        self._text_element._set_root(root)
+        if self._prompt:
+            self._prompt._set_root(root)
+
+    def _update_rect_chain_down(self, surface: pygame.Surface, pos: tuple[float, float], max_size: tuple[float, float],
+                                root: "View", _ignore_fill_width: bool = False,
+                                _ignore_fill_height: bool = False) -> NoReturn:
+
+        super()._update_rect_chain_down(surface, pos, max_size, root, _ignore_fill_width, _ignore_fill_height)
+
+        pos = (pos[0] + self.rect.w / 2 - self._scroll.get_abs_width(self.rect.w) / 2,
+               pos[1] + self.rect.h / 2 - self._scroll.get_abs_height(self.rect.h) / 2)
+        self._scroll._update_rect_chain_down(surface, pos, self.get_abs_size(max_size), root)
+
+        if self.is_active:
+            self._update_cursor_pos(reset_timer=False, mode="cursor")
+            self._update_cursor_pos(reset_timer=False, mode="highlight")
+
+        if self._prompt is not None:
+            self._prompt._update_rect_chain_down(
+                surface,
+                (0, self.rect.h // 2 - self._prompt.get_abs_height(self.rect.h) // 2),
+                (self.rect.w, self.rect.y), root)
+
+    def _update(self, root: "View") -> NoReturn:
         # If the backspace key is held, repeat multiple times
         if self.is_active:
 
@@ -117,46 +175,47 @@ class TextField(Element, Interactive):
                 if keys[self._repeating_key]:
                     self._repeated_key_timer -= _c.delta_time
                     if self._repeated_key_timer <= 0:
-                        self._repeated_key_timer = self.style.backspace_repeat_speed
+                        self._repeated_key_timer = self._style.key_repeat_delay
                         self._run_keypress(self._repeating_key)
             else:
-                self._repeated_key_timer = self.style.backspace_start_delay
+                self._repeated_key_timer = self._style.key_repeat_start_delay
+
+        if self._highlighting:
+            if not self._scroll.scroll.playing:
+                if self._multiline:
+                    self._scroll.scroll_to_show_position(_c.mouse_pos[1], size=self._line_height)
+                else:
+                    self._scroll.scroll_to_show_position(_c.mouse_pos[0], size=self._line_height)
 
         self.is_hovered = self.rect.collidepoint(_c.mouse_pos)
 
-        self._text_y = self.rect.h // 2 - self._text_element.get_height(self.rect.h) // 2
+        # self._text_element.update(root)
 
-        self._text_element.update_rect((self.style.padding, self._text_y),
-                                       (self.rect.w - self.style.padding * 2, self.rect.y), root)
-        self._text_element.update(root)
+        self._scroll._update(root)
 
         if self._prompt is not None:
-            self._prompt.update_rect((self.style.padding, self.rect.h // 2 - self._prompt.get_height(self.rect.h) // 2),
-                                     (self.rect.w - self.style.padding * 2, self.rect.y), root)
-            self._prompt.update(root)
+            self._prompt._update(root)
 
-    def render(self, surface: pygame.Surface, offset: tuple[int, int], root: "View",
-               alpha: int = 255, _ignore_fill_width=False, _ignore_fill_height=False):
+    def _render(self, surface: pygame.Surface, offset: tuple[int, int], root: "View",
+                alpha: int = 255, _ignore_fill_width=False, _ignore_fill_height=False):
         rect = self.rect.move(*offset)
         # Decide which background image to draw
         if self._disabled:
-            img_num = 3
+            material = self._style.disabled_material
         elif root.element_focused is self:
-            img_num = 2
+            material = self._style.active_material
         elif self.is_hovered:
-            img_num = 1
+            material = self._style.hover_material
         else:
-            img_num = 0
+            material = self._style.material
 
-        self.material_controller.set_material(self.style.images[img_num])
+        self.material_controller.set_material(material, transition=self._style.material_transition)
         self.material_controller.render(self, surface, rect.topleft, rect.size, alpha)
-
-        text_surface = pygame.Surface(rect.size, pygame.SRCALPHA)
 
         if self._text:
             # Draw highlight
             if self.is_active:
-                if self._highlighted or self._highlighting:
+                if (self._highlighted or self._highlighting) and self._scroll.subsurf:
                     if self._highlighting:
                         if (result := self._get_position_of_click()) is not None:
                             self._highlight_index = result[0]
@@ -180,77 +239,72 @@ class TextField(Element, Interactive):
                         start_line = self._text_element.get_line(start_line)
                         end_line = self._text_element.get_line(end_line)
 
-                        if self._cursor_line == self._highlight_line:
-                            y = start_line.line_index * self._line_height + self._text_y + \
-                                self._text_element.style.font.cursor_offset[1]
+                        scroll_offset = self._scroll.subsurf.get_abs_offset()
+                        scroll_offset = (self._text_element.rect.x - scroll_offset[0],
+                                         self._text_element.rect.y - scroll_offset[1])
 
-                            pygame.draw.rect(text_surface,
-                                             self.style.highlight_color,
-                                             (
-                                             self.style.padding + start_x + self._text_element.style.font.cursor_offset[
-                                                 0], y,
-                                             end_x - start_x,
-                                             self._text_element.style.font.cursor.get_height()))
+                        if self._cursor_line == self._highlight_line:
+                            y = start_line.line_index * self._line_height + \
+                                self._text_element._style.font.cursor_offset[1] + scroll_offset[1]
+
+                            pygame.draw.rect(self._scroll.subsurf,
+                                             self._style.highlight_color,
+                                             (start_x + scroll_offset[0] +
+                                              self._text_element._style.font.cursor_offset[0], y,
+                                              end_x - start_x,
+                                              self._text_element._style.font.cursor.get_height()))
                         else:
                             # Top line
-                            y = start_line.line_index * self._line_height + self._text_y + \
-                                self._text_element.style.font.cursor_offset[1]
-                            pygame.draw.rect(text_surface,
-                                             self.style.highlight_color,
-                                             (
-                                             self.style.padding + start_x + self._text_element.style.font.cursor_offset[
-                                                 0], y,
-                                             start_line.width - start_x + start_line.start_x,
-                                             self._text_element.style.font.cursor.get_height()))
+                            y = start_line.line_index * self._line_height + \
+                                self._text_element._style.font.cursor_offset[1] + scroll_offset[1]
+                            pygame.draw.rect(self._scroll.subsurf,
+                                             self._style.highlight_color,
+                                             (start_x + scroll_offset[0] +
+                                              self._text_element._style.font.cursor_offset[0], y,
+                                              start_line.width - start_x + start_line.start_x,
+                                              self._text_element._style.font.cursor.get_height()))
 
                             # Middle lines
                             for line_index in range(start_line.line_index + 1, end_line.line_index):
                                 line = self._text_element.get_line(line_index)
-                                y = line.line_index * self._line_height + self._text_y + \
-                                    self._text_element.style.font.cursor_offset[1]
-                                pygame.draw.rect(text_surface,
-                                                 self.style.highlight_color,
-                                                 (self.style.padding + line.start_x +
-                                                  self._text_element.style.font.cursor_offset[0], y, line.width,
-                                                  self._text_element.style.font.cursor.get_height()))
+                                y = line.line_index * self._line_height + \
+                                    self._text_element._style.font.cursor_offset[1] + scroll_offset[1]
+                                pygame.draw.rect(self._scroll.subsurf,
+                                                 self._style.highlight_color,
+                                                 (line.start_x + scroll_offset[0] +
+                                                  self._text_element._style.font.cursor_offset[0], y, line.width,
+                                                  self._text_element._style.font.cursor.get_height()))
 
                             # Bottom line
-                            y = end_line.line_index * self._line_height + self._text_y + \
-                                self._text_element.style.font.cursor_offset[1]
-                            pygame.draw.rect(text_surface,
-                                             self.style.highlight_color,
-                                             (self.style.padding + end_line.start_x +
-                                              self._text_element.style.font.cursor_offset[0], y,
+                            y = end_line.line_index * self._line_height + \
+                                self._text_element._style.font.cursor_offset[1] + scroll_offset[1]
+                            pygame.draw.rect(self._scroll.subsurf,
+                                             self._style.highlight_color,
+                                             (end_line.start_x + scroll_offset[0] +
+                                              self._text_element._style.font.cursor_offset[0], y,
                                               end_x - end_line.start_x,
-                                              self._text_element.style.font.cursor.get_height()))
+                                              self._text_element._style.font.cursor.get_height()))
 
-            self._text_element.render_a(text_surface, offset, root, alpha=alpha)
-        elif self._prompt is not None:
-            self._prompt.render_a(text_surface, offset, root, alpha=alpha)
-
-        surface.blit(text_surface, self.rect.topleft)
+            self._scroll._render_a(surface, offset, root, alpha=alpha)
 
         # Draw cursor
         if self.is_active:
 
             if not (self._highlighting or self._highlighted):
                 self._cursor_timer += _c.delta_time
-                if self._cursor_timer < self.style.cursor_blink_speed:
-                    # sself._update_cursor_pos(reset_timer=False,line_index = self.line_index)
-                    if self._text_element.text:
-                        cursor_x = self.rect.x + self.style.padding + self._cursor_x
-                    else:
-                        cursor_x = self.rect.x + (self.style.padding if self.style.text_align == "left"
-                                                  else self.rect.w / 2)
+                if self._cursor_timer < self._style.cursor_blink_speed:
+                    cursor_x = self._text_element.rect.x + self._cursor_x + \
+                               self._text_element._style.font.cursor_offset[0]
 
-                    cursor = self._text_element.style.font.cursor.copy()
-                    cursor.fill(self.style.cursor_color, special_flags=pygame.BLEND_RGB_ADD)
+                    cursor = self._text_element._style.font.cursor.copy()
+                    cursor.fill(self._style.cursor_color, special_flags=pygame.BLEND_RGB_ADD)
 
-                    surface.blit(cursor,
-                                 (cursor_x + self._text_element.style.font.cursor_offset[0],
-                                  self.rect.y + self._text_y + self._text_element.style.font.cursor_offset[1] +
-                                  self._cursor_line * self._line_height))
-                if self._cursor_timer > self.style.cursor_blink_speed * 2:
+                    cursor_y = self._text_element.rect.y + self._text_element._style.font.cursor_offset[1] + \
+                               self._cursor_line * self._line_height - \
+                               self._scroll.subsurf.get_abs_offset()[1]
+
+                    self._scroll.subsurf.blit(cursor, (cursor_x - self._scroll.subsurf.get_abs_offset()[0], cursor_y))
+                if self._cursor_timer > self._style.cursor_blink_speed * 2:
                     self._cursor_timer = 0
 
     def _deselect(self, root):
@@ -269,18 +323,24 @@ class TextField(Element, Interactive):
         pygame.event.post(event)
 
     def _get_position_of_click(self):
-        y = _c.mouse_pos[1] - self.rect.y - self._text_y - self._text_element.style.font.cursor_offset[1]
-        line_index = int(y) // (self._text_element.style.font.line_height + self._text_element.style.font.line_spacing)
+        y = _c.mouse_pos[1] - self._text_element.rect.y - self._text_element._style.font.cursor_offset[1]
+        line_index = int(y) // (
+                    self._text_element._style.font.line_height + self._text_element._style.font.line_spacing)
 
         line_index = min(max(0, line_index), len(self._text_element.lines) - 1)
         line = self._text_element.get_line(line_index)
         if line is None:
             return None
-        x = _c.mouse_pos[0] - self.rect.x - self.style.padding - line.start_x
+        target_x = _c.mouse_pos[0] - self._text_element.rect.x - line.start_x
 
+        prev_x = 0
         for n in range(len(line.content)):
-            if self._text_element.style.font.get_width_of(line.content[:n]) > x:
-                return line.start_index + n, line_index
+            if (current_x := self._text_element._style.font.get_width_of(line.content[:n])) > target_x:
+                result = line.start_index + n
+                if abs(target_x - prev_x) < abs(target_x - current_x):
+                    result -= 1
+                return result, line_index
+            prev_x = current_x
 
         return line.start_index + len(line.content), line_index
 
@@ -292,25 +352,37 @@ class TextField(Element, Interactive):
         self._highlighted = False
 
     def _update_cursor_pos(self, line_index=None, reset_timer=True, mode: Literal["cursor", "highlight"] = "cursor"):
-        if self._text:
-            index = self._cursor_index if mode == "cursor" else self._highlight_index
-            if line_index is None:
-                line_index = self._text_element.get_line_index_from_letter_index(index)
-            line = self._text_element.get_line(line_index)
+        index = self._cursor_index if mode == "cursor" else self._highlight_index
+        if line_index is None:
+            line_index = self._text_element.get_line_index_from_letter_index(index)
+        line = self._text_element.get_line(line_index)
 
-            x = line.start_x + \
-                self._text_element.style.font.get_width_of(line.content[:index - line.start_index])
-            if mode == "cursor":
-                self._cursor_x = x
-                self._cursor_line = line_index
-                if reset_timer:
-                    self._cursor_timer = 0
-            else:
-                self._highlight_x = x
-                self._highlight_line = line_index
+        x = line.start_x + \
+            self._text_element._style.font.get_width_of(line.content[:index - line.start_index])
+        if mode == "cursor":
+            self._cursor_x = x
+            self._cursor_line = line_index
+            if reset_timer:
+                self._cursor_timer = 0
+        else:
+            self._highlight_x = x
+            self._highlight_line = line_index
+
+        if mode == "cursor":
+            if not self._scroll.scroll.playing:
+                self._text_element._check_for_surface_update()
+                self._scroll._scrollbar_calc()
+                if self._multiline:
+                    self._scroll.scroll_to_show_position(
+                        self._text_element.rect.y + self._cursor_line * self._line_height,
+                        size=self._line_height, duration=0)
+                else:
+                    self._scroll.scroll_to_show_position(self._text_element.rect.x + self._cursor_x,
+                                                         size=self._text_element._style.font.cursor.get_width(),
+                                                         offset=3, duration=0)
 
     def _remove_highlighted_area(self):
-        new_text = self._text[:self._cursor_index] + self._text[self._highlight_index:]
+        new_text = self._text[:self._cursor_index] + self._text[self._highlight_index - 1:]
 
         if self._highlighted:
             self._highlighted = False
@@ -323,7 +395,7 @@ class TextField(Element, Interactive):
             self._cursor_index -= 1
 
         self._update_text(self._text[:self._cursor_index] + self._text[self._cursor_index + 1:])
-        self._update_cursor_pos()
+        self._update_cursor_pos(line_index=None if self._text else 0)
 
     def _up_down_line(self, direction: int):
         if self._cursor_line != (len(self._text_element.lines) - 1 if direction == 1 else 0):
@@ -331,18 +403,19 @@ class TextField(Element, Interactive):
             target = self._cursor_x
             output = len(line)
             for i in range(len(line)):
-                w = line.start_x + self._text_element.style.font.get_width_of(line.content[:i])
+                w = line.start_x + self._text_element._style.font.get_width_of(line.content[:i])
                 if w >= target:
                     if i == 0:
                         output = 0
                     else:
-                        w2 = line.start_x + self._text_element.style.font.get_width_of(line.content[:i - 1])
+                        w2 = line.start_x + self._text_element._style.font.get_width_of(line.content[:i - 1])
                         if abs(w2 - target) < abs(w - target):
                             output = i - 1
                         else:
                             output = i
 
                     break
+
             self._cursor_index = line.start_index + output
             self._update_cursor_pos(line_index=self._cursor_line + direction)
 
@@ -371,9 +444,12 @@ class TextField(Element, Interactive):
             self._backspace()
             return True
 
-    def event(self, event: pygame.event.Event, root: "View"):
+    def _event(self, event: pygame.event.Event, root: "View"):
         if self._disabled:
             return
+
+        if self._scroll._event(event, root):
+            return True
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self.is_hovered and self.is_active:
@@ -383,7 +459,7 @@ class TextField(Element, Interactive):
                     self._update_cursor_pos(line_index=result[1])
 
         elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-            if self.is_hovered:
+            if self.is_hovered or self._highlighting:
                 if self.is_active:
                     # If the position of the click-up is not the same as the position of the click-down,
                     # the user is trying to highlight
@@ -402,7 +478,9 @@ class TextField(Element, Interactive):
                     if root.element_focused is not self and isinstance(root.element_focused, TextField):
                         root.element_focused.is_active = False
                     root.element_focused = self
-                    self._set_cursor_to_end()
+                    if (result := self._get_position_of_click()) is not None:
+                        self._cursor_index = result[0]
+                        self._update_cursor_pos(line_index=result[1])
 
             elif self.is_active:
                 self._deselect(root)
@@ -422,17 +500,14 @@ class TextField(Element, Interactive):
             mods = pygame.key.get_mods()
             if self._run_keypress(event.key):
                 self._repeating_key = event.key
-                self._repeated_key_timer = self.style.backspace_start_delay
+                self._repeated_key_timer = self._style.key_repeat_start_delay
                 return
 
             if event.key == pygame.K_ESCAPE:
                 self._deselect(root)
 
-            elif event.key == pygame.K_RETURN:
-                if self.multiline:
-                    pass
-                else:
-                    self._deselect(root)
+            elif event.key == pygame.K_RETURN and not self._multiline:
+                self._deselect(root)
 
             elif mods & pygame.KMOD_META or mods & pygame.KMOD_LCTRL or mods & pygame.KMOD_RCTRL:
                 if event.key == pygame.K_a:
@@ -473,24 +548,27 @@ class TextField(Element, Interactive):
                     self._update_cursor_pos()
                     self._update_text(self._text[:self._cursor_index] + self._text[self._cursor_index + 1:])
 
-            elif event.unicode not in EXCLUDED_CHARS and \
-                    (self.allowed_characters is None or event.unicode in self.allowed_characters):
-                if self.max_length is not None:
-                    if len(self._text) >= self.max_length:
-                        return
-                self._remove_highlighted_area()
+            else:
+                char = "\n" if event.unicode == "\r" else event.unicode
+                if char not in EXCLUDED_CHARS and \
+                        (self.allowed_characters is None or char in self.allowed_characters):
 
-                self._cursor_index += 1
-                self._update_text(self._text[:self._cursor_index - 1] + event.unicode +
-                                  self._text[self._cursor_index - 1:])
+                    if self.max_length is not None:
+                        if len(self._text) >= self.max_length:
+                            return
+                    self._remove_highlighted_area()
 
-                self._update_cursor_pos()
+                    self._cursor_index += 1
+                    self._update_text(self._text[:self._cursor_index - 1] + char +
+                                      self._text[self._cursor_index - 1:])
+
+                    self._update_cursor_pos()
 
         elif event.type == pygame.JOYBUTTONUP and event.button == 0 and root.element_focused is self:
             self.is_active = not self.is_active
 
-    def focus(self, root: "View", previous: Element = None, key: str = 'select'):
-        if key == 'select':
+    def _focus_chain(self, root: "View", previous: Element = None, direction: str = 'in'):
+        if direction == 'in':
             if type(root.element_focused) is TextField:
                 if root.element_focused.is_active:
                     self.is_active = True
@@ -498,39 +576,82 @@ class TextField(Element, Interactive):
                     self._set_cursor_to_end()
             return self
         else:
-            return self.parent.focus(root, self, key=key)
+            return self.parent._focus_chain(root, self, direction=direction)
 
-    def _get_text(self):
-        return self._text
+    def _set_text(self, text: str) -> NoReturn:
+        self.set_text(text)
 
-    def set_text(self, text: str):
+    def set_text(self, text: str) -> NoReturn:
+        """
+        Set the text on the button.
+        """
         self._update_text(text)
+        self._update_cursor_pos()
 
-    def _set_disabled(self, value: bool):
+    def set_disabled(self, value: bool):
         self._disabled = value
-        self.selectable = not value
-        if hasattr(self.parent, "calc_fit_size"):
-            self.parent.calc_fit_size()
+        self._can_focus = not value
+        if hasattr(self.parent, "update_rect_chain_up"):
+            self.parent._update_rect_chain_up()
         if self._disabled:
             if self.root:
                 self._deselect(self.root)
 
-    def _get_disabled(self):
-        return self.disabled
-
     def _get_line_height(self):
-        return self._text_element.style.font.line_height + self._text_element.style.font.line_spacing
+        return self._text_element._style.font.line_height + self._text_element._style.font.line_spacing
 
-    disabled = property(
-        fset=_set_disabled,
-        fget=_get_disabled
-    )
+    def _set_style(self, style: Optional[TextFieldStyle]) -> NoReturn:
+        self.set_style(style)
 
-    _line_height = property(
-        fget=_get_line_height
-    )
+    def set_style(self, style: Optional[TextFieldStyle]) -> NoReturn:
+        """
+        Sets the TextFieldStyle of the TextField.
+        """
+        if style is None:
+            if _c.default_text_field_style is None:
+                load_style("plastic", parts=['text_field'])
+            self._style: TextFieldStyle = _c.default_text_field_style
+        else:
+            self._style: TextFieldStyle = style
+
+    def _set_multiline(self, value: Optional[bool] = None) -> NoReturn:
+        self.set_multiline(value)
+
+    def set_multiline(self, value: Optional[bool] = None) -> NoReturn:
+        """
+        If set to :code:`True`, text will wrap onto a second line when it reaches the end of the TextField.
+        """
+        if value is None:
+            value = not self._multiline
+        self._multiline = value
+
+        if value:
+            self._text_element.set_size(FILL - FILL - self._text_element._style.font.cursor.get_width() * 2, FIT)
+            self._scroll = VScroll(self._text_element, size=self._style.default_scroll_size)
+        else:
+            self._text_element.set_size(FIT, FIT)
+            self._scroll = HScroll(self._text_element, size=self._style.default_scroll_size,
+                                   over_scroll=[self._text_element._style.font.cursor.get_width()] * 2)
+
+        self._text_element._update_surface()
+        self._update_cursor_pos()
+
+    _line_height = property(fget=_get_line_height)
 
     text = property(
-        fget=_get_text,
-        fset=set_text
+        fget=lambda self: self._text,
+        fset=_set_text,
+        doc="The text string contained within the TextField."
+    )
+
+    style = property(
+        fget=lambda self: self._style,
+        fset=_set_style,
+        doc="The TextFieldStyle of the TextField. Synonymous with the set_style() method."
+    )
+
+    multiline = property(
+        fget=lambda self: self._multiline,
+        fset=_set_multiline,
+        doc="If set to :code:`True`, text will wrap onto a second line when it reaches the end of the TextField."
     )
