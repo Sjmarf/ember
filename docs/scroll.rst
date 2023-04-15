@@ -6,8 +6,8 @@
 
 .. currentmodule:: ember.ui
 
-.. autoclass:: VStack
-.. autoclass:: HStack
+.. autoclass:: VScroll
+.. autoclass:: HScroll
 
     A Scroll holds one Element, and allows you to scroll that Element. There are two types of Scroll - VScroll and HScroll. VScrolls scroll vertically, whereas HScrolls scroll horizontally. Other than that, the behaviours of the two classes are identical.
 
@@ -31,6 +31,8 @@
 
     .. automethod:: set_element
     .. automethod:: set_style
+    .. automethod:: scroll_to_element
+    .. automethod:: scroll_to_show_position
     .. automethod:: get_size
     .. automethod:: get_abs_size
     .. automethod:: set_size

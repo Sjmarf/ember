@@ -303,13 +303,13 @@ class Button(Element, Interactive):
 
         self._update_rect_chain_up()
 
-    element = property(
+    element: Optional[Element] = property(
         fget=lambda self: self._element,
         fset=_set_element,
         doc="The child element of the Button. Synonymous with the set_element() method."
     )
 
-    style = property(
+    style: ButtonStyle = property(
         fget=lambda self: self._style,
         fset=_set_style,
         doc="The ButtonStyle of the Button. Synonymous with the set_style() method."

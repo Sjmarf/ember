@@ -12,16 +12,18 @@ import os
 import sys
 import pathlib
 
-# Stops the docs builder from raising an error if Ember is not installed as a package.
-# try:
-#     import ember
-# except ModuleNotFoundError:
-#
-#     import ember
+#Stops the docs builder from raising an error if Ember is not installed as a package.
+try:
+    import ember
+except ModuleNotFoundError:
+    path = pathlib.Path(os.getcwd()).parent
+    sys.path.append(str(path))
+    print(f"Could'nt import ember directly, patching with {path}.")
 
-path = pathlib.Path(os.getcwd()).parent
-sys.path.append(str(path))
-print(str(path))
+    import ember
+    if hasattr(ember, "ui"):
+        print("Ember imported successfully.")
+
 
 project = 'ember'
 copyright = '2023, Sjmarf'

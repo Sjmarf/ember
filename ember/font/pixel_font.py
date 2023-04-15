@@ -49,14 +49,14 @@ class PixelFont(BaseFont):
 
         self.cursor = pygame.Surface((max(1, int(self.line_height * 0.07)), self.line_height), pygame.SRCALPHA)
         self.cursor.fill((255, 255, 255))
-        self.cursor_offset = (-2, 0)
+        self.cursor_offset = (0, 0)
 
     def get_width_of(self, text):
-        return sum(self.letters[i][1] - 5 for i in text) + 4
+        return sum(self.letters[i][1] - 5 for i in text) - 1
 
     def _render_text(self, text, col) -> pygame.Surface:
         surf = pygame.Surface((self.get_width_of(text), self.line_height), pygame.SRCALPHA)
-        x = 0
+        x = - 3
         for letter in text:
             letter = self.letters[letter]
             letter_surf = self.sheet.subsurface((letter[0], 0, letter[1], self.line_height))

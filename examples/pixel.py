@@ -47,8 +47,7 @@ while is_running:
             is_running = False
 
         if event.type == ember.BUTTONCLICKED:
-            text.set_color("indianred" if text.color == "white" else "white",
-                           transition=ember.transition.SurfaceFade(1))
+            text.set_align("center")
 
     display.fill((20, 20, 20))
     ember.update()

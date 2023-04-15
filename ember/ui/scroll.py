@@ -70,6 +70,9 @@ class Scroll(Element):
         self._scrollbar_grabbed_pos: int = 0
 
     def set_element(self, element: Optional[Element]) -> NoReturn:
+        """
+        Replace the child element of the Scroll.
+        """
         if element is not self._element:
             self._element = element
             if element is not None:
@@ -112,9 +115,9 @@ class Scroll(Element):
         if self.subsurf is None or (*self.subsurf.get_abs_offset(), *self.subsurf.get_size()) != self.rect:
             self.subsurf = surface.subsurface(self.rect)
 
-        self.update_element_rect()
+        self._update_element_rect()
 
-    def update_element_rect(self):
+    def _update_element_rect(self):
         pass
 
     def _render(self, surface: pygame.Surface, offset: tuple[int, int], root: "View", alpha: int = 255) -> NoReturn:
@@ -157,7 +160,7 @@ class Scroll(Element):
                 self.scroll.val = pygame.math.clamp(self.scroll.val, -self.over_scroll[0], max_scroll)
             else:
                 self.scroll.val = -self.over_scroll[0]
-            self.update_element_rect()
+            self._update_element_rect()
 
     def _render_scrollbar(self, surface: pygame.Surface, rect: pygame.Rect, alpha: int) -> NoReturn:
         pass
@@ -219,21 +222,31 @@ class Scroll(Element):
         self.set_style(style)
 
     def set_style(self, style: ScrollStyle) -> NoReturn:
+        """
+        Sets the ScrollStyle of the Scroll.
+        """
         self._style = style
 
     def scroll_to_show_position(self, position: int, size: int = 0, offset: int = 0, duration: float = 0.1):
+        """
+        Scroll so that a position is shown within the Scroll.
+        """
         pass
 
     def scroll_to_element(self, element: Element) -> NoReturn:
+        """
+        Scroll so that an element is shown within the Scroll.
+        """
         pass
 
-    element = property(
+    element: Optional[Element] = property(
         fget=lambda self: self._element,
         fset=set_element,
-        doc="The element contained in the VScroll."
+        doc="The element contained in the Scroll."
     )
 
-    style = property(
+    style: ScrollStyle = property(
         fget=lambda self: self._style,
-        fset=_set_style
+        fset=_set_style,
+        doc="The ScrollStyle of the Scroll."
     )
