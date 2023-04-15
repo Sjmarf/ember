@@ -1,8 +1,6 @@
 import pygame
 from .. import log
 from .material import Material
-f
-
 class AverageColor(Material):
     def __init__(self,
                  hsv_adjustment: tuple[int, int, int] = (0, 0, 0)):
