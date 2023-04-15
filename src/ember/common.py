@@ -1,5 +1,6 @@
 import pygame
 from .common_styles import *
+from typing import Tuple
 try:
     from typing import Literal
 except ImportError:

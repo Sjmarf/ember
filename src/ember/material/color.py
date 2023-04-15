@@ -1,6 +1,6 @@
 import pygame
 import logging
-from typing import Union, Optional
+from typing import Union, Optional, Tuple
 
 from .. import common as c
 from ..utility.size_element import size_element
