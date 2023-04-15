@@ -1,10 +1,6 @@
 import pygame
 from .common_styles import *
-from typing import Tuple
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from typing import Literal
 
 
 VERSION: str = "0.1"

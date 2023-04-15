@@ -1,9 +1,4 @@
-from typing import Optional
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
+from typing import Optional, Literal
 
 from .. import common as _c
 from .style import Style, MaterialType

@@ -1,9 +1,5 @@
 import pygame
-from typing import Union, Optional
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from typing import Union, Optional, Literal
 
 from .style import Style
 from ..font import Font, PixelFont

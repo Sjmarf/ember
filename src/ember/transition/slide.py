@@ -1,9 +1,5 @@
 import pygame
-from typing import TYPE_CHECKING
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from typing import TYPE_CHECKING, Literal
 
 
 from ..ui.element import Element

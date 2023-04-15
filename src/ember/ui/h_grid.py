@@ -1,11 +1,7 @@
 import math
 import logging
 import pygame
-from typing import Union, Optional, NoReturn
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from typing import Union, Optional, NoReturn, Literal
 
 
 from .element import Element

@@ -1,11 +1,6 @@
 import pygame
 import logging
-from typing import Union, Optional, TYPE_CHECKING, NoReturn
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
+from typing import Union, Optional, TYPE_CHECKING, NoReturn, Literal
 from .. import log
 from .. import common as _c
 from .element import Element

@@ -1,10 +1,5 @@
 import pygame
-from typing import Union, Optional, Sequence, NoReturn
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
+from typing import Union, Optional, Sequence, NoReturn, Literal
 
 from .. import common as _c
 from .h_stack import HStack

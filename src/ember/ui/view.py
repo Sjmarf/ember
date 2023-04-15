@@ -2,13 +2,7 @@ import pygame
 from .. import event as ember_event
 from .. import common as _c
 from .. import log
-from typing import Optional, TYPE_CHECKING
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
-
-
+from typing import Optional, TYPE_CHECKING, Literal
 if TYPE_CHECKING:
     from ..style.view_style import ViewStyle
     from ..transition.transition import Transition
