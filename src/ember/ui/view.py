@@ -5,7 +5,7 @@ from .. import log
 from typing import Optional, TYPE_CHECKING
 try:
     from typing import Literal
-except ModuleNotFoundError:
+except ImportError:
     from typing_extensions import Literal
 
 

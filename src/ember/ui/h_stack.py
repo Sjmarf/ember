@@ -4,7 +4,7 @@ from ..common import INHERIT, InheritType
 from typing import Union, NoReturn, Optional, Sequence
 try:
     from typing import Literal
-except ModuleNotFoundError:
+except ImportError:
     from typing_extensions import Literal
 
 

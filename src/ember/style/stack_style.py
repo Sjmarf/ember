@@ -1,7 +1,7 @@
 from typing import Optional
 try:
     from typing import Literal
-except ModuleNotFoundError:
+except ImportError:
     from typing_extensions import Literal
 
 

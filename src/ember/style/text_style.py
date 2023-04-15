@@ -2,7 +2,7 @@ import pygame
 from typing import Union, Optional
 try:
     from typing import Literal
-except ModuleNotFoundError:
+except ImportError:
     from typing_extensions import Literal
 
 from .style import Style

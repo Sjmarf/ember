@@ -2,7 +2,7 @@ import pygame
 from typing import TYPE_CHECKING
 try:
     from typing import Literal
-except ModuleNotFoundError:
+except ImportError:
     from typing_extensions import Literal
 
 

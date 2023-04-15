@@ -3,7 +3,7 @@ import logging
 from typing import Union, Optional, TYPE_CHECKING, NoReturn
 try:
     from typing import Literal
-except ModuleNotFoundError:
+except ImportError:
     from typing_extensions import Literal
 
 from .. import log

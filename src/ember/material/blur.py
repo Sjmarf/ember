@@ -4,7 +4,7 @@ from .material import Material
 from typing import Optional
 try:
     from typing import Literal
-except ModuleNotFoundError:
+except ImportError:
     from typing_extensions import Literal
 
 from .. import common as _c
