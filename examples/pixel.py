@@ -1,6 +1,10 @@
 import pygame
-import ember
-import logging
+import os
+import sys
+
+path = os.getcwd().replace(f"examples", "src")
+sys.path.append(path)
+import ember  # noqa
 
 pygame.init()
 ember.init()
@@ -33,7 +37,7 @@ view = ember.View(
     ember.VStack(
         text_field,
         button,
-        size=ember.FILL*0.8,
+        size=ember.FILL * 0.8,
         spacing=5
     )
 )
