@@ -1,8 +1,24 @@
+import pygame
+from typing import Optional
 from .material import Material
+
 
 class Blank(Material):
     def __init__(self):
-        super().__init__()
+        """
+        A blank Material.
+        """
+        super().__init__(255)
 
-    def render(self, element, surface, pos, size, alpha):
-        pass
+    def __repr__(self) -> str:
+        return "<Blank>"
+
+    def render(
+        self,
+        element: "Element",
+        surface: pygame.Surface,
+        pos: tuple[float, float],
+        size: tuple[float, float],
+        alpha: int,
+    ) -> bool:
+        return False

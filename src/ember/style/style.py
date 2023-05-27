@@ -4,6 +4,9 @@ from ..material.material import Material
 
 
 class Style:
+    """
+    All Styles inherit from this class. This base class should not be directly instantiated.
+    """
     pass
 
 

@@ -1,149 +1,225 @@
 import pygame
-from typing import Union, Optional, TYPE_CHECKING
+from typing import Union, Optional
 
 from .. import common as _c
-from .element import Element
+from .base.element import Element
+from .base.interactive import Interactive
 from ..utility.timer import BasicTimer
 from ..style.slider_style import SliderStyle
-from ..style.load_style import load as load_style
+from ..position import PositionType
+from ..size import SizeType, SequenceSizeType
 
-from ..material.material import MaterialController
-
-if TYPE_CHECKING:
-    from .view import View
+from ..state.state_controller import StateController
+from ..style.get_style import _get_style
 
 
-class Slider(Element):
-    def __init__(self,
-                 value: Optional[float] = None,
-                 min_value: float = 0,
-                 max_value: float = 100,
-                 size: Union[tuple[float, float], None] = None,
-                 width: Union[float, None] = None,
-                 height: Union[float, None] = None,
-                 style: Union[SliderStyle, None] = None):
+class Slider(Element, Interactive):
+    """
+    A Slider is an interactive Element. Given a lower and upper bound, it lets the user scroll between those two values.
+    """
 
-        # Load the SliderStyle object.
-        if style is None:
-            if _c.default_slider_style is None:
-                load_style("plastic", parts=['slider'])
-            self.style = _c.default_slider_style
-        else:
-            self.style = style
+    def __init__(
+        self,
+        value: Optional[float] = None,
+        min_value: float = 0,
+        max_value: float = 100,
+        disabled: bool = False,
+        position: PositionType = None,
+        size: SequenceSizeType = None,
+        width: SizeType = None,
+        height: SizeType = None,
+        style: Union[SliderStyle, None] = None,
+    ):
+        self.set_style(style)
 
-        # If None is passed as a size value, then use the first set size. If unavailable, use the style image size.
-        if size is None:
-            if width is not None:
-                self.width = width
-            else:
-                self.width = self.style.default_size[0]
+        Element.__init__(
+            self,
+            position,
+            size,
+            width,
+            height,
+            default_size=self._style.default_size,
+            can_focus=True,
+        )
 
-            if height is not None:
-                self.height = height
-            else:
-                self.height = self.style.default_size[1]
-        else:
-            self.width, self.height = size
+        Interactive.__init__(self, disabled)
 
-        super().__init__(self.width, self.height)
-        self.handle_width = 0
+        self.min_value: float = min_value
+        """
+        The minimum value.
+        """
 
-        self.min_value = min_value
-        self.max_value = max_value
+        self.max_value: float = max_value
+        """
+        The maximum value.
+        """
 
-        self.is_active = False
         self.is_hovered = False
-        self.is_active_keyboard = False
+        """
+        Is :code:`True` when the mouse is hovered over the Slider. Read-only.
+        """
 
-        self.base_material_controller = MaterialController(self)
-        self.handle_material_controller = MaterialController(self)
+        self.is_clicked = False
+        """
+        Is :code:`True` when the Slider is clicked down. Read-only.
+        """
 
-        self.anim = BasicTimer(value if value is not None else min_value)
+        self.is_clicked_keyboard = False
+        """
+        Is :code:`True` when the Slider is clicked down using keyboard / controller navigation. Read-only.
+        """
 
-    def _get_val_from_mouse_x(self, mouse_x):
-        x = mouse_x - self.rect.x - self.handle_width / 2
-        w = self.rect.w - self.handle_width
-        return max(min(x / w * (self.max_value - self.min_value) + self.min_value,
-                       self.max_value), self.min_value)
+        self.handle_state_controller: StateController = StateController(self)
+        """
+        The :py:class:`ember.state.StateController` object responsible for managing the Slider's handle states.
+        """
 
-    def _update(self, root: "View"):
-        self.is_hovered = self.rect.collidepoint(_c.mouse_pos)
+        self.base_state_controller: StateController = StateController(self)
+        """
+        The :py:class:`ember.state.StateController` object responsible for managing the Slider's base states.
+        """
 
-        if self.is_active:
-            val = self._get_val_from_mouse_x(_c.mouse_pos[0])
-            if (not self.anim.playing and self.anim.val != val) or \
-                    (self.anim.playing and self.anim.stop_at != val):
-                self.anim.val = val
-                self.anim.playing = False
+        self._timer: BasicTimer = BasicTimer(value if value is not None else min_value)
 
-        self.anim.tick()
+    def __repr__(self):
+        return "<Slider>"
 
-        if self.is_active_keyboard:
-            if not self.anim.playing:
-                keys = pygame.key.get_pressed()
-                if keys[pygame.K_RIGHT]:
-                    self.anim.val = max(
-                        min(self.anim.val + _c.delta_time * (self.max_value - self.min_value), self.max_value),
-                        self.min_value)
-                elif keys[pygame.K_LEFT]:
-                    self.anim.val = max(
-                        min(self.anim.val - _c.delta_time * (self.max_value - self.min_value), self.max_value),
-                        self.min_value)
-
-    def _render(self, surface: pygame.Surface, offset: tuple[int, int], root: "View", alpha: int = 255):
-        rect = self.rect.move(*offset)
+    def _render(
+        self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
+    ) -> None:
+        rect = self._draw_rect.move(*offset)
 
         # Draw the base image
-        self.base_material_controller.set_material(self.style.images[0])
-        self.base_material_controller.render(self, surface, rect.topleft, rect.size, alpha)
+        self.base_state_controller.render(
+            self._style.base_state_func(self),
+            surface,
+            rect.topleft,
+            rect.size,
+            alpha,
+            transition=self._style.base_material_transition,
+        )
 
         # Draw the handle image
-        if root.element_focused is self:
-            img_num = 5 if self.is_active or self.is_active_keyboard else 4
-        elif self.is_active:
-            img_num = 3
-        elif self.is_hovered:
-            img_num = 2
-        else:
-            img_num = 1
 
-        self.handle_width = self.rect.h * self.style.handle_width
+        handle_width = round(self.rect.h * self._style.handle_width_ratio)
 
-        self.handle_material_controller.set_material(self.style.images[img_num])
-        self.handle_material_controller.render(self, surface, (rect.x +
-                                                               (self.anim.val - self.min_value)
-                                                               / (self.max_value - self.min_value)
-                                                               * (self.rect.w - self.handle_width), rect.y),
-                                               (self.handle_width, rect.h), alpha)
+        self.handle_state_controller.render(
+            self._style.state_func(self),
+            surface,
+            (
+                rect.x
+                + (self._timer.val - self.min_value)
+                / (self.max_value - self.min_value)
+                * (self.rect.w - handle_width),
+                rect.y,
+            ),
+            (handle_width, rect.h),
+            alpha,
+        )
 
-    def _event(self, event: int, root: "View"):
-        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if self.is_hovered:
-                self.is_active = True
-                self.anim.play(self._get_val_from_mouse_x(_c.mouse_pos[0]), duration=0.2)
+    def _update(self) -> None:
+        self.is_hovered = self.rect.collidepoint(_c.mouse_pos)
 
-        elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
-            self.is_active = False
+        if self.is_clicked:
+            val = self._get_val_from_mouse_x(_c.mouse_pos[0])
+            if (not self._timer.playing and self._timer.val != val) or (
+                self._timer.playing and self._timer.stop_at != val
+            ):
+                self._timer.val = val
+                self._timer.playing = False
 
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
-                if root.element_focused is self:
-                    self.is_active_keyboard = not self.is_active_keyboard
+        self._timer.tick()
 
-        elif event.type == pygame.JOYBUTTONDOWN and event.button == 0:
-            if root.element_focused is self:
-                self.is_active = False
+        if self.is_clicked_keyboard:
+            if not self._timer.playing:
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_RIGHT]:
+                    self._timer.val = max(
+                        min(
+                            self._timer.val
+                            + _c.delta_time * (self.max_value - self.min_value),
+                            self.max_value,
+                        ),
+                        self.min_value,
+                    )
+                elif keys[pygame.K_LEFT]:
+                    self._timer.val = max(
+                        min(
+                            self._timer.val
+                            - _c.delta_time * (self.max_value - self.min_value),
+                            self.max_value,
+                        ),
+                        self.min_value,
+                    )
 
-    def _on_unfocus(self):
-        self.is_active_keyboard = False
+    def _event(self, event: pygame.event.Event) -> bool:
+        if not self._disabled:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                if self.is_hovered:
+                    self.is_clicked = True
+                    self._timer.play(
+                        self._get_val_from_mouse_x(_c.mouse_pos[0]), duration=0.2
+                    )
+                    return True
 
-    def _get_value(self):
-        return self.anim.val
+            elif event.type == pygame.MOUSEBUTTONUP and event.button == 1:
+                self.is_clicked = False
 
-    def set_value(self, value):
-        self.anim.val = value
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_RETURN:
+                    if self.layer.element_focused is self:
+                        self.is_clicked_keyboard = not self.is_clicked_keyboard
+                        return True
 
-    value = property(
-        fget=_get_value,
-        fset=set_value
+            elif event.type == pygame.JOYBUTTONDOWN and event.button == 0:
+                if self.layer.element_focused is self:
+                    self.is_clicked = False
+                    return True
+
+        return False
+
+    def _on_unfocus(self) -> None:
+        self.is_clicked_keyboard = False
+
+    def _set_disabled(self, value: bool) -> None:
+        self.is_clicked = False
+        self.is_clicked_keyboard = False
+
+    def _set_style(self, style: Optional[SliderStyle]) -> None:
+        self.set_style(style)
+
+    def set_style(self, style: Optional[SliderStyle]) -> None:
+        """
+        Sets the SliderStyle of the Slider.
+        """
+        self._style: SliderStyle = _get_style(style, "slider")
+
+    def _get_val_from_mouse_x(self, mouse_x) -> float:
+        handle_width = round(self.rect.h * self._style.handle_width_ratio)
+        x = mouse_x - self.rect.x - handle_width / 2
+        w = self.rect.w - handle_width
+        return max(
+            min(
+                x / w * (self.max_value - self.min_value) + self.min_value,
+                self.max_value,
+            ),
+            self.min_value,
+        )
+
+    def _set_value(self, value: float) -> None:
+        self.set_value(value)
+
+    def set_value(self, value: float) -> None:
+        self._timer.val = value
+
+    value: float = property(
+        fget=lambda self: self._timer.val,
+        fset=_set_value,
+        doc="The Slider's value. Limits are controlled by the :code:`min_value` and :code:`max_value` attributes.",
+    )
+
+    style: SliderStyle = property(
+        fget=lambda self: self._style,
+        fset=_set_style,
+        doc="The SliderStyle of the Slider. Synonymous with the set_style() method.",
     )

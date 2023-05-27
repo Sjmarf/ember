@@ -1,28 +1,48 @@
 import pygame
-import logging
-from typing import Union, Optional
+from typing import Union, Sequence, Optional, Any, TYPE_CHECKING
 
-from .. import common as c
-from ..utility.size_element import size_element
-from .material import Material
+from ..utility.stretch_surface import stretch_surface
+from .material import MaterialWithSizeCache
+
+if TYPE_CHECKING:
+    from ember.ui.base.element import Element
 
 
-class StretchedSurface(Material):
-    def __init__(self, surface: Union[str, pygame.Surface],
-                 edge: tuple[int, int, int, int] = (5, 5, 5, 5)):
+class StretchedSurface(MaterialWithSizeCache):
+    def __init__(
+        self,
+        surface: Union[str, pygame.Surface],
+        edge: Sequence[int] = (5, 5, 5, 5),
+        alpha: int = 255,
+    ):
+        super().__init__(alpha)
+        self.surface: pygame.Surface = (
+            pygame.image.load(surface).convert_alpha()
+            if isinstance(surface, str)
+            else surface
+        )
+        """
+        The surface to stretch.
+        """
+        self.edge: Sequence[int] = edge
+        """
+        (left, right, top, bottom). The number of pixels from each side that should be kept intact.
+        """
 
-        super().__init__()
-        self.surface = pygame.image.load(surface).convert_alpha() if type(surface) is str else surface
-        self.edge = edge
+    def _needs_to_render(
+        self,
+        element: "Element",
+        surface: pygame.Surface,
+        pos: tuple[float, float],
+        size: tuple[float, float],
+    ) -> bool:
+        return element not in self._cache or self._cache[element].get_size() != size
 
-    def render_surface(self, element, surface: pygame.Surface, pos, size, alpha):
-        if element in self._cache and self._cache[element].get_size() == size:
-            surf = self._cache[element]
-            surf.set_alpha(alpha)
-            return False
-
-        else:
-            surf = size_element(self.surface, size, self.edge)
-            self._cache[element] = surf
-            surf.set_alpha(alpha)
-            return True
+    def _render_surface(
+        self,
+        element: Optional["Element"],
+        surface: Optional[pygame.Surface],
+        pos: tuple[float, float],
+        size: tuple[float, float],
+    ) -> Any:
+        return stretch_surface(self.surface, size, self.edge)

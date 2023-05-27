@@ -1,5 +1,6 @@
 import logging
-from typing import NoReturn, Union
+from typing import Union
+
 
 class Indentor:
     def __init__(self, logger: Union["CustomLogger", "MaterialLogger"]):
@@ -9,8 +10,9 @@ class Indentor:
         self.logger.indent_string += "    "
         return self
 
-    def __exit__(self, type, value, traceback) -> NoReturn:
+    def __exit__(self, type, value, traceback) -> None:
         self.logger.indent_string = self.logger.indent_string[:-4]
+
 
 class CustomLogger:
     def __init__(self, name: str):
@@ -24,8 +26,8 @@ class CustomLogger:
     def info(self, obj, msg):
         self.logger.info(f"{self.indent_string}{obj}: {msg}")
 
-    def line_break(self, lines=1):
-        self.logger.info(""+"\n"*(lines-1))
+    def line_break(self, text="", lines=1):
+        self.logger.info(text + "\n" * (lines - 1))
 
 
 class MaterialLogger:
@@ -40,10 +42,11 @@ class MaterialLogger:
     def info(self, obj, element, msg):
         self.logger.info(f"{self.indent_string}{element} {obj}: {msg}")
 
-    def line_break(self, lines=1):
-        self.logger.info(""+"\n"*(lines-1))
+    def line_break(self, text="", lines=1):
+        self.logger.info(text + "\n" * (lines - 1))
 
 
 nav = CustomLogger("ember.nav")
 material = MaterialLogger("ember.material")
 size = CustomLogger("ember.size")
+layer = CustomLogger("ember.layer")

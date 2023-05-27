@@ -14,20 +14,18 @@ Getting Started
 ---------------
 Check out the :ref:`quick-start` to get started.
 
-
-Table of contents
-=================================
-
 .. toctree::
-   :maxdepth: 2
+   :caption: Getting Started
+   :hidden:
 
    quick_start
-   element
+   element_guide
 
+.. toctree::
+   :caption: API Reference
+   :hidden:
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   ui
+   style
+   material
+   transition

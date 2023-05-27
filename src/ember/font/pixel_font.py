@@ -54,7 +54,7 @@ class PixelFont(BaseFont):
         return sum(self.letters[i][1] - 5 for i in text) - 1
 
     def _render_text(self, text, col) -> pygame.Surface:
-        surf = pygame.Surface((self.get_width_of(text), self.line_height), pygame.SRCALPHA)
+        surf = pygame.Surface((max(1, self.get_width_of(text)), self.line_height), pygame.SRCALPHA)
         x = - 3
         for letter in text:
             letter = self.letters[letter]

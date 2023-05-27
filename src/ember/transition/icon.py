@@ -2,12 +2,12 @@ import pygame
 from typing import Optional, TYPE_CHECKING
 
 from .. import common as _c
-from ..ui.element import Element
+from ember.ui.base.element import Element
 
 if TYPE_CHECKING:
-    from ..ui.view import View
+    pass
 
-from .transition import Transition, ElementTransitionController
+from .transition import Transition, TransitionController
 
 
 class IconMorph(Transition):
@@ -18,15 +18,15 @@ class IconMorph(Transition):
         self.frame_count = 0
         self.frame_height = 0
         
-    def new_element_controller(self,
-                               old_element: Optional["Transition"] = None,
-                               new_element: Optional["Transition"] = None
-                               ):
-        controller = ElementTransitionController(self, old_element=old_element, new_element=new_element)
+    def _new_element_controller(self,
+                                old_element: Optional["Transition"] = None,
+                                new_element: Optional["Transition"] = None
+                                ):
+        controller = TransitionController(self, old_element=old_element, new_element=new_element)
         self._load_sheet(controller, old_element.icon, new_element.icon)
         return controller
         
-    def _load_sheet(self, controller: ElementTransitionController, from_name, to_name):
+    def _load_sheet(self, controller: TransitionController, from_name, to_name):
         try:
             path = str(_c.package.joinpath(f'{controller.old_element.style.font.name}/icon_animations/{from_name}${to_name}.png'))
             controller.sheet = pygame.image.load(path).convert_alpha()
@@ -44,16 +44,15 @@ class IconMorph(Transition):
         controller.frame_height = controller.old_element.get_surface().get_height()
         controller.frame_count = controller.sheet.get_height()/controller.frame_height
 
-    def render_element(self,
-                       controller: ElementTransitionController,
-                       timer: float,
-                       old_element: Element,
-                       new_element: Element,
-                       surface: pygame.Surface,
-                       offset: tuple[int, int],
-                       root: "View",
-                       alpha: int = 255
-                       ):
+    def _render_element(self,
+                        controller: TransitionController,
+                        timer: float,
+                        old_element: Element,
+                        new_element: Element,
+                        surface: pygame.Surface,
+                        offset: tuple[int, int],
+                        alpha: int = 255
+                        ):
         
         frame = int((timer/self.duration)*controller.frame_count)
         if controller.direction == 1:

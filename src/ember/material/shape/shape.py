@@ -1,41 +1,127 @@
 import pygame
-from typing import Optional
+import abc
+from typing import Optional, TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ember.ui.base.element import Element
+
 from ..material import Material
-from ... import log
+
+from ...common import ColorType
 
 
-class Shape(Material):
-    def __init__(self,
-                 material: Optional[Material] = None,
-                 color: Optional[pygame.Color] = None):
+class Shape(Material, abc.ABC):
+    """
+    All shape materials inherit from this class. This base class should not be instantiated.
+    """
 
-        super().__init__()
+    def __init__(
+        self,
+        material: Optional[Material] = None,
+        color: Optional[ColorType] = None,
+        antialias: bool = False,
+        outline: int = 0,
+        alpha: int = 255,
+    ):
+        super().__init__(alpha)
+
+        self._antialias: bool = antialias
+        self._outline: int = outline
+
         if color is not None and material is not None:
             raise ValueError("You must provide either a color or material, not both.")
-        self._material = material
-        self._color = color
 
-    def _create_surface(self, size) -> pygame.Surface:
+        self._material: Optional[Material] = material
+        self._color: Optional[ColorType] = color
+
+    @abc.abstractmethod
+    def _create_surface(self, size: tuple[float, float]) -> pygame.Surface:
         pass
 
-    def render_surface(self, element, surface: pygame.Surface, pos, size, alpha):
+    def _update_generic_surface(self):
+        self._clear_cache()
+
+    def _needs_to_render(
+        self,
+        element: "Element",
+        surface: pygame.Surface,
+        pos: tuple[float, float],
+        size: tuple[float, float],
+    ) -> bool:
+        if self._material is not None:
+            return (
+                self._material._needs_to_render(element, surface, pos, size)
+                or element not in self._cache
+                or self._cache.get(element).get_size() != size
+            )
+
+        elif self._color is not None:
+            return (
+                element not in self._cache
+                or self._cache.get(element).get_size() != size
+            )
+
+    def _render_surface(
+        self,
+        element: Optional["Element"],
+        surface: Optional[pygame.Surface],
+        pos: tuple[float, float],
+        size: tuple[float, float],
+    ) -> Any:
+        surface = self._create_surface(size)
+
         if self._material:
-            if self._material.render_surface(element, surface, pos, size, 255) or element not in self._cache:
-                surface = self._create_surface(size)
-                surface.blit(self._material.get_surface(element), (0, 0), special_flags=pygame.BLEND_RGB_ADD)
-                surface.set_alpha(alpha)
-                self._cache[element] = surface
+            surface.blit(
+                self._material._get(element),
+                (0, 0),
+                special_flags=pygame.BLEND_RGB_ADD,
+            )
+            return surface
 
         elif self._color:
-            if element not in self._cache or (cached_size := self._cache.get(element).get_size()) != size:
-                if element not in self._cache:
-                    log.material.info(self, element, f"Element not cached, building surface of size {size} and "
-                                                     f"color {self._color}...")
-                else:
-                    log.material.info(self, element,
-                                      f"Cached surface size {cached_size} != size {size}, rebuilding surface...")
+            surface.fill(self._color, special_flags=pygame.BLEND_RGB_ADD)
+        return surface
 
-                surface = self._create_surface(size)
-                surface.fill(self._color, special_flags=pygame.BLEND_RGB_ADD)
-                surface.set_alpha(alpha)
-                self._cache[element] = surface
+    def render(
+        self,
+        element: "Element",
+        surface: pygame.Surface,
+        pos: tuple[float, float],
+        size: tuple[float, float],
+        alpha: int,
+    ) -> bool:
+        if self._material:
+            self._material.render(element, surface, pos, size, alpha)
+        return super().render(element, surface, pos, size, alpha)
+
+    def _set_outline(self, outline: int) -> None:
+        self.set_outline(outline)
+
+    def set_outline(self, outline: int) -> None:
+        """
+        "The thickness of the shape outline. If set to 0, the shape will be filled with no outline."
+        """
+        self._outline = outline
+        self._update_generic_surface()
+
+    def _set_antialias(self, value: bool) -> None:
+        self.set_antialias(value)
+
+    def set_antialias(self, value: bool) -> None:
+        """
+        When True, the edges will be anti-aliased.
+        """
+        self._antialias = value
+        self._update_generic_surface()
+
+    outline: int = property(
+        fget=lambda self: self._outline,
+        fset=_set_outline,
+        doc="The thickness of the shape outline. If set to 0, the shape will be filled with no outline.",
+    )
+
+    antialias: bool = property(
+        fget=lambda self: self._antialias,
+        fset=_set_antialias,
+        doc="When True, the edges of the shape will be anti-aliased.",
+    )

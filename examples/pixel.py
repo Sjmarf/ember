@@ -1,44 +1,57 @@
 import pygame
 import os
 import sys
+import logging
 
-path = os.getcwd().replace(f"examples", "src")
-sys.path.append(path)
-import ember  # noqa
+os.chdir(__file__.replace("pixel.py", ""))
+
+try:
+    path = os.getcwd().replace(f"examples", "src")
+    sys.path.append(path)
+    print('PATH1', str(path))
+    import ember  # noqa
+except ModuleNotFoundError:
+    path = os.path.join(os.getcwd(), "src")
+    sys.path.append(str(path))
+    print('PATH2', str(path))
+    import ember  # noqa
 
 pygame.init()
-ember.init()
-#
-# log = logging.getLogger("ember.size")
-# log.setLevel(logging.DEBUG)
-# log.addHandler(logging.FileHandler("log.log", "w+"))
+
+log = logging.getLogger("ember.size")
+log.setLevel(logging.DEBUG)
+log.addHandler(logging.FileHandler("log.log", "w+"))
 
 ZOOM = 3
 
 screen = pygame.display.set_mode((600, 600))
-ember.style.load('stone')
+
+ember.init()
+style = ember.style.load("pixel_dark")
 
 display = pygame.Surface((600 / ZOOM, 600 / ZOOM), pygame.SRCALPHA)
 clock = pygame.time.Clock()
 ember.set_clock(clock)
 ember.set_display_zoom(ZOOM)
 
-text = ember.Text("Amet ex magna adipisicing esse dolore veniam nostrud excepteur est irure. "
-                  "Et veniam enim laborum irure aute cupidatat nulla aliquip laboris ullamco "
-                  "cupidatat. Fugiat ea magna irure tempor ullamco magna culpa quis proident. "
-                  "Exercitation est minim id Lorem fugiat laborum amet.", align="left")
+wallpaper = pygame.image.load("wallpaper2.png").convert_alpha()
 
-text.set_color("white")
+button = ember.Button("Button")
+text_field = ember.TextField(
+            "",
+            prompt="Test",
+            multiline=True,
+            height = 40,
+        )
+toggle = ember.Toggle()
+slider = ember.Slider()
 
-text_field = ember.TextField(text, size=ember.FILL, multiline=True)
-
-button = ember.Button("Test", width=ember.FILL)
 view = ember.View(
     ember.VStack(
-        text_field,
         button,
-        size=ember.FILL * 0.8,
-        spacing=5
+        text_field,
+        toggle,
+        slider
     )
 )
 
@@ -51,16 +64,11 @@ while is_running:
             is_running = False
 
         if event.type == ember.BUTTONCLICKED:
-            text.set_align("center")
+            text_field.multiline = not text_field.multiline
 
-    display.fill((20, 20, 20))
+    display.fill(style["background_color"])
     ember.update()
     view.update(display)
-
-    # surf = view.element.element.style.material._cache.get(view.element.element)
-    # if surf:
-    #     surf.fill((255,0,0,100))
-    #     display.blit(surf, (0,0))
 
     screen.blit(pygame.transform.scale(display, (600, 600)), (0, 0))
 

@@ -1,7 +1,12 @@
 import pygame
 
-MENUEXIT = pygame.event.custom_type()
+MENUEXITSTARTED = pygame.event.custom_type()
+MENUEXITFINISHED = pygame.event.custom_type()
+
 ELEMENTFOCUSED = pygame.event.custom_type()
+ELEMENTUNFOCUSED = pygame.event.custom_type()
+
+TRANSITIONSTARTED = pygame.event.custom_type()
 TRANSITIONFINISHED = pygame.event.custom_type()
 
 BUTTONCLICKED = pygame.event.custom_type()

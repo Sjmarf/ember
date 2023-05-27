@@ -1,21 +1,32 @@
 import pygame
-from .common_styles import *
-from typing import Literal
+from typing import Literal, Union, Sequence, Optional
+from . import event as _event
+from weakref import WeakSet
 
-
-VERSION: str = "0.1"
+VERSION: str = "0.0.1"
 is_ce: bool = getattr(pygame, "IS_CE", False)
+
+event_ids = _event.__dict__.values()
 
 
 class InheritType:
     pass
 
 
-class DefaultType:
+ColorType = Union[
+    pygame.Color,
+    int,
+    str,
+    tuple[int, int, int],
+    tuple[int, int, int, int],
+    Sequence[int],
+]
+
+
+class Error(Exception):
     pass
 
 
-DEFAULT = DefaultType()
 INHERIT = InheritType()
 
 display_zoom: float = 1
@@ -30,7 +41,9 @@ package = None
 # Populated in View.__init__. Maybe that should be changed?
 event_ids: list = []
 
+views: WeakSet = WeakSet()
+
 audio_enabled: bool = False
 audio_muted: bool = False
 
-DEFAULT_STYLE: Literal['stone', 'plastic', 'white', 'dark'] = "plastic"
+DEFAULT_STYLE: Literal["stone", "plastic", "white", "dark"] = "dark"

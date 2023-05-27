@@ -29,7 +29,7 @@ class Line:
 class BaseFont:
     def _render_line(self, surf, text, max_width, y, height, col, align):
         old_surf = surf.copy()
-        surf = pygame.Surface((max_width, y + height), pygame.SRCALPHA)
+        surf = pygame.Surface((max(1, max_width), y + height), pygame.SRCALPHA)
         surf.blit(old_surf, (0, 0))
 
         new_text = text
@@ -52,7 +52,7 @@ class BaseFont:
 
         height = self.line_height
 
-        surf = pygame.Surface((0 if max_width is None else max_width, height), pygame.SRCALPHA)
+        surf = pygame.Surface((1 if max_width is None else max(1, max_width), height), pygame.SRCALPHA)
         y = 0
 
         lines = []

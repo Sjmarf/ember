@@ -2,23 +2,28 @@ import importlib.resources
 from typing import Union, Optional
 
 from . import common as _c
-from .common import DEFAULT, INHERIT
+from .common import INHERIT, Error
 
 from . import event
 from .event import *
+
+from . import material
 
 from . import ui
 from .ui import *
 
 from . import transition
-from . import display
 from . import style
-from . import material
 from . import font
 from . import size
-from .size import FIT, FILL
+from . import state
+from .size import FIT, FILL, Size
 
-from .utility.size_element import size_element
+from . import position
+from .position import Position, LEFT, RIGHT, TOP, BOTTOM, TOPLEFT, TOPRIGHT, \
+     BOTTOMLEFT, BOTTOMRIGHT, CENTER, MIDLEFT, MIDRIGHT, MIDTOP, MIDBOTTOM
+
+from .utility.stretch_surface import stretch_surface
 from .utility.spritesheet import SpriteSheet
 
 import pygame as _pygame
@@ -34,15 +39,21 @@ def mute_audio(muted: bool):
 
 def set_display_zoom(value: float):
     _c.display_zoom = value
+    update_views()
+
+def update_views() -> None:
+    for view in _c.views:
+        view.update_elements()
 
 def update():
-    mouse = pygame.mouse.get_pos()
-    _c.mouse_pos = mouse[0] // _c.display_zoom, mouse[1] // _c.display_zoom
+    _c.delta_time = 1 / max(1.0, _c.clock.get_fps())
 
 
 def init(clock: Optional[_pygame.time.Clock] = None, audio: Optional[bool] = None):
-    _c.audio_enabled = audio if audio is not None else (_pygame.mixer.get_init() is not None)
+    if audio:
+        pygame.mixer.init()
     pygame.scrap.init()
+    _c.audio_enabled = audio
     _c.audio_muted = False
     _c.clock = clock if clock is not None else _c.clock
 

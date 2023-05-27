@@ -2,15 +2,18 @@ import pygame
 from .. import event as ember_event
 from .. import common as _c
 from .. import log
-from typing import Optional, TYPE_CHECKING, Literal
+from ..common import InheritType, INHERIT
+from typing import Optional, TYPE_CHECKING, Any, Sequence, Union, overload
+
+from ..style.load_style import load as load_style
+
 if TYPE_CHECKING:
     from ..style.view_style import ViewStyle
     from ..transition.transition import Transition
-    from .element import Element
+    from ember.ui.base.element import Element
 
-from .text_field import TextField
-from .slider import Slider
-from .scroll import Scroll
+from .view_layer import ViewLayer
+from ..state.state import StateType
 
 KEY_NAMES = {
     pygame.K_RIGHT: "right",
@@ -36,166 +39,188 @@ DPAD_NAMES = {
 
 
 class View:
-    def __init__(self,
-                 element: "Element",
-                 focused: Optional["Element"] = None,
-                 style: Optional["ViewStyle"] = None,
+    @overload
+    def __init__(
+        self,
+        layer: "ViewLayer",
+    ) -> None:
+        ...
 
-                 keyboard_nav: bool = True,
-                 listen_for_exit: bool = True,
-                 transition: Optional["Transition"] = None,
-                 transition_in: Optional["Transition"] = None,
-                 transition_out: Optional["Transition"] = None
-                 ):
+    @overload
+    def __init__(
+        self,
+        element: "Element",
+        focused: Optional["Element"] = None,
+        keyboard_nav: bool = True,
+        background: StateType = None,
+        listen_for_exit: bool = True,
+        transition: Optional["Transition"] = None,
+        transition_in: Optional["Transition"] = None,
+        transition_out: Optional["Transition"] = None,
+        style: Optional["ViewStyle"] = None,
+    ) -> None:
+        ...
 
+    def __init__(
+        self,
+        layer: Union["ViewLayer", "Element", None] = None,
+        focused: Optional["Element"] = None,
+        keyboard_nav: bool = True,
+        background: StateType = None,
+        listen_for_exit: bool = True,
+        transition: Optional["Transition"] = None,
+        transition_in: Optional["Transition"] = None,
+        transition_out: Optional["Transition"] = None,
+        style: Optional["ViewStyle"] = None,
+        element: Optional["Element"] = None,
+    ) -> None:
         if not _c.clock:
-            raise Exception("You must use ember.set_clock() before initialising a view.")
+            raise _c.Error(
+                "You must use ember.set_clock() before initialising a view."
+            )
 
-        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
+        self.keyboard_nav: bool = keyboard_nav
+        """
+        Whether keyboard and controller navigation is enabled for this View.
+        """
 
-        self.element_focused = focused
-        self.keyboard_nav = keyboard_nav
-        self.listen_for_exit = listen_for_exit
+        self._layers: list[ViewLayer] = []
 
-        self.style = style if style else _c.default_view_style
-
-        if transition_in:
-            self.transition_in = transition_in
-        elif transition:
-            self.transition_in = transition
-        elif self.style and self.style.transition_in:
-            self.transition_in = self.style.transition_in
+        if isinstance(layer, ViewLayer):
+            self._layers.append(layer)
         else:
-            self.transition_in = None
+            if layer is not None:
+                element = layer
+            self._layers.append(
+                ViewLayer(
+                    element,
+                    focused=focused,
+                    background=background,
+                    listen_for_exit=listen_for_exit,
+                    transition=transition,
+                    transition_in=transition_in,
+                    transition_out=transition_out,
+                    view=self,
+                    style=style,
+                    close_when_click_off=False
+                )
+            )
 
-        if transition_out:
-            self.transition_out = transition_out
-        elif transition:
-            self.transition_out = transition
-        elif self.style and self.style.transition_out:
-            self.transition_out = self.style.transition_out
-        else:
-            self.transition_out = None
+        self._joystick_cooldown = 0
+        self._prev_rect: tuple[float, float, float, float] = (0, 0, 0, 0)
+        self._joy_axis_motion: Sequence[int] = [0, 0]
 
-        self.style = style if style else _c.default_view_style
+        _c.views.add(self)
 
-        self._element = element
-        element._set_parent(self)
-        element._set_root(self)
-
-        if self.transition_in:
-            element._transition = self.transition_in.new_element_controller()
-            element._transition.new_element = element
-
-        _c.event_ids = ember_event.__dict__.values()
-        self.joystick_cooldown = 0
-
-        self.check_size = True
-        self._prev_rect = None
-        self._waiting_for_transition_finish = False
-        self._block_rendering = False
-
-        self._joy_axis_motion = [0, 0]
-
-        self.rect = pygame.Rect((0, 0, 0, 0))
-
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "<View>"
 
-    def update(self, surface: pygame.Surface, rect: pygame.rect.RectType = None,
-               update_positions=True, update_elements=True, render=True):
+    def __getitem__(self, item) -> "ViewLayer":
+        return self._layers[item]
+
+    def __len__(self) -> int:
+        return len(self._layers)
+
+    def update(
+        self,
+        surface: pygame.Surface,
+        rect: pygame.rect.RectType = None,
+        update_positions: bool = True,
+        update_elements: bool = True,
+        render: bool = True,
+        alpha: int = 255,
+        display_zoom: Union[InheritType, int] = INHERIT,
+    ) -> None:
+        """
+        Update the View. This should be called every tick.
+        """
+        mouse = pygame.mouse.get_pos()
+        if display_zoom is INHERIT:
+            display_zoom = _c.display_zoom
+        _c.mouse_pos = mouse[0] // display_zoom, mouse[1] // display_zoom
+
+        for layer in self._layers:
+            if update_positions:
+                layer._update_positions(surface, rect)
+            if render:
+                layer._render(surface, alpha) 
+
+        for layer in reversed(self._layers):
+            if update_elements:
+                layer._element._update_a()
+
+            if layer._rect.collidepoint(_c.mouse_pos):
+                _c.mouse_pos = (-10, -10)
+
+        _c.mouse_pos = mouse[0] // display_zoom, mouse[1] // display_zoom
+
+        if self._joystick_cooldown > 0:
+            self._joystick_cooldown -= _c.delta_time * 5
+            if self._joystick_cooldown < 0:
+                self._joystick_cooldown = 0
+
         if update_positions:
-            self._update_positions(surface, rect)
-        if render:
-            self._render(surface)
-        if update_elements:
-            self._element._update_a(root=self)
+            # Joystick controls
+            if self._joystick_cooldown == 0:
+                direction = None
+                if abs(self._joy_axis_motion[0]) > 0.5:
+                    direction = ["left", "right"][self._joy_axis_motion[0] > 0]
+                elif abs(self._joy_axis_motion[1]) > 0.5:
+                    direction = ["up", "down"][self._joy_axis_motion[1] > 0]
+                if direction:
+                    self._joystick_cooldown = 1
+                    self.shift_focus(direction)
 
-        if self.joystick_cooldown > 0:
-            self.joystick_cooldown -= _c.delta_time * 5
-            if self.joystick_cooldown < 0:
-                self.joystick_cooldown = 0
-
-    def _update_positions(self,
-                          surface: pygame.Surface, rect: pygame.rect.RectType = None):
-        _c.delta_time = 1 / max(1, _c.clock.get_fps())
-
-        if type(rect) is tuple:
-            pos = (rect[0] + rect[2] / 2 - self._element.get_abs_width(rect[2]) / 2,
-                   rect[1] + rect[3] / 2 - self._element.get_abs_height(rect[3]) / 2,
-                   *rect[2:])
-        elif type(rect) is pygame.Rect:
-            pos = rect.centerx - self._element.get_abs_width(rect.w) / 2, \
-                  rect.centery - self._element.get_abs_height(rect.h) / 2, \
-                  *rect.size
-        else:
-            pos = (surface.get_width() / 2 - self._element.get_abs_width(surface.get_width()) / 2,
-                   surface.get_height() / 2 - self._element.get_abs_height(surface.get_height()) / 2,
-                   *surface.get_size())
-
-        self.rect.update(pos)
-
-        if self._prev_rect != pos:
-            self._prev_rect = pos
-            self.check_size = True
-
-        i = 0
-        while self.check_size:
-            log.size.line_break()
-            if i > 0:
-                log.size.info(self, f"Starting chain down again (iteration {i+1}).")
-            else:
-                log.size.info(self, f"Starting chain down.")
-            self.check_size = False
-            with log.size.indent:
-                self._element._update_rect_chain_down(surface, pos[:2], pos[2:], root=self)
-            log.size.info(self, "Chain finished.")
-            i += 1
-            if i > 30:
-                raise Exception("Maximimum chain-down count exceeded.")
-
-        # Joystick controls
-        if self.joystick_cooldown == 0:
-            direction = None
-            if abs(self._joy_axis_motion[0]) > 0.5:
-                direction = ["left", "right"][self._joy_axis_motion[0] > 0]
-            elif abs(self._joy_axis_motion[1]) > 0.5:
-                direction = ["up", "down"][self._joy_axis_motion[1] > 0]
-            if direction:
-                self.joystick_cooldown = 1
-                self._select_element(direction)
-
-    def _render(self, surface: pygame.Surface):
-        if not self._block_rendering:
-            self._element._render_a(surface, (0, 0), root=self)
-
-    def event(self, event: pygame.event.Event):
-        if event.type == ember_event.TRANSITIONFINISHED:
-            if event.element is self._element:
-                if self._waiting_for_transition_finish:
-                    self._exit_menu()
-
+    def event(self, event: pygame.event.Event) -> bool:
+        """
+        Passes Pygame Events to the View. This should be called for each event in the event stack.
+        """
         if event.type in _c.event_ids:
-            return
+            return False
 
-        if event.type == pygame.KEYDOWN and self.keyboard_nav:
-            if event.key == pygame.K_ESCAPE:
-                if self.element_focused is None:
-                    log.nav.info(self, "Escape key pressed, exiting menu.")
-                    self._exit_pressed()
-                else:
-                    log.nav.info(self, "Escape key pressed, moving up one layer.")
-                    with log.nav.indent:
-                        self.element_focused = self.element_focused._focus_chain(self, None, "out")
-                    log.nav.info(self, f'Focus chain ended. Focused {self.element_focused}.')
+        if event.type == ember_event.MENUEXITFINISHED:
+            if event.layer in self._layers and len(self._layers) > 1:
+                self._layers.remove(event.layer)
+                log.nav.info(self, f"Removed layer {event.layer}.")
 
-            if event.key in KEY_NAMES.keys():
-                if not (isinstance(self.element_focused, (Slider, TextField)) and self.element_focused.is_active):  # noqa
-                    log.nav.info(self, "Nav key pressed.")
-                    if event.key == pygame.K_TAB and pygame.key.get_mods() & pygame.KMOD_SHIFT:
-                        self._select_element("backward")
+        for n, layer in enumerate(reversed(self._layers)):
+            if layer._event(event, layer=len(self._layers) - 1 - n):
+                return True
+            if event.type in {
+                pygame.MOUSEBUTTONDOWN,
+                pygame.MOUSEBUTTONUP,
+            } and layer._rect.collidepoint(_c.mouse_pos):
+                break
+
+        if self.keyboard_nav:
+            layer = self._layers[-1]
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    if layer.element_focused is None:
+                        log.nav.info(self, "Escape key pressed, exiting menu.")
+                        return layer._exit_pressed()
                     else:
-                        self._select_element(KEY_NAMES[event.key])
+                        if layer.element_focused is None:
+                            return False
+                        log.nav.info(self, "Escape key pressed, moving up one layer.")
+                        with log.nav.indent:
+                            layer._focus_element(
+                                layer.element_focused._focus_chain(None, "out")
+                            )
+                        log.nav.info(
+                            self, f"Focus chain ended. Focused {layer.element_focused}."
+                        )
+                        return True
+
+                if event.key in KEY_NAMES.keys():
+                    log.nav.info(self, "Nav key pressed.")
+                    if (
+                        event.key == pygame.K_TAB
+                        and pygame.key.get_mods() & pygame.KMOD_SHIFT
+                    ):
+                        layer.shift_focus("backward")
+                    else:
+                        layer.shift_focus(KEY_NAMES[event.key])
 
         elif event.type == pygame.JOYAXISMOTION:
             if event.axis in {0, 3}:
@@ -205,96 +230,103 @@ class View:
 
         elif event.type == pygame.JOYHATMOTION:
             if event.value in JOY_HAT_NAMES:
-                self._select_element(JOY_HAT_NAMES[event.value])
+                layer.shift_focus(JOY_HAT_NAMES[event.value])
 
         elif event.type == pygame.JOYBUTTONDOWN:
             if event.button == 1:  # B as ESC key
-                self._exit_pressed()
+                layer._exit_pressed()
 
             elif event.button in DPAD_NAMES:
-                self._select_element(DPAD_NAMES[event.button])
+                layer.shift_focus(DPAD_NAMES[event.button])
 
-        self._element._event(event, self)
+    @overload
+    def add_layer(
+        self,
+        element: "Element",
+        rect: Optional[pygame.rect.RectType] = None,
+        focused: Optional["Element"] = None,
+        listen_for_exit: bool = True,
+        transition: Optional["Transition"] = None,
+        transition_in: Optional["Transition"] = None,
+        transition_out: Optional["Transition"] = None,
+    ) -> None:
+        ...
 
-    def set_element(self, element: "Element"):
-        self._element = element
-        element._set_parent(self)
-        element._set_root(self)
+    @overload
+    def add_layer(
+        self,
+        layer: "ViewLayer",
+    ) -> None:
+        ...
 
-    def focus_element(self, element):
-        self.element_focused = element
-
-    def start_transition(self, transition: "Transition" = None):
-        if transition or self.transition_out:
-            transition = transition if transition else self.transition_out
-            self._element._transition = transition.new_element_controller()
-            self._element._transition.old_element = self._element
-
-    def _exit_pressed(self):
-        if self.element_focused is not None:
-            self.element_focused = None
-        elif self.listen_for_exit:
-            if self.transition_out:
-                self.start_transition()
-                self._waiting_for_transition_finish = True
-            else:
-                self._exit_menu()
-
-    def _exit_menu(self):
-        self._block_rendering = True
-        pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-        new_event = pygame.event.Event(ember_event.MENUEXIT, view=self)
-        pygame.event.post(new_event)
-
-    def shift_focus(self, direction: Literal['left', 'right', 'up', 'down']):
-        self._select_element(direction)
-
-    def _select_element(self, direction):
-        if self.element_focused is None:
-            log.nav.info(self, f'Selection is None. Starting focus chain for {self._element} with direction'
-                               f' \'select\'.')
-            with log.nav.indent:
-                new_element = self._element._focus_chain(self, None)
+    def add_layer(
+        self,
+        layer: Union[ViewLayer, "Element", None] = None,
+        rect: Optional[pygame.rect.RectType] = None,
+        focused: Optional["Element"] = None,
+        listen_for_exit: bool = True,
+        transition: Optional["Transition"] = None,
+        transition_in: Optional["Transition"] = None,
+        transition_out: Optional["Transition"] = None,
+        element: Optional["Element"] = None,
+    ) -> None:
+        if not isinstance(layer, ViewLayer) or element:
+            if element is None:
+                if layer is None:
+                    raise ValueError(
+                        "You must provide either a ViewLayer or an Element, not None."
+                    )
+                element = layer
+            layer = ViewLayer(
+                element,
+                focused=focused,
+                listen_for_exit=listen_for_exit,
+                transition=transition,
+                transition_in=transition_in,
+                transition_out=transition_out,
+                rect=rect,
+                view=self,
+                style=self._layers[0]._style,
+            )
         else:
-            log.nav.info(self, f"Starting focus chain for {self.element_focused} with direction '{direction}'.")
-            with log.nav.indent:
-                new_element = self.element_focused._focus_chain(self, None, direction=direction)
+            layer.view = self
+        self._layers.append(layer)
+        log.nav.info(self, f"Added layer {layer}.")
 
-        if self.element_focused is not new_element:
-            if self.element_focused is not None:
-                self.element_focused._on_unfocus()
-            self.element_focused = new_element
+    def update_elements(self) -> None:
+        log.size.info(self, "Starting chain down next tick for all layers...")
+        for layer in self._layers:
+            layer._check_size = True
 
-        log.nav.info(self, f'Focus chain ended. Focused {self.element_focused}.')
-        event = pygame.event.Event(ember_event.ELEMENTFOCUSED, element=self.element_focused)
-        pygame.event.post(event)
+    def shift_focus(self, direction: str) -> None:
+        if self._layers:
+            self._layers[-1].shift_focus(direction)
 
-        # Determine if the element being selected is inside a VScroll
-        if self.element_focused is not None:
-            for element in self.element_focused.get_parent_tree():
-                if isinstance(element, Scroll):
-                    # If the element isn't fully visible in the frame, scroll to that element
-                    element.scroll_to_element(self.element_focused)
+    @staticmethod
+    def set_focus(element: "Element") -> None:
+        element.focus()
 
-    def _update_rect_chain_up(self):
+    def start_transition_out(
+        self, transition: Optional["Transition"] = None, cause: Any = None
+    ) -> None:
+        self._layers[-1].start_transition_out(transition, cause)
+
+    def _update_rect_chain_up(self) -> None:
         pass
 
-    def _focus_chain(self, root: 'View', previous: "Element" = None, direction: str = ""):
-        log.nav.info(self,"Reached Root. Focus wasn't changed.")
-        if direction == "out":
-            self._exit_pressed()
-        return self.element_focused
+    def _set_style(self, style: Optional["ViewStyle"]) -> None:
+        self._layers[0].set_style(style)
 
-    def _show_controller_keyboard(self):
-        pass
+    def set_style(self, style: Optional["ViewStyle"]) -> None:
+        """
+        Sets the ViewStyle of the bottommost ViewLayer.
+        """
+        self._layers[0].set_style(style)
 
-    def keybinds_blocked(self):
-        return type(self.element_focused).__name__ == "TextField" and self.element_focused.is_active
-
-    def _get_element(self):
-        return self._element
-
-    element = property(
-        fget=_get_element,
-        fset=set_element
+    style: "ViewStyle" = property(
+        fget=lambda self: self._style,
+        fset=_set_style,
+        doc="The ViewStyle of the bottommost ViewLayer. Synonymous with the set_style() method.",
     )
+
+    layers: list[ViewLayer] = property(fget=lambda self: self._layers)

@@ -1,28 +1,24 @@
 import json
 from .. import common as _c
-from typing import Union, Literal
+from typing import Union, Literal, IO
 import os
 
 from .. import material
 from .. import font
 from .. import transition
 from .. import style
+from .. import state
 
 import logging
 import pygame
 
 from ..size import FIT, FILL, Size
 
-def load(style: Literal['stone', 'plastic', 'white', 'dark'] = 'dark',
-         parts: Union[list[str], None] = None) -> dict:
-    logging.debug(f"Loading style {style}")
-    path = _c.package.joinpath(f'default_styles/{style}/data.json')
-    return from_json(str(path), parts=parts, _ignore_ver=True)
-
-
 def decode_element(data, styles):
     obj = None
-    if data[0] == "Color":
+    if data[0] == "State":
+        obj = state.State
+    elif data[0] == "Color":
         obj = material.Color
     elif data[0] == "AverageColor":
         obj = material.AverageColor
@@ -35,33 +31,45 @@ def decode_element(data, styles):
     elif data[0] == "Slide":
         obj = transition.Slide
     elif data[0] == "PixelFont":
-        return font.PixelFont(filename=_c.package.joinpath(f'fonts/{data[1]}'))
+        return font.PixelFont(filename=_c.package.joinpath(f"default_fonts/{data[1]}"))
     elif data[0] == "Font":
         return font.Font(pygame.font.SysFont(data[1], data[2]))
     elif data[0] == "RoundedRect":
         if isinstance(data[1][0], str):
-            return material.shape.RoundedRect(material=decode_element(data[1], styles),
-                                                    radius=data[2] if len(data) >= 3 else 20)
+            return material.shape.RoundedRect(
+                material=decode_element(data[1], styles),
+                radius=data[2] if len(data) >= 3 else 20,
+            )
         else:
-            return material.shape.RoundedRect(color=data[1],
-                                                    radius=data[2] if len(data) >= 3 else 20)
+            return material.shape.RoundedRect(
+                color=data[1], radius=data[2] if len(data) >= 3 else 20
+            )
 
     if obj:
-        if type(data[1]) is dict:
+        if isinstance(data[1], dict):
             return obj(**data[1])
         else:
             return obj(data[1])
 
 
-def from_json(filepath: Union[str, dict], set_as_default=True, parts: Union[list[str], None] = None,
-              _ignore_ver: bool = False) -> dict:
-    if type(filepath) is str:
+def load(
+    filepath: Union[str, IO],
+    set_as_default=True,
+    parts: Union[list[str], None] = None,
+    _ignore_ver: bool = False,
+) -> dict:
+    if isinstance(filepath, str):
+        if "." not in filepath:
+            filepath = _c.package.joinpath(f"default_styles/{filepath}/data.json")
+
         with open(filepath) as f:
             data = json.load(f)
 
-        if data["pxui_version"] != _c.VERSION and not _ignore_ver:
-            raise Exception(f"Can't load styles from json - PXUI version ({_c.VERSION}) does not match "
-                            f"json file's version {data['pxui_version']}")
+        if data["ember_version"] != _c.VERSION and not _ignore_ver:
+            raise _c.Error(
+                f"Can't load styles from json - Ember version ({_c.VERSION}) does not match "
+                f"json file's version {data['ember_version']}"
+            )
 
     else:
         data = json.load(filepath)
@@ -81,9 +89,9 @@ def from_json(filepath: Union[str, dict], set_as_default=True, parts: Union[list
             if name in asset_folders:
                 assets = os.listdir(f"{asset_path}/{name}")
 
-        if (x := value.get('type')):
+        if x := value.get("type"):
             element = x
-            value.pop('type')
+            value.pop("type")
         else:
             element = name
 
@@ -91,58 +99,70 @@ def from_json(filepath: Union[str, dict], set_as_default=True, parts: Union[list
         valid_file_names = dict()
 
         if element == "view":
+            if assets:
+                valid_file_names = {
+                    "default.png": "default_material",
+                }
+
             element_style = style.ViewStyle
 
-        elif element == "stack":
-            element_style = style.StackStyle
+        elif element == "container":
+            element_style = style.ContainerStyle
 
         elif element == "button":
             if assets:
-                valid_file_names = {'default.png': 'material',
-                                    'click.png': 'click_material',
-                                    'hover.png': 'hover_material',
-                                    'highlight.png': 'focus_material',
-                                    'highlight_click.png': 'focus_click_material',
-                                    'disabled.png': 'disabled_material',
-                                    'click_down.ogg': 'click_down_sound',
-                                    'click_up.ogg': 'click_up_sound'}
+                valid_file_names = {
+                    "default.png": "default_material",
+                    "click.png": "click_material",
+                    "hover.png": "hover_material",
+                    "focus.png": "focus_material",
+                    "focus_click.png": "focus_click_material",
+                    "disabled.png": "disabled_material",
+                    "click_down.ogg": "click_down_sound",
+                    "click_up.ogg": "click_up_sound",
+                }
 
             element_style = style.ButtonStyle
 
         elif element == "text_field":
             if assets:
-                valid_file_names = {'default.png': 'material',
-                                    'active.png': 'active_material',
-                                    'hover.png': 'hover_material',
-                                    'disabled.png': 'disabled_material',
-                                    'text_fade.png': 'text_fade'}
+                valid_file_names = {
+                    "default.png": "default_material",
+                    "active.png": "active_material",
+                    "hover.png": "hover_material",
+                    "disabled.png": "disabled_material",
+                    "text_fade.png": "text_fade",
+                }
 
             element_style = style.TextFieldStyle
 
         elif element == "toggle":
             if assets:
-                valid_file_names = {'base.png': 'base_image',
-                                    'default.png': 'default_image',
-                                    'hover.png': 'hover_image',
-                                    'highlight.png': 'highlight_image',
-                                    'switch_on.ogg': 'switch_on_sound',
-                                    'switch_off.ogg': 'switch_off_sound'}
+                valid_file_names = {
+                    "base.png": "default_base_material",
+                    "default.png": "default_material",
+                    "hover.png": "hover_material",
+                    "focus.png": "focus_material",
+                    "disabled.png": "disabled_material",
+                    "switch_on.ogg": "switch_on_sound",
+                    "switch_off.ogg": "switch_off_sound",
+                }
 
             element_style = style.ToggleStyle
 
         elif element == "slider":
             if assets:
-                valid_file_names = {'base.png': 'base_image',
-                                    'default.png': 'default_image',
-                                    'hover.png': 'hover_image',
-                                    'click.png': 'click_image',
-                                    'focus.png': 'focus_image',
-                                    'focus_click.png': 'focus_click_image'}
+                valid_file_names = {
+                    "base.png": "default_base_material",
+                    "default.png": "default_material",
+                    "hover.png": "hover_material",
+                    "click.png": "click_material",
+                    "focus.png": "focus_material",
+                    "focus_click.png": "focus_click_material",
+                    "disabled.png": "disabled_material"
+                }
 
             element_style = style.SliderStyle
-
-        elif element == "list":
-            element_style = style.ListStyle
 
         elif element == "text":
             element_style = style.TextStyle
@@ -155,10 +175,12 @@ def from_json(filepath: Union[str, dict], set_as_default=True, parts: Union[list
 
         if assets:
             for file in assets:
-                if (k := valid_file_names.get(file)):
+                if k := valid_file_names.get(file):
                     path = os.path.join(asset_path, name, file)
                     if file.endswith(".png") and file != "text_fade.png":
-                        kwargs[k] = material.StretchedSurface(path, edge=data.get("image_edge"))
+                        kwargs[k] = material.StretchedSurface(
+                            path, edge=data.get("image_edge")
+                        )
                     else:
                         kwargs[k] = path
 
