@@ -1,22 +1,21 @@
 import pygame
-from typing import Union, Optional, Sequence, Callable
+from typing import Union, Optional, Sequence, Callable, TYPE_CHECKING
 
 from .. import common as _c
 from ..event import BUTTONCLICKED
 
-from ..ui.view import ViewLayer
 from ..ui.h_stack import HStack
 from ..ui.text import Text
 from .base.interactive import Interactive
 from .base.element import Element, ElementStrType
-from ..style.get_style import _get_style
 from ..ui.load_element import load_element
 
-from ..size import SizeType, SequenceSizeType
-from ..position import PositionType
+from ..size import SizeType, SequenceSizeType, SizeMode
+from ..position import PositionType, CENTER, SequencePositionType
 
-from ..style.button_style import ButtonStyle
-from ..style.load_style import load as load_style
+if TYPE_CHECKING:
+    from ..style.button_style import ButtonStyle
+    from ..ui.view import ViewLayer
 
 from ..state.state_controller import StateController
 
@@ -35,14 +34,16 @@ class Button(Element, Interactive):
         can_hold: bool = False,
         hold_delay: float = 0.2,
         hold_start_delay: float = 0.5,
-        focus_when_clicked: bool = False,
         disabled: bool = False,
         on_click: Optional[Callable[["Button"], None]] = None,
-        position: PositionType = None,
-        size: SequenceSizeType = None,
-        width: SizeType = None,
-        height: SizeType = None,
-        style: Optional[ButtonStyle] = None,
+        rect: Union[pygame.rect.RectType, Sequence, None] = None,
+        pos: Optional[SequencePositionType] = None,
+        x: Optional[PositionType] = None,
+        y: Optional[PositionType] = None,
+        size: Optional[SequenceSizeType] = None,
+        width: Optional[SizeType] = None,
+        height: Optional[SizeType] = None,
+        style: Optional["ButtonStyle"] = None,
     ):
         self.can_hold: bool = can_hold
         """
@@ -59,11 +60,6 @@ class Button(Element, Interactive):
         """
         The delay (in seconds) between the initial event and the first repeated event, 
         if the :code:`can_hold` attribute is :code:`True`.
-        """
-
-        self.focus_when_clicked: bool = focus_when_clicked
-        """
-        If :code:`True`, the button will be focused when it is clicked.
         """
 
         self.is_hovered: bool = False
@@ -86,7 +82,7 @@ class Button(Element, Interactive):
         The :py:class:`ember.state.StateController` object responsible for managing the Button's states.
         """
 
-        self._style: ButtonStyle
+        self._style: "ButtonStyle"
         self._fit_width: float = 0
         self._fit_height: float = 0
         self._hold_timer: float = hold_start_delay
@@ -97,7 +93,7 @@ class Button(Element, Interactive):
         self.set_style(style)
 
         Element.__init__(
-            self, position, size, width, height, default_size=self.style.default_size
+            self, rect, pos, x, y, size, width, height
         )
         Interactive.__init__(self, disabled)
         self.set_element(*element)
@@ -109,10 +105,11 @@ class Button(Element, Interactive):
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
         # Decide which image to draw
-        rect = self._draw_rect.move(*offset)
+        rect = self._int_rect.move(*offset)
+        
+        self.state_controller.set_state(self.style.state_func(self), transitions=(self._style.material_transition,))
 
         self.state_controller.render(
-            self.style.state_func(self),
             surface,
             (
                 rect.x - surface.get_abs_offset()[0],
@@ -123,7 +120,7 @@ class Button(Element, Interactive):
         )
 
         if self._element:
-            offset2 = self.state_controller.element_offset
+            offset2 = self.state_controller.current_state.get_element_offset(self.state_controller)
 
             self._element._render_a(
                 surface, (offset[0] + offset2[0], offset[1] + offset2[1]), alpha=alpha
@@ -169,38 +166,38 @@ class Button(Element, Interactive):
                     surface,
                     (
                         pos[0]
-                        + self.rect.w / 2
-                        - self._element.get_abs_width(self.rect.w) / 2,
-                        self._draw_rect.y
+                        + self.rect.w // 2
+                        - self._element.get_ideal_width(self.rect.w) // 2,
+                        self._int_rect.y
                         + self.rect.h // 2
-                        - self._element.get_abs_height(self.rect.h) // 2,
+                        - self._element.get_ideal_height(self.rect.h) // 2,
                     ),
                     self.rect.size,
                 )
 
     @Element._chain_up_decorator
     def _update_rect_chain_up(self) -> None:
-        if self._width.mode == 1:
+        if self._w.mode == SizeMode.FIT:
             if self._element:
-                if self._element._width.mode == 2:
+                if self._element._w.mode == SizeMode.FILL:
                     raise ValueError(
                         "Cannot have elements of FILL width inside of a FIT width Button."
                     )
-                self._fit_width = self._element.get_abs_width()
+                self._fit_width = self._element.get_ideal_width()
             else:
-                self._fit_width = self._style.default_size[0]
+                self._fit_width = self._style.size[0]
 
-        if self._height.mode == 1:
+        if self._h.mode == SizeMode.FIT:
             if self._element:
-                if self._element._height.mode == 2:
+                if self._element._h.mode == SizeMode.FILL:
                     raise ValueError(
                         "Cannot have elements of FILL height inside of a FIT height Button."
                     )
-                self._fit_height = self._element.get_abs_width()
+                self._fit_height = self._element.get_ideal_width()
             else:
-                self._fit_height = self._style.default_size[1]
+                self._fit_height = self._style.size[1]
 
-    def _set_layer_chain(self, layer: ViewLayer) -> None:
+    def _set_layer_chain(self, layer: "ViewLayer") -> None:
         log.layer.info(self, f"Set layer to {layer}")
         self.layer = layer
         if self._element:
@@ -223,8 +220,6 @@ class Button(Element, Interactive):
                 self.is_clicked = False
                 if self.is_hovered and not self._disabled:
                     self._click_up()
-                    if self.focus_when_clicked:
-                        self.layer._focus_element(self)
                     return True
 
         elif (
@@ -294,19 +289,19 @@ class Button(Element, Interactive):
         """
         if self.on_click is not None:
             self.on_click(self)
-        else:
-            text = self._element.text if isinstance(self._element, Text) else None
-            event = pygame.event.Event(BUTTONCLICKED, element=self, text=text)
-            pygame.event.post(event)
 
-    def _set_style(self, style: Optional[ButtonStyle]) -> None:
+        text = self._element.text if isinstance(self._element, Text) else None
+        event = pygame.event.Event(BUTTONCLICKED, element=self, text=text)
+        pygame.event.post(event)
+
+    def _set_style(self, style: Optional["ButtonStyle"]) -> None:
         self.set_style(style)
 
-    def set_style(self, style: Optional[ButtonStyle]) -> None:
+    def set_style(self, style: Optional["ButtonStyle"]) -> None:
         """
         Sets the ButtonStyle of the Button.
         """
-        self._style: ButtonStyle = _get_style(style, "button")
+        self._style: "ButtonStyle" = self._get_style(style)
 
     def _set_element(
         self, *element: Union[Sequence[ElementStrType], ElementStrType]
@@ -357,7 +352,7 @@ class Button(Element, Interactive):
         doc="The child element of the Button. Synonymous with the set_element() method.",
     )
 
-    style: ButtonStyle = property(
+    style: "ButtonStyle" = property(
         fget=lambda self: self._style,
         fset=_set_style,
         doc="The ButtonStyle of the Button. Synonymous with the set_style() method.",

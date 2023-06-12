@@ -1,12 +1,15 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-from .text import Text, TextStyle
+from .text import Text
 from .base.element import Element, ElementStrType
+
+if TYPE_CHECKING:
+    from ..style.text_style import TextStyle
 
 
 def load_element(
     element: ElementStrType,
-    text_style: Optional[TextStyle] = None,
+    text_style: Optional["TextStyle"] = None,
     text_width: Optional[int] = None,
     text_height: Optional[int] = None,
 ) -> Optional[Element]:

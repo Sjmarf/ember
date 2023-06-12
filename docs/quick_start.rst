@@ -3,9 +3,12 @@
 Quick Start Guide
 =================
 
-This guide assumes a strong knowledge of Python (including OOP) and Pygame.
+This page aims to get you started with Ember in as few words as possible. For a more in-depth introduction,
+you might consider the series of guides starting with the :ref:`Element Guide<element_guide>`.
 
-Here's a basic Pygame structure:
+**This guide assumes a strong knowledge of Python (including OOP) and Pygame.**
+
+Here is a basic Pygame structure:
 
 .. code-block:: python
    :linenos:
@@ -63,7 +66,7 @@ Let's add the lines required for Ember to function:
 
     pygame.quit()
 
-Now, we'll create a :code:`View` object. A View is just a menu. You can pass any :ref:`UI element<ui-element>` as the first parameter of the View. Lets add a View with a :ref:`Button<ui-button>` element:
+Now, we'll create a :py:class:`View<ember.ui.View>` object. A View represents a menu. You can pass any Element as the first parameter of the View, and it will be rendered on the screen when you call :py:meth:`View.update<ember.ui.View.update>`. Let's add a View with a :ref:`Button<ui-button>` element:
 
 
 .. code-block:: python

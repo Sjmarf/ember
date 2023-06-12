@@ -3,13 +3,17 @@
 
  "elements": {
 
-     "text": {"font": ["Font", "arial", 40]},
+     "Text": {"font": ["Font", "arial", 40]},
 
-     "view": {"transition": ["Fade", 0.15]},
+     "View": {},
 
-     "container": {},
+     "Container": {
+       "sizes": {"Layout": "FILL"},
+       "min_spacing": 20
+     },
 
-     "button": {
+     "Button": {
+       "size": [300, 80],
        "default_material": ["RoundedRect", [30,30,30], 20],
        "hover_material": ["RoundedRect", [40,40,40], 20],
        "click_material": ["RoundedRect", [70,70,70], 20],
@@ -17,7 +21,42 @@
        "material_transition": ["SurfaceFade", 0.1]
      },
 
-     "text_field": {
+     "Toggle": {
+       "size": [100, 40],
+       "default_base_material": ["Capsule", [30,30,30]],
+       "default_handle_material": ["Ellipse", [70,70,70]],
+       "hover_handle_material": ["Ellipse", [80,80,80]],
+       "focus_handle_material": ["Ellipse", [100,100,100]],
+       "disabled_handle_material": ["Ellipse", [15,15,15]],
+       "handle_material_transition": ["SurfaceFade", 0.1]
+     },
+
+     "Slider": {
+       "size": [300, 40],
+       "default_base_material": ["Capsule", [30,30,30]],
+       "default_handle_material": ["Ellipse", [70,70,70]],
+       "hover_handle_material": ["Ellipse", [80,80,80]],
+       "click_handle_material": ["Ellipse", [100,100,100]],
+       "focus_handle_material": ["Ellipse", [100,100,100]],
+       "focus_click_handle_material": ["Ellipse", [140,140,140]],
+       "disabled_handle_material": ["Ellipse", [15,15,15]],
+       "handle_material_transition": ["SurfaceFade", 0.1]
+     },
+
+     "text_field_scroll": {
+       "type": "Scroll",
+       "default_handle_material": ["Capsule", [100, 100, 100]],
+       "hover_handle_material": ["Capsule", [110, 110, 110]],
+       "click_handle_material": ["Capsule", [120, 120, 120]],
+       "padding": 15,
+       "scrollbar_size": 10,
+       "scroll_speed": 15,
+       "handle_material_transition": ["SurfaceFade", 0.1]
+     },
+
+     "TextField": {
+       "size": [300, 80],
+       "scroll_style": ["Style", "text_field_scroll"],
        "default_material": ["RoundedRect", [30,30,30], 20],
        "hover_material": ["RoundedRect", [40,40,40], 20],
        "active_material": ["RoundedRect", [70,70,70], 20],
@@ -26,19 +65,18 @@
        "default_scroll_size": [["FILL", 1, -20], ["FILL", 1, -20]]
        },
 
-     "scroll": {
-       "default_handle_material": ["RoundedRect", ["Color",[100, 100, 255]], 4],
-       "hover_handle_material": ["RoundedRect", ["AverageColor",[0,0,30]], 4],
-       "click_handle_material": ["RoundedRect", ["Color", [255, 100, 100]], 4],
+     "Scroll": {
+       "default_handle_material": ["Capsule", [60, 60, 60]],
+       "hover_handle_material": ["Capsule", [40, 40, 40]],
+       "click_handle_material": ["Capsule", [70, 70, 70]],
        "padding": 25,
-       "scrollbar_size": 10,
-       "scroll_speed": 15
+       "scrollbar_size": 15,
+       "scroll_speed": 15,
+       "handle_material_transition": ["SurfaceFade", 0.1]
      }
    },
 
    "constants": {
-      "background_color": [69, 101, 69],
-      "background_color_dark": [59, 81, 59],
-      "background_color_light": [89, 121, 89]
+      "background_color": [10, 10, 10]
    }
 }

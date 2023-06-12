@@ -1,38 +1,52 @@
 import pygame
+from typing import Sequence
 from ..utility.spritesheet import SpriteSheet
 
-def stretch_surface(path, size, edge=(10, 10, 10, 10)) -> pygame.Surface:
-    sheet = SpriteSheet(path)
-    new_width,new_height = size
-    img = pygame.Surface(size, pygame.SRCALPHA)
 
-    e_l, e_r, e_t, e_b = edge
-    WIDTH, HEIGHT = sheet.img.get_size()
+def stretch_surface(
+    surf: pygame.Surface, size: Sequence[int], edge=(10, 10, 10, 10)
+) -> pygame.Surface:
+    nw, nh = size
+    new_surf = pygame.Surface(size, pygame.SRCALPHA)
+
+    l, e_r, t, b = edge
+    w, h = surf.get_size()
     # Middle
     try:
-        mid = pygame.transform.scale(sheet.image(e_l, e_t, WIDTH - e_l - e_r, HEIGHT - e_t - e_b),
-                                     (new_width - e_l - e_r, new_height - e_t - e_b))
-        img.blit(mid, (e_l, e_t))
+        mid = pygame.transform.scale(
+            surf.subsurface(l, t, w - l - e_r, h - t - b),
+            (nw - l - e_r, nh - t - b),
+        )
+        new_surf.blit(mid, (l, t))
         # Left
-        left = pygame.transform.scale(sheet.image(0, e_t, e_l, HEIGHT - e_t - e_b), (e_l, new_height - e_t - e_b))
-        img.blit(left, (0, e_t))
+        left = pygame.transform.scale(
+            surf.subsurface(0, t, l, h - t - b), (l, nh - t - b)
+        )
+        new_surf.blit(left, (0, t))
         # Right
-        right = pygame.transform.scale(sheet.image(WIDTH - e_r, e_t, e_r, HEIGHT - e_t - e_b),
-                                       (e_r, new_height - e_t - e_b))
-        img.blit(right, (new_width - e_r, e_t))
+        right = pygame.transform.scale(
+            surf.subsurface(w - e_r, t, e_r, h - t - b), (e_r, nh - t - b)
+        )
+        new_surf.blit(right, (nw - e_r, t))
         # Top
-        top = pygame.transform.scale(sheet.image(e_l, 0, WIDTH - e_l - e_r, e_t), (new_width - e_l - e_r, e_t))
-        img.blit(top, (e_l, 0))
+        top = pygame.transform.scale(
+            surf.subsurface(l, 0, w - l - e_r, t), (nw - l - e_r, t)
+        )
+        new_surf.blit(top, (l, 0))
         # Bottom
-        bottom = pygame.transform.scale(sheet.image(e_l, HEIGHT - e_b, WIDTH - e_l - e_r, e_b),
-                                        (new_width - e_l - e_r, e_b))
-        img.blit(bottom, (e_l, new_height - e_b))
+        bottom = pygame.transform.scale(
+            surf.subsurface(l, h - b, w - l - e_r, b), (nw - l - e_r, b)
+        )
+        new_surf.blit(bottom, (l, nh - b))
         # Corners
-        img.blit(sheet.image(0, 0, e_l, e_t), (0, 0))
-        img.blit(sheet.image(WIDTH - e_r, 0, e_r, e_t), (new_width - e_r, 0))
-        img.blit(sheet.image(0, HEIGHT - e_b, e_l, e_b), (0, new_height - e_b))
-        img.blit(sheet.image(WIDTH - e_r, HEIGHT - e_b, e_r, e_b), (new_width - e_r, new_height - e_b))
-    except ValueError:
-        raise ValueError(f"size_element size of {size} values cannot be smaller than sum of edges {edge}.")
+        new_surf.blit(surf.subsurface(0, 0, l, t), (0, 0))
+        new_surf.blit(surf.subsurface(w - e_r, 0, e_r, t), (nw - e_r, 0))
+        new_surf.blit(surf.subsurface(0, h - b, l, b), (0, nh - b))
+        new_surf.blit(surf.subsurface(w - e_r, h - b, e_r, b), (nw - e_r, nh - b))
 
-    return img
+    except ValueError:
+        raise ValueError(
+            f"size_element size of {size} values cannot be smaller than sum of edges {edge}."
+        )
+
+    return new_surf

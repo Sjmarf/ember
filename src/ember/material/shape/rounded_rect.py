@@ -1,7 +1,7 @@
 import pygame
 from typing import Optional
 from ..material import Material
-from .shape import Shape
+from .base_shape import Shape
 
 from ...common import ColorType
 
@@ -17,6 +17,9 @@ class RoundedRect(Shape):
         outline: int = 0,
         antialias: bool = True,
     ):
+        """
+        Masks the given material or color to a rectangle with rounded edges.
+        """
         super().__init__(material, color, antialias, outline)
 
         self._radius = radius
@@ -25,7 +28,7 @@ class RoundedRect(Shape):
 
     def __repr__(self) -> str:
         if self._color:
-            return "<RoundedRect({}, {}, {})>".format(*self._color)
+            return f"<RoundedRect({self._color})>"
         elif self._material:
             return f"<RoundedRect({self._material})>"
         else:
@@ -55,7 +58,7 @@ class RoundedRect(Shape):
         )
 
         if self._outline:
-            offset = self._outline / 2 - 0.5
+            offset = self._outline / 2
             pygame.draw.line(  # Top
                 surface,
                 (0, 0, 0),

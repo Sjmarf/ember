@@ -14,7 +14,7 @@ class AverageColor(Material):
     def __repr__(self) -> str:
         return "<AverageColor({}, {}, {})>".format(*self.hsv_adjustment)
 
-    def _get(self, element: "Element") -> Optional[pygame.Surface]:
+    def get(self, element: "Element") -> Optional[pygame.Surface]:
         return self._cache[element][0]
 
     def _needs_to_render(

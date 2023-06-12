@@ -1,15 +1,15 @@
 import pygame
 from typing import Union, Optional
 
-from .style import MaterialType
-from ..material.blank import Blank
-from ..material.stretched_surface import StretchedSurface
-from ..material.material import Material
+from ..common import MaterialType
+from ember.material.blank import Blank
+from ember.material.stretched_surface import StretchedSurface
+from ember.material.material import Material
 
-def load_material(image: MaterialType, default: Union[Material, None]) -> Material:
+def load_material(image: Optional[MaterialType], default: Union[Material, None]) -> Material:
     if isinstance(image, Material):
         return image
-    elif type(image) in {str,pygame.Surface}:
+    elif isinstance(image, (str, pygame.Surface)):
         return StretchedSurface(image)
     else:
         return Blank() if default is None else default

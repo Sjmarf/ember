@@ -4,6 +4,5 @@ from .single_element_container import SingleElementContainer
 from .multi_element_container import MultiElementContainer
 from .surfacable import Surfacable
 from .interactive import Interactive
-from .resizable import Resizable
 from .scroll import Scroll
 from .stack import Stack

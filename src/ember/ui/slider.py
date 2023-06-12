@@ -1,16 +1,18 @@
 import pygame
-from typing import Union, Optional
+from typing import Union, Optional, TYPE_CHECKING, Sequence
 
 from .. import common as _c
 from .base.element import Element
 from .base.interactive import Interactive
 from ..utility.timer import BasicTimer
-from ..style.slider_style import SliderStyle
-from ..position import PositionType
+from ..position import PositionType, CENTER, SequencePositionType
 from ..size import SizeType, SequenceSizeType
+from ..event import SLIDERMOVED
 
 from ..state.state_controller import StateController
-from ..style.get_style import _get_style
+
+if TYPE_CHECKING:
+    from ..style.slider_style import SliderStyle
 
 
 class Slider(Element, Interactive):
@@ -24,21 +26,26 @@ class Slider(Element, Interactive):
         min_value: float = 0,
         max_value: float = 100,
         disabled: bool = False,
-        position: PositionType = None,
-        size: SequenceSizeType = None,
-        width: SizeType = None,
-        height: SizeType = None,
-        style: Union[SliderStyle, None] = None,
+        rect: Union[pygame.rect.RectType, Sequence, None] = None,
+        pos: Optional[SequencePositionType] = None,
+        x: Optional[PositionType] = None,
+        y: Optional[PositionType] = None,
+        size: Optional[SequenceSizeType] = None,
+        width: Optional[SizeType] = None,
+        height: Optional[SizeType] = None,
+        style: Union["SliderStyle", None] = None,
     ):
         self.set_style(style)
 
         Element.__init__(
             self,
-            position,
+            rect,
+            pos,
+            x,
+            y,
             size,
             width,
             height,
-            default_size=self._style.default_size,
             can_focus=True,
         )
 
@@ -69,14 +76,9 @@ class Slider(Element, Interactive):
         Is :code:`True` when the Slider is clicked down using keyboard / controller navigation. Read-only.
         """
 
-        self.handle_state_controller: StateController = StateController(self)
+        self.state_controller: StateController = StateController(self, materials=2)
         """
-        The :py:class:`ember.state.StateController` object responsible for managing the Slider's handle states.
-        """
-
-        self.base_state_controller: StateController = StateController(self)
-        """
-        The :py:class:`ember.state.StateController` object responsible for managing the Slider's base states.
+        The :py:class:`ember.state.StateController` object responsible for managing the Slider's states.
         """
 
         self._timer: BasicTimer = BasicTimer(value if value is not None else min_value)
@@ -87,24 +89,26 @@ class Slider(Element, Interactive):
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
-        rect = self._draw_rect.move(*offset)
+        rect = self._int_rect.move(*offset)
+
+        self.state_controller.set_state(
+            self._style.state_func(self),
+            transitions=[
+                self._style.base_material_transition,
+                self._style.handle_material_transition,
+            ],
+        )
 
         # Draw the base image
-        self.base_state_controller.render(
-            self._style.base_state_func(self),
-            surface,
-            rect.topleft,
-            rect.size,
-            alpha,
-            transition=self._style.base_material_transition,
+        self.state_controller.render(
+            surface, rect.topleft, rect.size, alpha, material_index=0
         )
 
         # Draw the handle image
 
         handle_width = round(self.rect.h * self._style.handle_width_ratio)
 
-        self.handle_state_controller.render(
-            self._style.state_func(self),
+        self.state_controller.render(
             surface,
             (
                 rect.x
@@ -115,6 +119,7 @@ class Slider(Element, Interactive):
             ),
             (handle_width, rect.h),
             alpha,
+            material_index=1,
         )
 
     def _update(self) -> None:
@@ -128,29 +133,24 @@ class Slider(Element, Interactive):
                 self._timer.val = val
                 self._timer.playing = False
 
-        self._timer.tick()
+        if self._timer.tick():
+            self._post_event()
 
         if self.is_clicked_keyboard:
             if not self._timer.playing:
                 keys = pygame.key.get_pressed()
                 if keys[pygame.K_RIGHT]:
-                    self._timer.val = max(
-                        min(
-                            self._timer.val
-                            + _c.delta_time * (self.max_value - self.min_value),
-                            self.max_value,
-                        ),
-                        self.min_value,
-                    )
+                    self._move_handle(1)
+
                 elif keys[pygame.K_LEFT]:
-                    self._timer.val = max(
-                        min(
-                            self._timer.val
-                            - _c.delta_time * (self.max_value - self.min_value),
-                            self.max_value,
-                        ),
-                        self.min_value,
-                    )
+                    self._move_handle(-1)
+
+                for joy in _c.joysticks:
+                    axis = joy.get_axis(0)
+                    if axis > 0.5:
+                        self._move_handle(2)
+                    elif axis < -0.5:
+                        self._move_handle(-2)
 
     def _event(self, event: pygame.event.Event) -> bool:
         if not self._disabled:
@@ -171,28 +171,64 @@ class Slider(Element, Interactive):
                         self.is_clicked_keyboard = not self.is_clicked_keyboard
                         return True
 
-            elif event.type == pygame.JOYBUTTONDOWN and event.button == 0:
-                if self.layer.element_focused is self:
-                    self.is_clicked = False
-                    return True
+            elif event.type == pygame.JOYBUTTONDOWN:
+                if event.button == 0:
+                    if self.layer.element_focused is self:
+                        self.is_clicked_keyboard = not self.is_clicked_keyboard
+                        return True
+
+                if self.is_clicked_keyboard:
+                    if event.button == 1:
+                        self.is_clicked_keyboard = False
+                        return True
+
+                    if event.button == 13:
+                        self._move_handle(-1)
+                        return True
+
+                    if event.button == 14:
+                        self._move_handle(1)
+                        return True
+
+            elif event.type == pygame.JOYHATMOTION:
+                if self.is_clicked_keyboard:
+                    if event.value == (1, 0):
+                        self._move_handle(1)
+                        return True
+
+                    elif event.value == (-1, 0):
+                        self._move_handle(-1)
+                        return True
 
         return False
 
     def _on_unfocus(self) -> None:
         self.is_clicked_keyboard = False
 
+    def _move_handle(self, direction: int = 1) -> None:
+        self._timer.val = pygame.math.clamp(
+            self._timer.val
+            + _c.delta_time * (self.max_value - self.min_value) * direction,
+            self.min_value,
+            self.max_value,
+        )
+
+    def _post_event(self) -> None:
+        event = pygame.event.Event(SLIDERMOVED, element=self, value=self._timer.val)
+        pygame.event.post(event)
+
     def _set_disabled(self, value: bool) -> None:
         self.is_clicked = False
         self.is_clicked_keyboard = False
 
-    def _set_style(self, style: Optional[SliderStyle]) -> None:
+    def _set_style(self, style: Optional["SliderStyle"]) -> None:
         self.set_style(style)
 
-    def set_style(self, style: Optional[SliderStyle]) -> None:
+    def set_style(self, style: Optional["SliderStyle"]) -> None:
         """
         Sets the SliderStyle of the Slider.
         """
-        self._style: SliderStyle = _get_style(style, "slider")
+        self._style: "SliderStyle" = self._get_style(style)
 
     def _get_val_from_mouse_x(self, mouse_x) -> float:
         handle_width = round(self.rect.h * self._style.handle_width_ratio)
@@ -211,6 +247,7 @@ class Slider(Element, Interactive):
 
     def set_value(self, value: float) -> None:
         self._timer.val = value
+        self._post_event()
 
     value: float = property(
         fget=lambda self: self._timer.val,
@@ -218,7 +255,7 @@ class Slider(Element, Interactive):
         doc="The Slider's value. Limits are controlled by the :code:`min_value` and :code:`max_value` attributes.",
     )
 
-    style: SliderStyle = property(
+    style: "SliderStyle" = property(
         fget=lambda self: self._style,
         fset=_set_style,
         doc="The SliderStyle of the Slider. Synonymous with the set_style() method.",

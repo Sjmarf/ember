@@ -13,6 +13,7 @@ Bases
 
 .. automodule:: ember.ui.base
     :imported-members:
+    :undoc-members:
 
 
 Elements
@@ -20,4 +21,5 @@ Elements
 
 .. automodule:: ember.ui
     :imported-members:
-    :exclude-members: Element, View, ViewLayer
+    :exclude-members: Element, Interactive, Container, MultiElementContainer, SingleElementContainer, Stack, Surfacable, View, ViewLayer
+    :undoc-members:

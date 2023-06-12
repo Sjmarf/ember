@@ -1,5 +1,6 @@
 import pygame
 from typing import Union, Optional, TYPE_CHECKING, Sequence, Literal
+from enum import Enum
 
 from .. import common as _c
 from ..event import TEXTFIELDCLOSED, TEXTFIELDMODIFIED
@@ -9,23 +10,25 @@ from .v_scroll import VScroll
 from .h_scroll import HScroll
 from .base.scroll import Scroll
 from .base.interactive import Interactive
-from ..style.text_field_style import TextFieldStyle
-
-from ..style import defaults as default_style
 
 from ..state.state_controller import StateController
 
 from ..size import SizeType, SequenceSizeType, FILL, FIT
-from ..position import PositionType
-from ..style.get_style import _get_style
+from ..position import PositionType, CENTER, SequencePositionType
 
 from .. import log
 
 if TYPE_CHECKING:
     from .view import ViewLayer
+    from ..style.text_field_style import TextFieldStyle
 
 # Contains sus characters
 EXCLUDED_CHARS = ["", "\t", "\x00"]
+
+
+class Cursor(Enum):
+    MAIN = 1
+    HIGHLIGHT = 2  # Used for the highlight
 
 
 class TextField(Element, Interactive):
@@ -45,11 +48,14 @@ class TextField(Element, Interactive):
         max_length: Optional[int] = None,
         allowed_characters: Union[str, Sequence[str], None] = None,
         disabled: bool = False,
-        position: PositionType = None,
-        size: SequenceSizeType = None,
-        width: SizeType = None,
-        height: SizeType = None,
-        style: Optional[TextFieldStyle] = None,
+        rect: Union[pygame.rect.RectType, Sequence, None] = None,
+        pos: Optional[SequencePositionType] = None,
+        x: Optional[PositionType] = None,
+        y: Optional[PositionType] = None,
+        size: Optional[SequenceSizeType] = None,
+        width: Optional[SizeType] = None,
+        height: Optional[SizeType] = None,
+        style: Optional["TextFieldStyle"] = None,
     ):
         self.hide_input: bool = hide_input
         """
@@ -104,7 +110,13 @@ class TextField(Element, Interactive):
 
         # If a str is passed as the element, convert to a Text object.
         if self._multiline:
-            text_style = text.style if isinstance(text, Text) else default_style.text
+            if isinstance(text, Text):
+                text_style = text._style
+            elif self._style.text_style is not None:
+                text_style = self._style.text_style
+            else:
+                text_style = _c.default_styles[Text]
+
             element_size = (FILL - text_style.font.cursor.get_width() * 2, FIT)
         else:
             element_size = (FIT, FIT)
@@ -112,8 +124,8 @@ class TextField(Element, Interactive):
         if isinstance(text, str):
             self._text_element: Text = Text(
                 text,
-                color=self._style.text_color,
                 size=element_size,
+                style=self._style.text_style,
                 align=self._style.text_align,
             )
         else:
@@ -123,8 +135,8 @@ class TextField(Element, Interactive):
         if isinstance(prompt, str):
             self._prompt: Text = Text(
                 prompt,
-                color=self._style.text_color,
                 size=element_size,
+                style=self._style.prompt_style,
                 align=self._style.text_align,
             )
         else:
@@ -134,14 +146,17 @@ class TextField(Element, Interactive):
 
         if self._multiline:
             self._scroll: Scroll = VScroll(
-                self._text_element, size=self._style.default_v_scroll_size
+                self._text_element,
+                size=self._style.default_v_scroll_size,
+                style=self._style.scroll_style,
             )
         else:
             self._scroll: Scroll = HScroll(
                 self._text_element,
                 size=self._style.default_h_scroll_size,
                 over_scroll=[self._text_element._style.font.cursor.get_width()] * 2,
-                align_element=(self._style.text_align, "center"),
+                style=self._style.scroll_style,
+                align=(self._text_element.align[0], CENTER),
             )
 
         self._scroll._set_parent(self)
@@ -153,9 +168,7 @@ class TextField(Element, Interactive):
                 f"Text length ({len(self._text)}) is greater than max_length {self.max_length}."
             )
 
-        Element.__init__(
-            self, position, size, width, height, default_size=self._style.default_size
-        )
+        Element.__init__(self, rect, pos, x, y, size, width, height)
         Interactive.__init__(self, disabled)
 
     def __repr__(self) -> str:
@@ -164,11 +177,13 @@ class TextField(Element, Interactive):
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
-        rect = self._draw_rect.move(*offset)
+        rect = self._int_rect.move(*offset)
         # Decide which background image to draw
 
+        self.state_controller.set_state(
+            self._style.state_func(self), transitions=(self._style.material_transition,)
+        )
         self.state_controller.render(
-            self._style.state_func(self),
             surface,
             (
                 rect.x - surface.get_abs_offset()[0],
@@ -186,7 +201,7 @@ class TextField(Element, Interactive):
                         if (result := self._get_position_of_click()) is not None:
                             self._highlight_index = result[0]
                             self._update_cursor_pos(
-                                line_index=result[1], mode="highlight"
+                                line_index=result[1], mode=Cursor.HIGHLIGHT
                             )
 
                         if self._highlight_index != self._cursor_index:
@@ -220,8 +235,8 @@ class TextField(Element, Interactive):
 
                         scroll_offset = self._scroll._subsurf.get_abs_offset()
                         scroll_offset = (
-                            self._text_element._draw_rect.x - scroll_offset[0],
-                            self._text_element._draw_rect.y - scroll_offset[1],
+                            self._text_element._int_rect.x - scroll_offset[0],
+                            self._text_element._int_rect.y - scroll_offset[1],
                         )
 
                         if self._cursor_line == self._highlight_line:
@@ -256,6 +271,7 @@ class TextField(Element, Interactive):
                                 (
                                     start_x
                                     + scroll_offset[0]
+                                    + 1
                                     + self._text_element._style.font.cursor_offset[0],
                                     y,
                                     start_line.width - start_x + start_line.start_x,
@@ -315,9 +331,9 @@ class TextField(Element, Interactive):
                 self._cursor_timer += _c.delta_time
                 if self._cursor_timer < self._style.cursor_blink_speed:
                     cursor_x = (
-                        self._draw_rect.centerx
+                        self._text_element._int_rect.x
                         if self._text == ""
-                        else self._text_element._draw_rect.x
+                        else self._text_element._int_rect.x
                         + self._cursor_x
                         + self._text_element._style.font.cursor_offset[0]
                     )
@@ -393,11 +409,11 @@ class TextField(Element, Interactive):
         )
 
         pos = (
-            pos[0] + self.rect.w / 2 - self._scroll.get_abs_width(self.rect.w) / 2,
-            pos[1] + self.rect.h / 2 - self._scroll.get_abs_height(self.rect.h) / 2,
+            pos[0] + self.rect.w / 2 - self._scroll.get_ideal_width(self.rect.w) / 2,
+            pos[1] + self.rect.h / 2 - self._scroll.get_ideal_height(self.rect.h) / 2,
         )
-        scroll_w = self._scroll.get_abs_width(self.rect.w)
-        scroll_h = self._scroll.get_abs_height(self.rect.h)
+        scroll_w = self._scroll.get_ideal_width(self.rect.w)
+        scroll_h = self._scroll.get_ideal_height(self.rect.h)
 
         if not self.is_visible:
             self._scroll.is_visible = False
@@ -416,9 +432,9 @@ class TextField(Element, Interactive):
                 surface, pos, self.get_abs_size(max_size)
             )
 
-        if self.is_active:
-            self._update_cursor_pos(reset_timer=False, mode="cursor")
-            self._update_cursor_pos(reset_timer=False, mode="highlight")
+        # if self.is_active:
+        #     self._update_cursor_pos(reset_timer=False, mode=Cursor.MAIN)
+        #     self._update_cursor_pos(reset_timer=False, mode=Cursor.HIGHLIGHT)
 
     def _set_layer_chain(self, layer: "ViewLayer") -> None:
         log.layer.info(self, f"Set layer to {layer}")
@@ -428,9 +444,9 @@ class TextField(Element, Interactive):
             self._prompt._set_layer_chain(layer)
 
     def _focus_chain(
-        self, previous: Optional[Element] = None, direction: str = "in"
-    ) -> None:
-        if direction == "in":
+        self, direction: _c.FocusDirection, previous: Optional["Element"] = None
+    ) -> "Element":
+        if direction == _c.FocusDirection.IN:
             if isinstance(self.layer.element_focused, TextField):
                 if self.layer.element_focused.is_active:
                     self.is_active = True
@@ -438,7 +454,7 @@ class TextField(Element, Interactive):
                     self._set_cursor_to_end()
             return self
         else:
-            return self.parent._focus_chain(self, direction=direction)
+            return self.parent._focus_chain(direction, previous=self)
 
     def _event(self, event: pygame.event.Event) -> bool:
         if self._disabled:
@@ -506,6 +522,7 @@ class TextField(Element, Interactive):
                         self._cursor_index = result[0]
                         self._update_cursor_pos(line_index=result[1])
                     self._highlighting = False
+                    self._highlighted = False
                     return True
 
             elif self.is_active:
@@ -552,8 +569,8 @@ class TextField(Element, Interactive):
                     self._highlighted = True
                     self._cursor_index = 0
                     self._highlight_index = len(self._text_element.text) + 1
-                    self._update_cursor_pos(mode="cursor")
-                    self._update_cursor_pos(mode="highlight")
+                    self._update_cursor_pos(mode=Cursor.MAIN)
+                    self._update_cursor_pos(mode=Cursor.HIGHLIGHT)
                     return True
 
                 elif event.key == pygame.K_c:
@@ -635,6 +652,14 @@ class TextField(Element, Interactive):
             self.is_active = not self.is_active
             return True
 
+        elif (
+            event.type == pygame.JOYBUTTONDOWN
+            and event.button == 1
+            and self.layer.element_focused is self
+        ):
+            self.is_active = False
+            return True
+
         return False
 
     def _on_unfocus(self) -> None:
@@ -654,6 +679,10 @@ class TextField(Element, Interactive):
             event = pygame.event.Event(TEXTFIELDMODIFIED, element=self, text=text)
             pygame.event.post(event)
         if text != "":
+            if self._scroll.element == self._prompt:
+                self._text_element._check_for_surface_update(
+                    max_width=self._prompt.get_ideal_width()
+                )
             self._scroll.set_element(self._text_element)
         elif self._prompt is not None:
             self._scroll.set_element(self._prompt)
@@ -704,10 +733,10 @@ class TextField(Element, Interactive):
         self,
         line_index: Optional[int] = None,
         reset_timer: bool = True,
-        mode: Literal["cursor", "highlight"] = "cursor",
+        mode: Cursor = Cursor.MAIN,
         update_scroll: bool = True,
     ) -> None:
-        index = self._cursor_index if mode == "cursor" else self._highlight_index
+        index = self._cursor_index if mode == Cursor.MAIN else self._highlight_index
         if line_index is None:
             line_index = self._text_element.get_line_index_from_letter_index(index)
         line = self._text_element.get_line(line_index)
@@ -715,7 +744,7 @@ class TextField(Element, Interactive):
         x = line.start_x + self._text_element._style.font.get_width_of(
             line.content[: index - line.start_index]
         )
-        if mode == "cursor":
+        if mode == Cursor.MAIN:
             self._cursor_x = x
             self._cursor_line = line_index
             if reset_timer:
@@ -724,7 +753,7 @@ class TextField(Element, Interactive):
             self._highlight_x = x
             self._highlight_line = line_index
 
-        if mode == "cursor":
+        if mode == Cursor.MAIN:
             if not self._scroll.scroll.playing:
                 self._text_element._check_for_surface_update()
                 if update_scroll:
@@ -852,14 +881,14 @@ class TextField(Element, Interactive):
             if self.is_active:
                 self.is_active = False
 
-    def _set_style(self, style: Optional[TextFieldStyle]) -> None:
+    def _set_style(self, style: Optional["TextFieldStyle"]) -> None:
         self.set_style(style)
 
-    def set_style(self, style: Optional[TextFieldStyle]) -> None:
+    def set_style(self, style: Optional["TextFieldStyle"]) -> None:
         """
         Sets the TextFieldStyle of the TextField.
         """
-        self._style: TextFieldStyle = _get_style(style, "text_field")
+        self._style: "TextFieldStyle" = self._get_style(style)
 
     def set_active(self, state: bool) -> None:
         self.is_active = state
@@ -880,14 +909,18 @@ class TextField(Element, Interactive):
                 FILL - FILL - self._text_element._style.font.cursor.get_width() * 2, FIT
             )
             self._scroll = VScroll(
-                self._text_element, size=self._style.default_scroll_size
+                self._text_element,
+                size=self._style.default_v_scroll_size,
+                style=self._style.scroll_style,
             )
         else:
             self._text_element.set_size(FIT, FIT)
             self._scroll = HScroll(
                 self._text_element,
-                size=self._style.default_scroll_size,
+                size=self._style.default_h_scroll_size,
+                style=self._style.scroll_style,
                 over_scroll=[self._text_element._style.font.cursor.get_width()] * 2,
+                align=(self._text_element.align[0], CENTER),
             )
 
         self._scroll._set_parent(self)
@@ -896,7 +929,8 @@ class TextField(Element, Interactive):
         with log.layer.indent:
             self._scroll._set_layer_chain(self.layer)
 
-        self._text_element._update_surface()
+        self._update_text(self._text, send_event=False)
+        self._scroll[0]._update_surface()
         self._update_cursor_pos()
 
     _line_height: int = property(fget=_get_line_height)
@@ -907,7 +941,7 @@ class TextField(Element, Interactive):
         doc="The text string contained within the TextField.",
     )
 
-    style: TextFieldStyle = property(
+    style: "TextFieldStyle" = property(
         fget=lambda self: self._style,
         fset=_set_style,
         doc="The TextFieldStyle of the TextField. Synonymous with the set_style() method.",

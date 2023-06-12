@@ -1,4 +1,5 @@
 import pygame
+import inspect
 import copy
 from typing import Union, TYPE_CHECKING, Optional, Sequence, TypeVar
 from ember import log
@@ -8,11 +9,12 @@ from ember.event import TRANSITIONFINISHED, ELEMENTUNFOCUSED, ELEMENTFOCUSED
 if TYPE_CHECKING:
     from ember.ui.view import View, ViewLayer
     from ember.transition.transition import Transition, TransitionController
+    from ...style.style import Style
 
-from ember.size import Size, SizeType, SequenceSizeType
-from ember.position import PositionType, Position
+from ember.size import Size, SizeType, SequenceSizeType, create_range, SizeRange
+from ember.position import PositionType, SequencePositionType, Position, CENTER
 
-from ember import common as _c
+from ... import common as _c
 
 
 class Element:
@@ -21,15 +23,17 @@ class Element:
     """
 
     def __init__(
-            self,
-            position: PositionType = None,
-            size: SequenceSizeType = (20, 20),
-            width: SizeType = 20,
-            height: SizeType = 20,
-            default_size: Sequence[SizeType] = (20, 20),
-            can_focus: bool = True,
+        self,
+        rect: Union[pygame.rect.RectType, Sequence, None] = None,
+        pos: Optional[SequencePositionType] = None,
+        x: Optional[PositionType] = None,
+        y: Optional[PositionType] = None,
+        size: Optional[SequenceSizeType] = None,
+        width: Optional[SizeType] = None,
+        height: Optional[SizeType] = None,
+        default_size: Optional[Sequence[SizeType]] = None,
+        can_focus: bool = True,
     ):
-
         self.layer: Optional[ViewLayer] = None
         """
         The View that the Element is (directly or indirectly) attributed to.
@@ -46,30 +50,32 @@ class Element:
         Is :code:`True` when any part of the element is visible on the screen. Read-only.
         """
 
-        self.rect: pygame.Rect
+        self.rect = pygame.FRect(0, 0, 0, 0)
         """
-        A :code:`pygame.Rect` object containing the position and size of the element. Read-only.
-        """
-
-        if _c.is_ce:
-            self.rect = pygame.FRect(0, 0, 0, 0)
-        else:
-            self.rect = pygame.Rect(0, 0, 0, 0)
-
-        self._draw_rect = pygame.Rect(0, 0, 0, 0)
-
-        self.position: tuple[Position, Position] = (position, position) if isinstance(position, Position) else position
-        """
-        The position of the Element. Referenced if the element is inside of a :py:class:`ember.ui.Layout` container.
+        A :code:`pygame.FRect` object containing the absolute position and size of the element. Read-only.
         """
 
-        self._transition: Optional[TransitionController] = None
+        self._int_rect = pygame.Rect(0, 0, 0, 0)
+
         self._can_focus: bool = can_focus
+
+        if rect is not None:
+            x, y, width, height = rect[:]
+
+        if pos is not None:
+            if isinstance(pos, Sequence):
+                x, y = pos
+            else:
+                x, y = pos, pos
+
+        self.set_pos(x, y, _update=False)
+
+        if default_size is None:
+            default_size = self._style.size
 
         if size is None:
             if width is None:
                 width = default_size[0]
-
             if height is None:
                 height = default_size[1]
         else:
@@ -78,93 +84,37 @@ class Element:
             else:
                 width, height = size, size
 
-        self.set_size(width, height, _update_rect_chain_up=False)
+        self.set_size(width, height, _update=False)
 
-    def _render_a(
-            self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
-    ) -> None:
-        """
-        Used internally by the libray. Renders the element, with transitions taken into consideration.
-        :param offset:
-        :param surface:
-        :param alpha:
-        :return:
-        """
+        self._transition: Optional["TransitionController"] = None
 
-        if self._transition is not None:
-            self._transition.render(surface, offset, alpha=alpha)
-        else:
-            self._render(surface, offset, alpha=alpha)
-
-    def _render(
-            self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
-    ) -> None:
-        """
-        Used intenally by the library.
-        """
-        pass
-
-    def _update_a(self) -> None:
-        """
-        Used internally by the library. Updates the element, with transitions taken into consideration.
-        """
-        if self._transition is not None:
-            self._transition.update()
-            if self._transition.timer <= 0:
-                self._transition = None
-                new_event = pygame.event.Event(TRANSITIONFINISHED, element=self)
-                pygame.event.post(new_event)
-        else:
-            self._update()
-
-    def _update(self) -> None:
-        """
-        Used intenally by the library.
-        """
-        pass
-
-    def _update_rect_chain_down(
-            self,
-            surface: pygame.Surface,
-            pos: tuple[float, float],
-            max_size: tuple[float, float],
-            _ignore_fill_width: bool = False,
-            _ignore_fill_height: bool = False,
-    ) -> None:
-        """
-        Used internally by the library. Calling this method calls the same method for the element's child elements.
-        """
-
-        if _c.is_ce:
-            self.rect.update(
-                *pos,
-                self.get_abs_width(max_size[0], _ignore_fill_width=_ignore_fill_width),
-                self.get_abs_height(
-                    max_size[1], _ignore_fill_height=_ignore_fill_height
-                ),
-            )
-        else:
-            self.rect.update(
-                round(pos[0]),
-                round(pos[1]),
-                round(
-                    self.get_abs_width(
-                        max_size[0], _ignore_fill_width=_ignore_fill_width
-                    )
-                ),
-                round(
-                    self.get_abs_height(
-                        max_size[1], _ignore_fill_height=_ignore_fill_height
-                    )
-                ),
-            )
-
-        self._draw_rect.update(
+    def _update_rect(self, x: float, y: float, w: float, h: float) -> None:
+        self.rect.update(x, y, w, h)
+        self._int_rect.update(
             round(self.rect.x),
             round(self.rect.y),
             round(self.rect.w),
             round(self.rect.h),
         )
+
+    def _update_rect_chain_down(
+        self,
+        surface: pygame.Surface,
+        pos: tuple[float, float],
+        max_size: tuple[float, float],
+        _ignore_fill_width: bool = False,
+        _ignore_fill_height: bool = False,
+    ) -> None:
+        """
+        Used internally by the library. Calling this method calls the same method for the element's child elements.
+        """
+
+        self._update_rect(
+            *pos,
+            self.get_ideal_width(max_size[0], _ignore_fill_width=_ignore_fill_width),
+            self.get_ideal_height(max_size[1], _ignore_fill_height=_ignore_fill_height),
+        )
+
         log.size.info(self, f"Chain down {self.rect[:]}, visible = {self.is_visible}.")
 
     def _update_rect_chain_up(self) -> None:
@@ -205,21 +155,70 @@ class Element:
                     if self._fit_width == 1 or self._fit_height == 1:
                         log.size.info(self, "Size wasn't changed - cutting chain...")
                     else:
-                        log.size.info(self, "Element doesn't have FIT size - cutting chain...")
+                        log.size.info(
+                            self, "Element doesn't have FIT size - cutting chain..."
+                        )
                 else:
                     log.size.info(self, f"-> parent {self.parent}.")
                     with log.size.indent:
                         self.parent._update_rect_chain_up()
             else:
                 log.size.info(self, "No parent - cutting chain...")
+                return
+
             if self.layer:
-                if not self.layer._check_size:
+                if self.layer._chain_down_from is None:
                     log.size.info(self, "Starting chain down next tick...")
-                    self.layer._check_size = True
+                self.layer._chain_down_from = self.parent
             else:
                 log.size.info(self, "No layer - check_size was not set.")
 
         return wrapper
+
+    def _render_a(
+        self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
+    ) -> None:
+        """
+        Used internally by the libray. Renders the element, with transitions taken into consideration.
+        :param offset:
+        :param surface:
+        :param alpha:
+        :return:
+        """
+
+        if self._transition is not None:
+            self._transition.render(surface, offset, alpha=alpha)
+        else:
+            self._render(surface, offset, alpha=alpha)
+
+    def _render(
+        self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
+    ) -> None:
+        """
+        Used intenally by the library.
+        """
+        pass
+
+    def _update_a(self) -> None:
+        """
+        Used internally by the library. Updates the element, with transitions taken into consideration.
+        """
+        if self._transition is not None:
+            self._transition.update()
+            if self._transition.timer <= 0:
+                new_event = pygame.event.Event(
+                    TRANSITIONFINISHED, element=self, controller=self._transition
+                )
+                self._transition = None
+                pygame.event.post(new_event)
+        else:
+            self._update()
+
+    def _update(self) -> None:
+        """
+        Used intenally by the library.
+        """
+        pass
 
     def _set_layer_chain(self, layer: "ViewLayer") -> None:
         """
@@ -229,19 +228,21 @@ class Element:
         self.layer = layer
 
     def _focus_chain(
-            self, previous: "Element" = None, direction: str = "in"
+        self, direction: _c.FocusDirection, previous: Optional["Element"] = None
     ) -> "Element":
-        """
-        Used internally by the library to manage keyboard/controller navigation.
-        """
         # 'previous' is used for going back up the chain - it is set to None when going downwards
-        if direction in {"in", "in_first"}:
+
+        if direction in {
+            _c.FocusDirection.IN,
+            _c.FocusDirection.IN_FIRST,
+            _c.FocusDirection.SELECT,
+        }:
             log.nav.info(self, "Returning self.")
             return self
         elif self.parent:
             # Go up a level and try again
             log.nav.info(self, f"-> Parent {self.parent}.")
-            return self.parent._focus_chain(self, direction=direction)
+            return self.parent._focus_chain(direction, previous=self)
 
     def _event(self, event: pygame.event.Event) -> bool:
         """
@@ -262,84 +263,121 @@ class Element:
         """
         self.parent = parent
 
-    def set_size(
-            self, *size: Union[Sequence[SizeType], SizeType], _update_rect_chain_up=True
-    ) -> None:
+    def _get_style(self, style: Optional["Style"], *classes):
+        """
+        Used interally by the library.
+        """
+        if style is None:
+            for cls in classes if classes else inspect.getmro(type(self)):
+                if cls in _c.default_styles:
+                    return _c.default_styles[cls]
+            raise _c.Error(
+                f"Tried to find a style for {type(self).__name__}, but no style was found."
+            )
+        else:
+            return style
+
+    def set_pos(self, *pos: SequencePositionType, _update=True) -> None:
+        """
+        Set the position of the element.
+        """
+        if isinstance(pos[0], Sequence):
+            pos = pos[0]
+
+        self._x: Position = (
+            Position(pos[0]) if isinstance(pos[0], (int, float)) else pos[0]
+        )
+        self._y: Position = (
+            Position(pos[1]) if isinstance(pos[1], (int, float)) else pos[1]
+        )
+        if _update:
+            self._update_rect_chain_up()
+
+    def set_x(self, value: PositionType, _update=True) -> None:
+        """
+        Set the x position of the element.
+        """
+        self._x: Position = (
+            Position(value) if isinstance(value, (int, float)) else value
+        )
+        if _update:
+            self._update_rect_chain_up()
+
+    def set_y(self, value: PositionType, _update=True) -> None:
+        """
+        Set the y position of the element.
+        """
+        self._y: Position = (
+            Position(value) if isinstance(value, (int, float)) else value
+        )
+        if _update:
+            self._update_rect_chain_up()
+
+    def set_size(self, *size: SequenceSizeType, _update=True) -> None:
         """
         Set the size of the element.
         """
         if isinstance(size[0], Sequence):
             size = size[0]
 
-        self._width: Size = (
-            Size(size[0]) if isinstance(size[0], (int, float)) else size[0]
-        )
-        self._height: Size = (
-            Size(size[-1]) if isinstance(size[1], (int, float)) else size[1]
-        )
-        if _update_rect_chain_up:
+        self._w: SizeRange = create_range(size[0])
+        self._h: SizeRange = create_range(size[1])
+
+        if _update:
             self._update_rect_chain_up()
 
-    def set_width(self, value: SizeType, _update_rect_chain_up=True) -> None:
+    def set_width(self, value: SizeType, _update=True) -> None:
         """
         Set the width of the element.
         """
-        self._width: Size = Size(value) if isinstance(value, (int, float)) else value
-        if _update_rect_chain_up:
+        self._w: SizeRange = create_range(value)
+        if _update:
             self._update_rect_chain_up()
 
-    def set_height(self, value: SizeType, _update_rect_chain_up=True) -> None:
+    def set_height(self, value: SizeType, _update=True) -> None:
         """
         Set the height of the element.
         """
-        self._height: Size = Size(value) if isinstance(value, (int, float)) else value
-        if _update_rect_chain_up:
+        self._h: SizeRange = create_range(value)
+        if _update:
             self._update_rect_chain_up()
 
-    def get_size(self) -> tuple[Size, Size]:
+    def get_size(self) -> tuple[SizeRange, SizeRange]:
         """
         Get the size of the element. Returns ember.size.Size objects.
         If you want float sizes, use get_abs_size() instead.
         """
-        return self._width, self._height
+        return self._w, self._h
 
-    def get_width(self) -> Size:
+    def get_width(self) -> SizeRange:
         """
         Get the width of the element. Returns ember.size.Size object.
-        If you want the width as a float, use get_abs_width() instead.
+        If you want the width as a float, use get_ideal_width() instead.
         """
-        return self._width
+        return self._w
 
-    def get_height(self) -> Size:
+    def get_height(self) -> SizeRange:
         """
         Get the height of the element. Returns ember.size.Size object.
-        If you want the height as a float, use get_abs_height() instead.
+        If you want the height as a float, use get_ideal_height() instead.
         """
-        return self._height
+        return self._h
 
-    def get_abs_size(
-            self, max_size: Sequence[Optional[float]] = (None, None)
-    ) -> tuple[float, float]:
-        """
-        Get the size of the element as floats, given the maximum space to fill.
-        """
-        return self.get_abs_width(max_size[0]), self.get_abs_height(max_size[1])
-
-    def get_abs_width(
-            self, max_width: float = 0, _ignore_fill_width: bool = False
+    def get_ideal_width(
+        self, max_width: float = 0, _ignore_fill_width: bool = False
     ) -> float:
         """
         Get the width of the element as a float, given the maximum width to fill.
         """
-        return self._width.get(self, max_width, _ignore_fill_width, mode="width")
+        return self._w._ideal.get(self, max_width, _ignore_fill_width, mode="width")
 
-    def get_abs_height(
-            self, max_height: float = 0, _ignore_fill_height: bool = False
+    def get_ideal_height(
+        self, max_height: float = 0, _ignore_fill_height: bool = False
     ) -> float:
         """
         Get the height of the element as a float, given the maximum height to fill.
         """
-        return self._height.get(self, max_height, _ignore_fill_height, mode="height")
+        return self._h._ideal.get(self, max_height, _ignore_fill_height, mode="height")
 
     def focus(self) -> None:
         """

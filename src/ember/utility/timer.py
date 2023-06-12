@@ -10,7 +10,7 @@ class BasicTimer:
         self.speed = 1
         self.playing = False
 
-    def tick(self):
+    def tick(self) -> bool:
         if self.playing:
             self.val += self.direction * _c.delta_time * self.speed
             if self.direction == 1:

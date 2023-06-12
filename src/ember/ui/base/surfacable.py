@@ -21,3 +21,6 @@ class Surfacable(Element, abc.ABC):
             my_surface: pygame.Surface,
     ) -> None:
         pass
+
+    def _render(self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255) -> None:
+        self._draw_surface(surface, offset, self._get_surface(alpha))

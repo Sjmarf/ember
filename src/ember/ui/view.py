@@ -2,10 +2,8 @@ import pygame
 from .. import event as ember_event
 from .. import common as _c
 from .. import log
-from ..common import InheritType, INHERIT
+from ..common import InheritType, INHERIT, RectType
 from typing import Optional, TYPE_CHECKING, Any, Sequence, Union, overload
-
-from ..style.load_style import load as load_style
 
 if TYPE_CHECKING:
     from ..style.view_style import ViewStyle
@@ -16,25 +14,25 @@ from .view_layer import ViewLayer
 from ..state.state import StateType
 
 KEY_NAMES = {
-    pygame.K_RIGHT: "right",
-    pygame.K_LEFT: "left",
-    pygame.K_UP: "up",
-    pygame.K_DOWN: "down",
-    pygame.K_TAB: "forward",
+    pygame.K_RIGHT: _c.FocusDirection.RIGHT,
+    pygame.K_LEFT: _c.FocusDirection.LEFT,
+    pygame.K_UP: _c.FocusDirection.UP,
+    pygame.K_DOWN: _c.FocusDirection.DOWN,
+    pygame.K_TAB: _c.FocusDirection.FORWARD,
 }
 
 JOY_HAT_NAMES = {
-    (0, 1): "up",
-    (0, -1): "down",
-    (-1, 0): "left",
-    (1, 0): "right",
+    (0, 1): _c.FocusDirection.UP,
+    (0, -1): _c.FocusDirection.DOWN,
+    (-1, 0): _c.FocusDirection.LEFT,
+    (1, 0): _c.FocusDirection.RIGHT,
 }
 
 DPAD_NAMES = {
-    11: "up",
-    12: "down",
-    13: "left",
-    14: "right",
+    11: _c.FocusDirection.UP,
+    12: _c.FocusDirection.DOWN,
+    13: _c.FocusDirection.LEFT,
+    14: _c.FocusDirection.RIGHT,
 }
 
 
@@ -42,7 +40,7 @@ class View:
     @overload
     def __init__(
         self,
-        layer: "ViewLayer",
+        *layers: Union["ViewLayer", Sequence["ViewLayer"]],
     ) -> None:
         ...
 
@@ -52,32 +50,30 @@ class View:
         element: "Element",
         focused: Optional["Element"] = None,
         keyboard_nav: bool = True,
-        background: StateType = None,
-        listen_for_exit: bool = True,
-        transition: Optional["Transition"] = None,
-        transition_in: Optional["Transition"] = None,
-        transition_out: Optional["Transition"] = None,
+        material: StateType = None,
+        listen_for_exit: Union[InheritType, bool] = INHERIT,
+        transition: Union[InheritType, "Transition", None] = INHERIT,
+        transition_in: Union[InheritType, "Transition", None] = INHERIT,
+        transition_out: Union[InheritType, "Transition", None] = INHERIT,
         style: Optional["ViewStyle"] = None,
     ) -> None:
         ...
 
     def __init__(
         self,
-        layer: Union["ViewLayer", "Element", None] = None,
+        *layers: Union["ViewLayer", Sequence["ViewLayer"], "Element"],
         focused: Optional["Element"] = None,
         keyboard_nav: bool = True,
-        background: StateType = None,
-        listen_for_exit: bool = True,
-        transition: Optional["Transition"] = None,
-        transition_in: Optional["Transition"] = None,
-        transition_out: Optional["Transition"] = None,
+        material: StateType = None,
+        listen_for_exit: Union[InheritType, bool] = INHERIT,
+        transition: Union[InheritType, "Transition", None] = INHERIT,
+        transition_in: Union[InheritType, "Transition", None] = INHERIT,
+        transition_out: Union[InheritType, "Transition", None] = INHERIT,
         style: Optional["ViewStyle"] = None,
         element: Optional["Element"] = None,
     ) -> None:
         if not _c.clock:
-            raise _c.Error(
-                "You must use ember.set_clock() before initialising a view."
-            )
+            raise _c.Error("You must use ember.set_clock() before initialising a view.")
 
         self.keyboard_nav: bool = keyboard_nav
         """
@@ -86,23 +82,27 @@ class View:
 
         self._layers: list[ViewLayer] = []
 
-        if isinstance(layer, ViewLayer):
-            self._layers.append(layer)
+        if isinstance(layers[0], (Sequence, ViewLayer)):
+            if isinstance(layers[0], Sequence):
+                layers = layers[0]
+            for layer in layers:
+                self._layers.append(layer)
+                layer.view = self
         else:
-            if layer is not None:
-                element = layer
+            if layers:
+                element = layers[0]
             self._layers.append(
                 ViewLayer(
                     element,
                     focused=focused,
-                    background=background,
+                    material=material,
                     listen_for_exit=listen_for_exit,
                     transition=transition,
                     transition_in=transition_in,
                     transition_out=transition_out,
                     view=self,
                     style=style,
-                    close_when_click_off=False
+                    exit_on_click_off=False,
                 )
             )
 
@@ -124,7 +124,7 @@ class View:
     def update(
         self,
         surface: pygame.Surface,
-        rect: pygame.rect.RectType = None,
+        rect: Optional[RectType] = None,
         update_positions: bool = True,
         update_elements: bool = True,
         render: bool = True,
@@ -139,18 +139,44 @@ class View:
             display_zoom = _c.display_zoom
         _c.mouse_pos = mouse[0] // display_zoom, mouse[1] // display_zoom
 
+        if update_positions:
+            if rect is None:
+                rect = (0, 0, *surface.get_size())
+
         for layer in self._layers:
             if update_positions:
-                layer._update_positions(surface, rect)
+                layer_w = layer.get_ideal_width(rect[2])
+                layer_h = layer.get_ideal_height(rect[3])
+
+                layer_x = rect[0] + layer._x.get(layer, rect[2], layer_w)
+
+                layer_y = rect[1] + layer._y.get(layer, rect[3], layer_h)
+
+                if layer.clamp:
+                    layer_x = pygame.math.clamp(
+                        layer_x, rect[0], rect[0] + rect[2] - layer_w
+                    )
+                    layer_y = pygame.math.clamp(
+                        layer_y, rect[1], rect[1] + rect[3] - layer_h
+                    )
+
+                if self._prev_rect != rect:
+                    log.size.info(
+                        self, "View rect changed size, starting chain down..."
+                    )
+                    layer._chain_down_from = layer._element
+                layer._update_rect_chain_down(surface, (layer_x, layer_y), rect[2:])
             if render:
-                layer._render(surface, alpha) 
+                layer._render_a(surface, alpha)
 
-        for layer in reversed(self._layers):
-            if update_elements:
-                layer._element._update_a()
+        self._prev_rect = tuple(rect)
 
-            if layer._rect.collidepoint(_c.mouse_pos):
-                _c.mouse_pos = (-10, -10)
+        if update_elements:
+            for layer in reversed(self._layers):
+                layer._update_a()
+
+                if layer.rect.collidepoint(_c.mouse_pos):
+                    _c.mouse_pos = (-10, -10)
 
         _c.mouse_pos = mouse[0] // display_zoom, mouse[1] // display_zoom
 
@@ -164,10 +190,14 @@ class View:
             if self._joystick_cooldown == 0:
                 direction = None
                 if abs(self._joy_axis_motion[0]) > 0.5:
-                    direction = ["left", "right"][self._joy_axis_motion[0] > 0]
+                    direction = [_c.FocusDirection.LEFT, _c.FocusDirection.RIGHT][
+                        self._joy_axis_motion[0] > 0
+                    ]
                 elif abs(self._joy_axis_motion[1]) > 0.5:
-                    direction = ["up", "down"][self._joy_axis_motion[1] > 0]
-                if direction:
+                    direction = [_c.FocusDirection.UP, _c.FocusDirection.DOWN][
+                        self._joy_axis_motion[1] > 0
+                    ]
+                if direction is not None:
                     self._joystick_cooldown = 1
                     self.shift_focus(direction)
 
@@ -175,24 +205,21 @@ class View:
         """
         Passes Pygame Events to the View. This should be called for each event in the event stack.
         """
-        if event.type in _c.event_ids:
-            return False
-
-        if event.type == ember_event.MENUEXITFINISHED:
+        if event.type == ember_event.VIEWEXITFINISHED:
             if event.layer in self._layers and len(self._layers) > 1:
                 self._layers.remove(event.layer)
                 log.nav.info(self, f"Removed layer {event.layer}.")
 
         for n, layer in enumerate(reversed(self._layers)):
-            if layer._event(event, layer=len(self._layers) - 1 - n):
+            if layer._event(event):
                 return True
             if event.type in {
                 pygame.MOUSEBUTTONDOWN,
                 pygame.MOUSEBUTTONUP,
-            } and layer._rect.collidepoint(_c.mouse_pos):
+            } and layer.rect.collidepoint(_c.mouse_pos):
                 break
 
-        if self.keyboard_nav:
+        if self.keyboard_nav and self._layers:
             layer = self._layers[-1]
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -205,7 +232,9 @@ class View:
                         log.nav.info(self, "Escape key pressed, moving up one layer.")
                         with log.nav.indent:
                             layer._focus_element(
-                                layer.element_focused._focus_chain(None, "out")
+                                layer.element_focused._focus_chain(
+                                    _c.FocusDirection.OUT
+                                )
                             )
                         log.nav.info(
                             self, f"Focus chain ended. Focused {layer.element_focused}."
@@ -218,37 +247,38 @@ class View:
                         event.key == pygame.K_TAB
                         and pygame.key.get_mods() & pygame.KMOD_SHIFT
                     ):
-                        layer.shift_focus("backward")
+                        layer.shift_focus(_c.FocusDirection.BACKWARD)
                     else:
                         layer.shift_focus(KEY_NAMES[event.key])
 
-        elif event.type == pygame.JOYAXISMOTION:
-            if event.axis in {0, 3}:
-                self._joy_axis_motion[0] = event.value
-            elif event.axis in {1, 4}:
-                self._joy_axis_motion[1] = event.value
+            elif event.type == pygame.JOYAXISMOTION:
+                if event.axis == 0:
+                    self._joy_axis_motion[0] = event.value
+                elif event.axis == 1:
+                    self._joy_axis_motion[1] = event.value
 
-        elif event.type == pygame.JOYHATMOTION:
-            if event.value in JOY_HAT_NAMES:
-                layer.shift_focus(JOY_HAT_NAMES[event.value])
+            elif event.type == pygame.JOYHATMOTION:
+                if event.value in JOY_HAT_NAMES:
+                    layer.shift_focus(JOY_HAT_NAMES[event.value])
 
-        elif event.type == pygame.JOYBUTTONDOWN:
-            if event.button == 1:  # B as ESC key
-                layer._exit_pressed()
+            elif event.type == pygame.JOYBUTTONDOWN:
+                if event.button == 1:  # B as ESC key
+                    layer._exit_pressed()
 
-            elif event.button in DPAD_NAMES:
-                layer.shift_focus(DPAD_NAMES[event.button])
+                elif event.button in DPAD_NAMES:
+                    layer.shift_focus(DPAD_NAMES[event.button])
 
     @overload
     def add_layer(
         self,
         element: "Element",
-        rect: Optional[pygame.rect.RectType] = None,
         focused: Optional["Element"] = None,
-        listen_for_exit: bool = True,
-        transition: Optional["Transition"] = None,
-        transition_in: Optional["Transition"] = None,
-        transition_out: Optional["Transition"] = None,
+        material: StateType = None,
+        listen_for_exit: Union[InheritType, bool] = INHERIT,
+        transition: Union[InheritType, "Transition", None] = INHERIT,
+        transition_in: Union[InheritType, "Transition", None] = INHERIT,
+        transition_out: Union[InheritType, "Transition", None] = INHERIT,
+        style: Optional["ViewStyle"] = None,
     ) -> None:
         ...
 
@@ -262,15 +292,16 @@ class View:
     def add_layer(
         self,
         layer: Union[ViewLayer, "Element", None] = None,
-        rect: Optional[pygame.rect.RectType] = None,
         focused: Optional["Element"] = None,
-        listen_for_exit: bool = True,
-        transition: Optional["Transition"] = None,
-        transition_in: Optional["Transition"] = None,
-        transition_out: Optional["Transition"] = None,
+        material: StateType = None,
+        listen_for_exit: Union[InheritType, bool] = INHERIT,
+        transition: Union[InheritType, "Transition", None] = INHERIT,
+        transition_in: Union[InheritType, "Transition", None] = INHERIT,
+        transition_out: Union[InheritType, "Transition", None] = INHERIT,
         element: Optional["Element"] = None,
+        style: Optional["ViewStyle"] = None,
     ) -> None:
-        if not isinstance(layer, ViewLayer) or element:
+        if not isinstance(layer, ViewLayer) or element is not None:
             if element is None:
                 if layer is None:
                     raise ValueError(
@@ -280,36 +311,54 @@ class View:
             layer = ViewLayer(
                 element,
                 focused=focused,
+                material=material,
                 listen_for_exit=listen_for_exit,
                 transition=transition,
                 transition_in=transition_in,
                 transition_out=transition_out,
-                rect=rect,
                 view=self,
-                style=self._layers[0]._style,
+                style=style if style is not None else self._layers[0]._style,
             )
         else:
             layer.view = self
+
         self._layers.append(layer)
         log.nav.info(self, f"Added layer {layer}.")
+
+    def remove_top_layer(self, transition: Optional["Transition"] = None) -> None:
+        """
+        Remove the top layer of the View.
+        """
+        self._layers[-1].start_transition_out(transition=transition)
 
     def update_elements(self) -> None:
         log.size.info(self, "Starting chain down next tick for all layers...")
         for layer in self._layers:
-            layer._check_size = True
+            layer._chain_down_from = layer._element
 
-    def shift_focus(self, direction: str) -> None:
+    def shift_focus(
+        self, direction: _c.FocusDirection, element: Optional["Element"] = None
+    ) -> None:
         if self._layers:
-            self._layers[-1].shift_focus(direction)
+            self._layers[-1].shift_focus(direction, element=element)
 
-    @staticmethod
-    def set_focus(element: "Element") -> None:
-        element.focus()
+    def start_transition_in(self, transition: Optional["Transition"] = None) -> None:
+        """
+        Start transitioning all ViewLayers in.
+        """
+        for layer in self._layers:
+            layer.start_transition_in(transition)
 
     def start_transition_out(
-        self, transition: Optional["Transition"] = None, cause: Any = None
+        self, transition: Optional["Transition"] = None, cause: Any = None, **kwargs
     ) -> None:
-        self._layers[-1].start_transition_out(transition, cause)
+        """
+        Start transitioning the ViewLayer out. When the transition is finished, an ember.MENUEXIT event will be posted.
+        This event will have the 'cause' attribute, the value of which can be specified in the 'cause'
+        parameter of this method. You can also specify any other keyword argument(s) - they'll be added to the
+        event too.
+        """
+        self._layers[-1].start_transition_out(transition, cause, **kwargs)
 
     def _update_rect_chain_up(self) -> None:
         pass
@@ -329,4 +378,6 @@ class View:
         doc="The ViewStyle of the bottommost ViewLayer. Synonymous with the set_style() method.",
     )
 
-    layers: list[ViewLayer] = property(fget=lambda self: self._layers)
+    layers: list[ViewLayer] = property(
+        fget=lambda self: self._layers, doc="A list of the View's ViewLayers."
+    )

@@ -31,8 +31,8 @@ class Slide(Transition):
         self,
         controller: TransitionController,
         timer: float,
-        old_element: Element,
-        new_element: Element,
+        old: Element,
+        new: Element,
         surface: pygame.Surface,
         offset: tuple[int, int],
         alpha: int = 255,
@@ -41,24 +41,24 @@ class Slide(Transition):
 
         alpha = int((1 - progress) * alpha)
 
-        if old_element is not None:
+        if old is not None:
             width, height = (
-                old_element.rect.w + self.spacing,
-                old_element.rect.h + self.spacing,
+                old.rect.w + self.spacing,
+                old.rect.h + self.spacing,
             )
             new_offset = (
                 offset[0] + self.direction[0] * width * progress,
                 offset[1] + self.direction[1] * height * progress,
             )
-            old_element._render(surface, new_offset, alpha=alpha)
+            old._render(surface, new_offset, alpha=alpha)
 
-        if new_element is not None:
+        if new is not None:
             width, height = (
-                new_element.rect.w + self.spacing,
-                new_element.rect.h + self.spacing,
+                new.rect.w + self.spacing,
+                new.rect.h + self.spacing,
             )
             new_offset = (
                 offset[0] + self.direction[0] * width * (progress - 1),
                 offset[1] + self.direction[1] * height * (progress - 1),
             )
-            new_element._render(surface, new_offset, alpha=255 - alpha)
+            new._render(surface, new_offset, alpha=255 - alpha)

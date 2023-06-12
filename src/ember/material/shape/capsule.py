@@ -3,7 +3,7 @@ import pygame.gfxdraw
 import math
 from typing import Optional
 from ..material import Material
-from .shape import Shape
+from .base_shape import Shape
 
 from ...common import ColorType
 
@@ -13,6 +13,9 @@ DEG_90 = math.radians(90)
 DEG_180 = math.radians(180)
 
 class Capsule(Shape):
+    """
+    Masks the given material or color to a capsule (tic-tac) shape.
+    """
     def __init__(self,
                  material: Optional[Material] = None,
                  color: Optional[ColorType] = None,
@@ -38,7 +41,7 @@ class Capsule(Shape):
     def _create_surface(self, size: tuple[float, float]) -> pygame.Surface:
         surface = pygame.Surface(size, pygame.SRCALPHA)
         offset = self._outline / 2 - 0.5
-        
+
         if size[0] >= size[1]:
             radius = size[1] // 2
             draw_arc(surface, (radius, radius), radius, self.antialias, self.outline, DEG_90, -DEG_90)

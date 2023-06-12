@@ -19,35 +19,35 @@ class Fade(Transition):
     def _render_element(self,
                         controller: StateController,
                         timer: float,
-                        old_element: "Element",
-                        new_element: "Element",
+                        old: "Element",
+                        new: "Element",
                         surface: pygame.Surface,
                         offset: tuple[int, int],
                         alpha: int = 255):
 
         alpha = int(timer / self.duration * alpha)
-        if old_element is not None:
-            old_element._render(surface, offset, alpha=alpha)
-        if new_element is not None:
-            new_element._render(surface, offset, alpha=(255 - alpha))
+        if old is not None:
+            old._render(surface, offset, alpha=alpha)
+        if new is not None:
+            new._render(surface, offset, alpha=(255 - alpha))
 
     def _render_material(self,
                          controller: "StateController",
                          timer: float,
                          element: "Element",
-                         old_material: Optional[Material],
-                         new_material: Optional[Material],
+                         old: Optional[Material],
+                         new: Optional[Material],
                          surface: pygame.Surface,
                          pos: tuple[int, int],
                          size: tuple[int, int],
                          alpha: int = 255):
 
-        if old_material is not None:
+        if old is not None:
             new_alpha = int(timer / self.duration * alpha)
-            old_material.render(element, surface, pos, size, new_alpha)
-            old_material.draw(element, surface, pos)
+            old.render(element, surface, pos, size, new_alpha)
+            old.draw(element, surface, pos)
 
-        if new_material is not None:
+        if new is not None:
             new_alpha = int((1 - timer / self.duration) * alpha)
-            new_material.render(element, surface, pos, size, new_alpha)
-            new_material.draw(element, surface, pos)
+            new.render(element, surface, pos, size, new_alpha)
+            new.draw(element, surface, pos)

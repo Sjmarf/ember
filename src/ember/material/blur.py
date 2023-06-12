@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from ember.ui.base.element import Element
 
 from .. import common as _c
+from ..common import BlurMode, BLUR_PIL, BLUR_PYGAME
 
 try:
     from PIL import Image, ImageFilter
@@ -17,10 +18,14 @@ except ModuleNotFoundError:
 
 
 class Blur(Material):
+    """
+    Applies a gaussian blur to the material's area. Experimental.
+    """
+
     def __init__(
         self,
         radius: int = 7,
-        method: Optional[Literal["pil", "pygame"]] = "pygame",
+        method: Optional[BlurMode] = BLUR_PYGAME,
         recalculate_each_tick: bool = False,
         alpha: int = 255,
     ):
@@ -28,26 +33,7 @@ class Blur(Material):
         self.recalculate_each_tick = recalculate_each_tick
 
         ver = pygame.version.vernum
-        if not _c.is_ce:
-            msg = (
-                "You are using the upstream version of Pygame, which does not support blurring. "
-                "\n\nTo fix this, install pygame-ce by running 'pip uninstall pygame' followed by "
-                "'pip install pygame-ce'."
-            )
-            if pillow_installed:
-                if method == "pygame":
-                    warnings.warn(
-                        f"{msg} In the meantime, PIL blur will be used instead."
-                    )
-                    method = "pil"
-            else:
-                warnings.warn(
-                    f"{msg} In the meantime, parts of the program that "
-                    f"should have been blurred will not be blurred."
-                )
-                method = None
-
-        elif ver < (2, 2):
+        if ver < (2, 2):
             msg = (
                 "You are using an outdated version of pygame-ce, which does not support blurring. "
                 "\n\nTo fix this, "
@@ -55,14 +41,14 @@ class Blur(Material):
             )
 
             if pillow_installed:
-                if method == "pygame":
+                if method is BLUR_PYGAME:
                     warnings.warn(
                         f"{msg} In the meantime, PIL blur will be used instead."
                     )
-                    method = "pil"
+                    method = BLUR_PIL
             else:
                 warnings.warn(
-                    f"{msg} In the meantime, parts of the program that "
+                    f"{msg} In the meantime, parts of the UI that "
                     f"should have been blurred will not be blurred."
                 )
                 method = None
@@ -101,7 +87,7 @@ class Blur(Material):
             size = size[0], surface.get_height() - pos[1]
         new = surface.subsurface(pos, size)
 
-        if self.method == "pil":
+        if self.method is BLUR_PIL:
             img = Image.frombytes(
                 "RGBA", new.get_size(), pygame.image.tostring(new, "RGBA", False)
             )
@@ -111,9 +97,10 @@ class Blur(Material):
             )
 
         else:
-            blurred_surface = pygame.transform.gaussian_blur(new, int(self.radius))
+            radius = self.radius * 2
+            blurred_surface = pygame.transform.gaussian_blur(new, radius)
 
         return (blurred_surface, (pos, size))
 
-    def _get(self, element: "Element") -> Optional[pygame.Surface]:
+    def get(self, element: "Element") -> Optional[pygame.Surface]:
         return self._cache[element][0]

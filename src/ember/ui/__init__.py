@@ -1,6 +1,5 @@
 from . import base
-
-from .base import Element
+from .base import *
 
 from .view import View
 from .view_layer import ViewLayer
@@ -12,6 +11,8 @@ from .v_scroll import VScroll
 from .h_scroll import HScroll
 
 from .box import Box
+from .resizable import Resizable
+from .section import Section
 from .layout import Layout
 
 from .button import Button

@@ -1,17 +1,18 @@
 import pygame
-from typing import Optional
+from typing import Optional, TYPE_CHECKING, Sequence, Union
 
 from .. import common as _c
 from ..event import TOGGLECLICKED
 from .base.element import Element
 from .base.interactive import Interactive
 from ..utility.timer import BasicTimer
-from ..style.toggle_style import ToggleStyle
-from ..style.load_style import load as load_style
+
 from ..size import SizeType, SequenceSizeType
-from ..position import PositionType
+from ..position import PositionType, CENTER, SequencePositionType
 from ..state.state_controller import StateController
-from ..style.get_style import _get_style
+
+if TYPE_CHECKING:
+    from ..style.toggle_style import ToggleStyle
 
 
 class Toggle(Element, Interactive):
@@ -20,15 +21,19 @@ class Toggle(Element, Interactive):
 
     When the toggle is clicked, it will post the :code:`ember.TOGGLECLICKED` event.
     """
+
     def __init__(
         self,
         active: bool = False,
         disabled: bool = False,
-        position: PositionType = None,
-        size: SequenceSizeType = None,
-        width: SizeType = None,
-        height: SizeType = None,
-        style: Optional[ToggleStyle] = None,
+        rect: Union[pygame.rect.RectType, Sequence, None] = None,
+        pos: Optional[SequencePositionType] = None,
+        x: Optional[PositionType] = None,
+        y: Optional[PositionType] = None,
+        size: Optional[SequenceSizeType] = None,
+        width: Optional[SizeType] = None,
+        height: Optional[SizeType] = None,
+        style: Optional["ToggleStyle"] = None,
     ):
         self.set_style(style)
 
@@ -39,33 +44,30 @@ class Toggle(Element, Interactive):
         Is :code:`True` when the mouse is hovered over the Toggle. Read-only.
         """
 
-        self.handle_state_controller: StateController = StateController(self)
+        self.state_controller: StateController = StateController(self, materials=2)
         """
-        The :py:class:`ember.state.StateController` object responsible for managing the Toggle's handle states.
-        """
-
-        self.base_state_controller: StateController = StateController(self)
-        """
-        The :py:class:`ember.state.StateController` object responsible for managing the Toggle's base states.
+        The :py:class:`ember.state.StateController` object responsible for managing the Toggle's states.
         """
 
         self._disabled: bool = False
 
         Element.__init__(
             self,
-            position,
+            rect,
+            pos,
+            x,
+            y,
             size,
             width,
             height,
-            default_size=self._style.default_size,
             can_focus=True,
         )
 
         Interactive.__init__(self, disabled)
 
         self._timer = BasicTimer(
-            self._width.value
-            - round(self._height.value * self._style.handle_width_ratio)
+            self._w.value
+            - round(self._h.value * self._style.handle_width_ratio)
             if self._is_active
             else 0
         )
@@ -76,12 +78,19 @@ class Toggle(Element, Interactive):
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
-        rect = self._draw_rect.move(*offset)
+        rect = self._int_rect.move(*offset)
 
         # Draw the base image
 
-        self.base_state_controller.render(
-            self._style.base_state_func(self),
+        self.state_controller.set_state(
+            self._style.state_func(self),
+            transitions=[
+                self._style.base_material_transition,
+                self._style.handle_material_transition,
+            ],
+        )
+
+        self.state_controller.render(
             surface,
             (
                 rect.x - surface.get_abs_offset()[0],
@@ -89,18 +98,18 @@ class Toggle(Element, Interactive):
             ),
             rect.size,
             alpha,
-            transition=self._style.base_material_transition
+            material_index=0
         )
 
-        self.handle_state_controller.render(
-            self._style.state_func(self),
+        self.state_controller.render(
             surface,
             (
                 rect.x - surface.get_abs_offset()[0] + self._timer.val,
                 rect.y - surface.get_abs_offset()[1],
             ),
             (round(self.rect.h * self._style.handle_width_ratio), rect.h),
-            alpha
+            alpha,
+            material_index=1
         )
 
     def _update(self) -> None:
@@ -114,26 +123,23 @@ class Toggle(Element, Interactive):
                     self.set_active(not self._is_active, play_sound=True)
                     return True
 
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                if self.layer.element_focused is self:
-                    self.set_active(not self._is_active, play_sound=True)
-                    return True
-
-            elif event.type == pygame.JOYBUTTONDOWN and event.button == 0:
+            elif (event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN) or (
+                event.type == pygame.JOYBUTTONDOWN and event.button == 0
+            ):
                 if self.layer.element_focused is self:
                     self.set_active(not self._is_active, play_sound=True)
                     return True
 
         return False
 
-    def _set_style(self, style: Optional[ToggleStyle]) -> None:
+    def _set_style(self, style: Optional["ToggleStyle"]) -> None:
         self.set_style(style)
 
-    def set_style(self, style: Optional[ToggleStyle]) -> None:
+    def set_style(self, style: Optional["ToggleStyle"]) -> None:
         """
         Sets the ToggleStyle of the Toggle.
         """
-        self._style: ToggleStyle = _get_style(style, "toggle")
+        self._style: "ToggleStyle" = self._get_style(style)
 
     def _set_active(self, state: bool) -> None:
         self.set_active(state)
@@ -145,14 +151,16 @@ class Toggle(Element, Interactive):
         self._is_active = state
         self._timer.play(
             stop=(
-                self._width.value - round(self.rect.h * self._style.handle_width_ratio)
+                self._w.value - round(self.rect.h * self._style.handle_width_ratio)
                 if self._is_active
                 else 0
             ),
             duration=0.1,
         )
 
-        event = pygame.event.Event(TOGGLECLICKED, element=self, active=self._is_active)
+        event = pygame.event.Event(
+            TOGGLECLICKED, element=self, is_active=self._is_active
+        )
         pygame.event.post(event)
 
         if _c.audio_enabled and not _c.audio_muted and play_sound:
@@ -170,7 +178,7 @@ class Toggle(Element, Interactive):
         doc="Whether the Toggle is on or off.",
     )
 
-    style: ToggleStyle = property(
+    style: "ToggleStyle" = property(
         fget=lambda self: self._style,
         fset=_set_style,
         doc="The ToggleStyle of the Toggle. Synonymous with the set_style() method.",

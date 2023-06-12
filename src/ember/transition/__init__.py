@@ -1,3 +1,4 @@
+from .transition import Transition, TransitionController
 from .fade import Fade
 from .surface_fade import SurfaceFade
 # from .slide import Slide

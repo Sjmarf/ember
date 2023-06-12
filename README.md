@@ -2,7 +2,7 @@
 
 # WIP. This isn't meant to be used yet.
 
-Ember is a GUI library for [Pygame CE](https://github.com/pygame-community/pygame-ce). Learn how to get started on the docs page.
+Ember is a UI library for [Pygame CE](https://github.com/pygame-community/pygame-ce). Learn how to get started on the docs page.
 
 # Installation
 
@@ -12,9 +12,7 @@ Requires:
 
 - Python 3.9 or later.
 
-- Either [Pygame](https://github.com/pygame/pygame) >= 2.1.4 or [Pygame CE](https://github.com/pygame-community/pygame-ce) >= 2.1.4. At some point in the future, we will **only** be supporting Pygame CE.
-
-- Either [Pillow](https://pypi.org/project/Pillow/) (any recent version should be fine) or [Pygame CE](https://github.com/pygame-community/pygame-ce) >= 2.2.0 is required to see the blur effect. If neither of these are installed, the program will still run fine but blur effects will not be visible.
+- [Pygame CE](https://github.com/pygame-community/pygame-ce) >= 2.2.0.
 
 # License 
 

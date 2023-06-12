@@ -2,7 +2,7 @@ import pygame
 from typing import TYPE_CHECKING, Optional, Sequence, Union
 
 if TYPE_CHECKING:
-    pass
+    from ..style.scroll_style import ScrollStyle
 
 from ..common import INHERIT, InheritType
 
@@ -10,43 +10,14 @@ from .. import log
 from .. import common as _c
 from .base.element import Element
 from ..material.material import Material
-from ..size import SizeType
-from ..position import PositionType
+from ..size import SizeType, SequenceSizeType
+from ..position import PositionType, CENTER, SequencePositionType
+from ..state.state import State
 
-from ..style.scroll_style import ScrollStyle
 from .base.scroll import Scroll
 
 
 class HScroll(Scroll):
-    def __init__(
-        self,
-        element: Optional[Element],
-        background: Optional[Material] = None,
-        focus_self: bool = False,
-        over_scroll: Union[InheritType, Sequence[int]] = INHERIT,
-        align_element: Union[InheritType, Sequence[str]] = INHERIT,
-        position: PositionType = None,
-        size: Sequence[SizeType] = None,
-        width: SizeType = None,
-        height: SizeType = None,
-        style: Optional[ScrollStyle] = None,
-    ):
-        super().__init__(
-            element,
-            background,
-            focus_self,
-            over_scroll,
-            position,
-            size,
-            width,
-            height,
-            style,
-        )
-
-        self.align_element: list[str] = (
-            self._style.align_element_h if align_element is INHERIT else align_element
-        )
-
     def __repr__(self) -> str:
         return "<HScroll>"
 
@@ -58,25 +29,33 @@ class HScroll(Scroll):
 
         # Draw scrollbar
         if self.can_scroll:
-            self.base_controller.render(
-                self._style.base_state_func(self),
+            self.scrollbar_controller.set_state(
+                self._style.scrollbar_state_func(self),
+                transitions=(
+                    self._style.base_material_transition,
+                    self._style.handle_material_transition,
+                ),
+            )
+
+            self.scrollbar_controller.render(
                 surface,
                 (rect.x, rect.y + rect.h - self._style.scrollbar_size),
                 (rect.w, self._style.scrollbar_size),
                 alpha,
-                transition=self._style.base_material_transition
+                material_index=0,
             )
 
-            self.handle_controller.render(
-                self._style.handle_state_func(self),
+            self.scrollbar_controller.render(
                 surface,
                 (
                     rect.x - surface.get_abs_offset()[0] + self._scrollbar_pos,
-                    rect.bottom - surface.get_abs_offset()[1] - self._style.scrollbar_size,
+                    rect.bottom
+                    - surface.get_abs_offset()[1]
+                    - self._style.scrollbar_size,
                 ),
                 (self._scrollbar_size + 1, self._style.scrollbar_size),
                 alpha,
-                transition=self._style.handle_material_transition
+                material_index=1,
             )
 
     def _update(self) -> None:
@@ -84,7 +63,7 @@ class HScroll(Scroll):
             return
 
         self._scrollbar_calc()
-        element_w = self._element.get_abs_width(self.rect.w)
+        element_w = self._element.get_ideal_width(self.rect.w)
         max_scroll = element_w - self.rect.w + self.over_scroll[1]
 
         # Move the scrollbar if it's grabbed
@@ -114,29 +93,25 @@ class HScroll(Scroll):
             with log.size.indent:
                 padding = self._style.padding if self.can_scroll else 0
 
-                if self.can_scroll or self.align_element[0] == "left":
+                if self.can_scroll:
                     x = self.rect.x - self.scroll.val
-                elif self.align_element[0] == "center":
-                    x = self.rect.centerx - self._element.get_abs_width(self.rect.w) / 2
-                elif self.align_element[0] == "right":
-                    x = self.rect.right - self._element.get_abs_width(self.rect.w)
-
-                if self.align_element[1] == "top":
-                    y = self.rect.y
-                elif self.align_element[1] == "center":
-                    y = (
-                        self.rect.y
-                        + (self.rect.h - padding) / 2
-                        - self._element.get_abs_height(self.rect.h - padding) / 2
-                    )
-                elif self.align_element[1] == "bottom":
-                    y = self.rect.bottom - self._element.get_abs_height(
-                        self.rect.h - padding
-                    )
-
+                    w = self.rect.w
+                else:
+                    element_x = self._element._x if self._element._x is not None else self.align[0]
+                    w = self.rect.w - abs(element_x.value)
+            
+                    x = self.rect.x + element_x.get(
+                                    self._element, self.rect.w, self._element.get_ideal_width(w)
+                                )
+            
+                element_y = self._element._y if self._element._y is not None else self.align[1]
+                y = self.rect.y + element_y.get(
+                                self._element, self.rect.h - padding, self._element.get_ideal_height(self.rect.h - abs(element_y.value) - padding)
+                            )                        
+            
                 self._element._update_rect_chain_down(
-                    self._subsurf, (x, y), (self.rect.h - padding, self.rect.w)
-                )
+                                self._subsurf, (x, y), (w, self.rect.h - padding - abs(element_y.value))
+                            )
 
     def _event2(self, event: pygame.event.Event) -> bool:
         if self.scrollbar_hovered:
@@ -162,7 +137,7 @@ class HScroll(Scroll):
         return False
 
     def _scrollbar_calc(self) -> None:
-        element_w = self._element.get_abs_width(self.rect.w)
+        element_w = self._element.get_ideal_width(self.rect.w)
         max_scroll = element_w - self.rect.w + self.over_scroll[1]
 
         old_can_scroll = self.can_scroll
@@ -174,7 +149,8 @@ class HScroll(Scroll):
 
         else:
             self._scrollbar_size = (
-                self.rect.w / (element_w + self.over_scroll[0] + self.over_scroll[1])
+                self.rect.w
+                / max(1.0, (element_w + self.over_scroll[0] + self.over_scroll[1]))
             ) * self.rect.w
             self.can_scroll = self._scrollbar_size < self.rect.w
             if old_can_scroll != self.can_scroll:
@@ -228,7 +204,7 @@ class HScroll(Scroll):
         destination = pygame.math.clamp(
             destination,
             -self.over_scroll[0],
-            self._element.get_abs_width(self.rect.w)
+            self._element.get_ideal_width(self.rect.w)
             - self.rect.w
             + self.over_scroll[1],
         )

@@ -1,114 +1,105 @@
 import pygame
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Sequence
 
 from ember.ui.base.element import Element
-from .state import State
 
 if TYPE_CHECKING:
+    from .state import State
+    from .material_state import MaterialState
     from ember.transition.transition import Transition
 
-from ember import common as _c
+from .. import common as _c
+from .. import log
 
 
-class StateController:
-    __slots__ = (
-        "_previous_state",
-        "_state",
-        "element",
-        "transition",
-        "playing",
-        "timer",
-    )
-
-    def __init__(self, element: Element):
-        self._previous_state: Optional[State] = None
-        self._state: Optional[State] = None
-        self.element: Element = element
-
+class MaterialController:
+    def __init__(self) -> None:
         self.transition: Optional["Transition"] = None
-
         self.playing: bool = False
         self.timer: float = 0.0
+
+class StateController:
+    __slots__ = ("previous_state", "current_state", "element", "material_controllers")
+
+    def __init__(self, element: Element, materials: int = 1) -> None:
+        self.previous_state: Optional["State"] = None
+        self.current_state: Optional["State"] = None
+        self.element: Element = element
+        self.material_controllers: [MaterialController] = [
+            MaterialController() for _ in range(materials)
+        ]
+
+        # self.transition: Optional["Transition"] = None
+
+        # self.playing: bool = False
+        # self.timer: float = 0.0
+
+    def __getitem__(self, item: int) -> MaterialController:
+        return self.material_controllers[item]
 
     def __repr__(self) -> str:
         return "<StateController>"
 
-    def set_state(
-        self, state: State, transition: Optional["Transition"] = None
-    ) -> None:
-        if self._state is not state:
-            if self._state is not None:
-                transition = (
-                    transition
-                    if transition is not None
-                    else self.element._style.material_transition
-                )
-                if transition:
-                    if (
-                        self.transition is not None
-                        and self.playing
-                        and state == self._previous_state
+    def set_state(self, state: "State", transitions: Sequence["Transition"] = None) -> None:
+        if self.current_state is not state:
+            log.material.info(state, self.element, "Set state")
+            if self.current_state is not None:
+                if transitions:
+                    for material_controller, transition in zip(
+                        self.material_controllers, transitions
                     ):
-                        self.timer = transition.duration - (
-                            self.timer / self.transition.duration * transition.duration
-                        )
-                    else:
-                        self.timer = transition.duration
-                    self.transition = transition
-                    self.playing = True
+                        if transition is None:
+                            continue
+                        if (
+                            material_controller.transition is not None
+                            and material_controller.playing
+                            and state == self.previous_state
+                        ):
+                            material_controller.timer = transition.duration - (
+                                material_controller.timer
+                                / material_controller.transition.duration
+                                * transition.duration
+                            )
+                        else:
+                            material_controller.timer = transition.duration
+                        material_controller.transition = transition
+                        material_controller.playing = True
 
-            self._previous_state = self._state
-            self._state = state
+            self.previous_state = self.current_state
+            self.current_state = state
 
     def render(
         self,
-        state: State,
         surface: pygame.Surface,
         pos: tuple[int, int],
         size: tuple[int, int],
         alpha: int = 255,
-        transition: Optional["Transition"] = None,
+        material_index=0,
     ) -> None:
-        self.set_state(state, transition=transition)
-        if self.playing:
-            self.transition._render_material(
+        self.previous_state: "MaterialState"
+        self.current_state: "MaterialState"
+
+        material_controller = self.material_controllers[material_index]
+        if material_controller.playing:
+            material_controller.transition._render_material(
                 self,
-                self.timer,
+                material_controller.timer,
                 self.element,
-                self._previous_state.material,
-                self._state.material,
+                self.previous_state.get_material(material_index),
+                self.current_state.get_material(material_index),
                 surface,
                 pos,
                 size,
                 alpha,
             )
-            self.timer -= _c.delta_time
-            if self.timer <= 0:
-                self.playing = False
+            material_controller.timer -= _c.delta_time
+            if material_controller.timer <= 0:
+                material_controller.playing = False
 
-        elif self._state:
-            self._state.material.render(self.element, surface, pos, size, alpha)
-            self._state.material.draw(self.element, surface, pos)
-
-    @property
-    def element_offset(self) -> tuple[float, float]:
-        if self.playing:
-            offset = (
-                self._previous_state.element_offset[0]
-                + (
-                    self._previous_state.element_offset[0]
-                    - self._state.element_offset[0]
-                )
-                * 1
-                - (self.timer / self.transition.duration),
-                self._previous_state.element_offset[1]
-                + (
-                    self._previous_state.element_offset[1]
-                    - self._state.element_offset[1]
-                )
-                * 1
-                - (self.timer / self.transition.duration),
+        elif self.current_state:
+            self.current_state.get_material(material_index).render(
+                self.element, surface, pos, size, alpha
             )
-            return offset
-        else:
-            return self._state.element_offset
+            self.current_state.get_material(material_index).draw(
+                self.element, surface, pos
+            )

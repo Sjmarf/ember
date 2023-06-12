@@ -39,7 +39,7 @@ class Material(abc.ABC):
         """
         Returns True if a surface needs to be rendered and cached.
         """
-        return element not in self._cache or self._get(element).get_size() != size
+        return element not in self._cache or self.get(element).get_size() != size
 
     def _render_surface(
         self,
@@ -53,7 +53,7 @@ class Material(abc.ABC):
         """
         pass
 
-    def _get(self, element: "Element") -> Optional[pygame.Surface]:
+    def get(self, element: "Element") -> Optional[pygame.Surface]:
         """
         Returns the cached surface for an element. None is returned if the surface is not yet cached.
         """
@@ -69,7 +69,7 @@ class Material(abc.ABC):
         Draw the material to a destination surface.
         """
         if element in self._cache:
-            destination_surface.blit(self._get(element), pos)
+            destination_surface.blit(self.get(element), pos)
 
     def render(
         self,
@@ -86,17 +86,20 @@ class Material(abc.ABC):
         if self._needs_to_render(element, surface, pos, size):
             log.material.info(self, element, f"Rendering...")
             self._cache[element] = self._render_surface(element, surface, pos, size)
-            self._get(element).set_alpha(alpha * self.alpha / 255)
+            self.get(element).set_alpha(alpha * self.alpha / 255)
             return True
         else:
-            self._get(element).set_alpha(alpha * self.alpha / 255)
+            self.get(element).set_alpha(alpha * self.alpha / 255)
             return False
 
 
 class MaterialWithSizeCache(Material, abc.ABC):
-    """ """
+    """
+    Materials that have a size cache in addition to an element cache inherit from this class.
+    This base class should not be instantiated.
+    """
 
-    def __init__(self, alpha: int):
+    def __init__(self, alpha: int) -> None:
         super().__init__(alpha)
 
         self._size_cache_k: WeakKeyDictionary[
@@ -122,7 +125,7 @@ class MaterialWithSizeCache(Material, abc.ABC):
         if self._needs_to_render(element, surface, pos, size):
             if size in self._size_cache_v:
                 log.material.info(self, element, f"Reusing size {size}...")
-                if self._get(self._size_cache_v[size]).get_size() != size:
+                if self.get(self._size_cache_v[size]).get_size() != size:
                     log.material.info(self, element, f"Rendering...")
                     self._cache[element] = self._render_surface(element, surface, pos, size)
                     
@@ -145,8 +148,8 @@ class MaterialWithSizeCache(Material, abc.ABC):
                 self._size_cache_v[size] = element
                 self._size_cache_k[element] = size
 
-            self._get(element).set_alpha(alpha * self.alpha / 255)
+            self.get(element).set_alpha(alpha * self.alpha / 255)
             return True
         else:
-            self._get(element).set_alpha(alpha * self.alpha / 255)
+            self.get(element).set_alpha(alpha * self.alpha / 255)
             return False

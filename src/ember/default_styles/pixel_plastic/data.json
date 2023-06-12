@@ -4,48 +4,65 @@
 
  "elements": {
 
-   "text": {"font": ["PixelFont", "pixel"]},
+   "Text": {"font": ["PixelFont", "pixel"]},
 
-   "view": {"transition": ["Fade", 0.15]},
+   "View": {},
 
-   "container": {},
+   "Container": {
+     "sizes": {"Layout": "FILL"},
+     "min_spacing": 6
+   },
 
-   "button": {
+    "Section": {
+        "focus_material": ["RoundedRect", [255, 255, 255], 3, 1, false]
+    },
+
+   "Button": {
      "default_state":["State",{"element_offset": [0,-1]}],
      "click_state":["State",{"element_offset": [0,0]}],
-     "default_size": [100,24]
+     "size": [100,24]
    },
 
    "button2":{
-     "type": "button",
-     "default_size": [100,24]
+     "type": "Button",
+     "size": [100,24]
    },
 
-   "toggle": {
-     "default_size": [30,15],
+   "Toggle": {
+     "size": [30,15],
      "handle_width_ratio": 0.9
    },
 
-   "slider": {
-     "default_size": [60,15],
+   "Slider": {
+     "size": [60,15],
      "handle_width_ratio": 0.9
    },
 
-   "text_field": {
-     "prompt_color": [220, 180, 160],
-     "highlight_color": [255, 100, 100],
-     "default_size": [100,24],
-     "default_h_scroll_size": [["FILL", 1, -12], ["FILL", 1, -6]],
-     "default_v_scroll_size": [["FILL", 1, -6], ["FILL", 1, -12]]
-   },
-
-   "scroll": {
+   "text_field_scroll": {
+     "type": "Scroll",
      "default_handle_material": ["AverageColor",[0,0,30]],
      "hover_handle_material": ["AverageColor",[0,0,40]],
      "click_handle_material": ["AverageColor",[0,-20,70]],
      "handle_material_transition": ["SurfaceFade", 0.15],
      "padding": 2,
      "scrollbar_size": 2
+   },
+
+   "TextField": {
+     "highlight_color": [255, 100, 100],
+     "size": [100,24],
+     "scroll_style": ["Style", "text_field_scroll"],
+     "default_h_scroll_size": [["FILL", 1, -12], ["FILL", 1, -6]],
+     "default_v_scroll_size": [["FILL", 1, -6], ["FILL", 1, -12]]
+   },
+
+   "Scroll": {
+     "default_handle_material": ["AverageColor",[0,0,30]],
+     "hover_handle_material": ["AverageColor",[0,0,40]],
+     "click_handle_material": ["AverageColor",[0,-20,70]],
+     "handle_material_transition": ["SurfaceFade", 0.15],
+     "padding": 6,
+     "scrollbar_size": 3
    }
  },
 

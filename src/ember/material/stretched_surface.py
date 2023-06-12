@@ -9,6 +9,10 @@ if TYPE_CHECKING:
 
 
 class StretchedSurface(MaterialWithSizeCache):
+    """
+    Stretches a pygame Surface while preserving the edges of the Surface.
+    """
+
     def __init__(
         self,
         surface: Union[str, pygame.Surface],
@@ -28,6 +32,9 @@ class StretchedSurface(MaterialWithSizeCache):
         """
         (left, right, top, bottom). The number of pixels from each side that should be kept intact.
         """
+
+    def __repr__(self) -> str:
+        return "<StretchedSurface>"
 
     def _needs_to_render(
         self,

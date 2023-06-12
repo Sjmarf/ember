@@ -29,22 +29,22 @@ class Transition:
         new_element: Optional["Element"] = None,
     ) -> "TransitionController":
         return TransitionController(
-            self, old_element=old_element, new_element=new_element
+            self, old=old_element, new=new_element
         )
 
     @staticmethod
     def _update_element(controller: "TransitionController") -> None:
-        if controller.old_element is not None:
-            controller.old_element._update()
-        if controller.new_element is not None:
-            controller.new_element._update()
+        if controller.old is not None:
+            controller.old._update()
+        if controller.new is not None:
+            controller.new._update()
 
     def _render_element(
         self,
         controller: "TransitionController",
         timer: float,
-        old_element: Optional["Element"],
-        new_element: Optional["Element"],
+        old: Optional["Element"],
+        new: Optional["Element"],
         surface: pygame.Surface,
         offset: tuple[int, int],
         alpha: int = 255,
@@ -56,8 +56,8 @@ class Transition:
         controller: "StateController",
         timer: float,
         element: "Element",
-        old_material: Optional[Material],
-        new_material: Optional[Material],
+        old: Optional[Material],
+        new: Optional[Material],
         surface: pygame.Surface,
         pos: tuple[int, int],
         size: tuple[int, int],
@@ -67,11 +67,14 @@ class Transition:
 
 
 class TransitionController:
+    """
+    Used internally to manage transitions.
+    """
     def __init__(
         self,
         *transitions: Transition,
-        old_element: Optional["Element"] = None,
-        new_element: Optional["Element"] = None,
+        old: Optional["Element"] = None,
+        new: Optional["Element"] = None,
     ) -> None:
         if len(transitions) == 1:
             self.transition_1 = transitions[0]
@@ -84,12 +87,12 @@ class TransitionController:
             )
 
         self.timer = self.transition_1.duration
-        self.playing = False
+        self.playing: bool = False
 
-        self.old_element = old_element
-        self.new_element = new_element
+        self.old: Optional["Element"] = old
+        self.new: Optional["Element"] = new
 
-        new_event = pygame.event.Event(TRANSITIONSTARTED, element=self.new_element)
+        new_event = pygame.event.Event(TRANSITIONSTARTED, element=self.new)
         pygame.event.post(new_event)
 
     def update(self) -> None:
@@ -102,7 +105,7 @@ class TransitionController:
 
     def _get_progress(self) -> float:
         val = pygame.math.clamp(self.timer / self.transition_1.duration, 0, 1)
-        if self.old_element is not None:
+        if self.old is not None:
             return val
         else:
             return 1 - val
@@ -112,17 +115,17 @@ class TransitionController:
     ) -> None:
         if self.transition_2 is not None:
             self.transition_1._render_element(
-                self, self.timer, self.old_element, None, surface, offset, alpha
+                self, self.timer, self.old, None, surface, offset, alpha
             )
             self.transition_1._render_element(
-                self, self.timer, None, self.new_element, surface, offset, alpha
+                self, self.timer, None, self.new, surface, offset, alpha
             )
         else:
             self.transition_1._render_element(
                 self,
                 self.timer,
-                self.old_element,
-                self.new_element,
+                self.old,
+                self.new,
                 surface,
                 offset,
                 alpha,

@@ -68,11 +68,12 @@ class Shape(Material, abc.ABC):
         pos: tuple[float, float],
         size: tuple[float, float],
     ) -> Any:
+
         surface = self._create_surface(size)
 
         if self._material:
             surface.blit(
-                self._material._get(element),
+                self._material.get(element),
                 (0, 0),
                 special_flags=pygame.BLEND_RGB_ADD,
             )

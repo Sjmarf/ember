@@ -4,61 +4,62 @@ if TYPE_CHECKING:
     from ..ui.slider import Slider
 
 from .. import common as _c
-from .style import Style, MaterialType
+from ..common import MaterialType
+from .style import Style
 
-from ..state.state import State, load_state
+from ..state.slider_state import SliderState
 from ..transition.transition import Transition
-from ..size import SizeType
-from . import defaults
-
-
-def default_base_state_func(slider: "Slider") -> State:
-    return slider._style.default_base_state
-
-
-def default_state_func(slider: "Slider") -> State:
-    if slider._disabled:
-        return slider._style.disabled_state
-    if slider.layer.element_focused is slider:
-        return (
-            slider._style.focus_click_state
-            if slider.is_clicked or slider.is_clicked_keyboard
-            else slider._style.focus_state
-        )
-    if slider.is_clicked:
-        return slider._style.click_state
-    if slider.is_hovered:
-        return slider._style.hover_state
-    return slider._style.default_state
+from ..size import SizeType, SequenceSizeType
+from ..ui.slider import Slider
 
 
 class SliderStyle(Style):
+    _ELEMENT = Slider
+
+    @staticmethod
+    def default_state_func(slider: "Slider") -> SliderState:
+        if slider._disabled:
+            return slider._style.disabled_state
+        if slider.layer.element_focused is slider:
+            return (
+                slider._style.focus_click_state
+                if slider.is_clicked or slider.is_clicked_keyboard
+                else slider._style.focus_state
+            )
+        if slider.is_clicked:
+            return slider._style.click_handle_state
+        if slider.is_hovered:
+            return slider._style.hover_handle_state
+        return slider._style.default_handle_state
+
     def __init__(
         self,
-        default_size: Sequence[SizeType] = (500, 80),
+        size: SequenceSizeType = (300, 80),
+        width: SizeType = None,
+        height: SizeType = None,
         handle_width_ratio: float = 1,
-        default_base_state: Optional[State] = None,
-        default_state: Optional[State] = None,
-        hover_state: Optional[State] = None,
-        click_state: Optional[State] = None,
-        focus_state: Optional[State] = None,
-        focus_click_state: Optional[State] = None,
-        disabled_state: Optional[State] = None,
-        default_base_material: MaterialType = None,
-        default_material: MaterialType = None,
-        hover_material: MaterialType = None,
-        click_material: MaterialType = None,
-        focus_material: MaterialType = None,
-        focus_click_material: MaterialType = None,
-        disabled_material: MaterialType = None,
-        material_transition: Optional[Transition] = None,
+        default_state: Optional[SliderState] = None,
+        hover_state: Optional[SliderState] = None,
+        click_state: Optional[SliderState] = None,
+        focus_state: Optional[SliderState] = None,
+        focus_click_state: Optional[SliderState] = None,
+        disabled_state: Optional[SliderState] = None,
+        default_base_material: Optional[MaterialType] = None,
+        default_handle_material: Optional[MaterialType] = None,
+        hover_handle_material: Optional[MaterialType] = None,
+        click_handle_material: Optional[MaterialType] = None,
+        focus_handle_material: Optional[MaterialType] = None,
+        focus_click_handle_material: Optional[MaterialType] = None,
+        disabled_handle_material: Optional[MaterialType] = None,
+        handle_material_transition: Optional[Transition] = None,
         base_material_transition: Optional[Transition] = None,
-        state_func: Optional[Callable[["Toggle"], "State"]] = None,
-        base_state_func: Optional[Callable[["Toggle"], "State"]] = None,
+        state_func: Callable[
+            ["Slider"], "SliderState"
+        ] = default_state_func,
     ):
-        self.default_size: Sequence[SizeType] = default_size
+        self.size: tuple[SizeType, SizeType] = self.load_size(size, width, height)
         """
-        The size of the Slider if no size is specified in the Slider constructor.
+        The size of the Element if no size is specified in the Element constructor.
         """
 
         self.handle_width_ratio: float = handle_width_ratio
@@ -66,71 +67,56 @@ class SliderStyle(Style):
         Modifies the ratio between the handle width and height. slider_height * handle_width_ratio = handle_width
         """
 
-        self.default_base_state: State = load_state(
-            default_base_state, default_base_material, None
+        self.default_handle_state: SliderState = SliderState._load(
+            default_state, default_base_material, default_handle_material
         )
         """
-        The default State of the Slider base.
+        The default State of the Slider.
         """
 
-        self.default_state: State = load_state(default_state, default_material, None)
+        self.hover_handle_state: SliderState = SliderState._load(
+            hover_state, None, hover_handle_material, self.default_handle_state
+        )
         """
-        The default State of the Slider handle.
+        Shown when the Slider is hovered over. Uses the default state if no state is specified.
+        """
+        self.click_handle_state: SliderState = SliderState._load(
+            click_state, None, click_handle_material, self.hover_handle_state
+        )
+        """
+        Shown when the Slider is clicked. Uses the hover state if no state is specified.
+        """
+        self.focus_state: SliderState = SliderState._load(
+            focus_state, None, focus_handle_material, self.hover_handle_state
+        )
+        """
+        Shown when the Slider is focused. Uses the hover state if no state is specified.
+        """
+        self.focus_click_state: SliderState = SliderState._load(
+            focus_click_state, None, focus_click_handle_material, self.focus_state
+        )
+        """
+        Shown when the Slider is focused and clicked. Uses the click state if no state is specified.
+        """
+        self.disabled_state: SliderState = SliderState._load(
+            disabled_state, None, disabled_handle_material, self.default_handle_state
+        )
+        """
+        Shown when the Slider is disabled. Uses the default state if no state is specified.
         """
 
-        self.hover_state: State = load_state(
-            hover_state, hover_material, self.default_state
-        )
+        self.handle_material_transition: Optional[
+            Transition
+        ] = handle_material_transition
         """
-        Shown when the Slider handle is hovered over. Uses the default state if no state is specified.
-        """
-        self.click_state: State = load_state(
-            click_state, click_material, self.hover_state
-        )
-        """
-        Shown when the Slider handle is clicked. Uses the hover state if no state is specified.
-        """
-        self.focus_state: State = load_state(
-            focus_state, focus_material, self.hover_state
-        )
-        """
-        Shown when the Slider handle is focused. Uses the hover state if no state is specified.
-        """
-        self.focus_click_state: State = load_state(
-            focus_click_state, focus_click_material, self.focus_state
-        )
-        """
-        Shown when the Slider handle is focused and clicked. Uses the click state if no state is specified.
-        """
-        self.disabled_state: State = load_state(
-            disabled_state, disabled_material, self.default_state
-        )
-        """
-        Shown when the Slider handle is disabled. Uses the default state if no state is specified.
-        """
-
-        self.material_transition: Optional[Transition] = material_transition
-        """
-        The Transition to use when changing handle States.
+        The Transition to use when changing handle Materials.
         """
         self.base_material_transition: Optional[Transition] = base_material_transition
         """
-        The Transition to use when changing base States.
+        The Transition to use when changing base Materials.
         """
 
-        self.state_func: Callable[["Slider"], "State"] = (
-            state_func if state_func is not None else default_state_func
-        )
+        self.state_func: Callable[["Slider"], "SliderState"] = state_func
         """
-        The function that determines which handle state is active. Can be replaced for more control over the Slider's handle states.
+        The function that determines which state is active. Can be replaced for more control over the Slider's states.
         """
-        self.base_state_func: Callable[["Slider"], "State"] = (
-            base_state_func if base_state_func is not None else default_base_state_func
-        )
-        """
-        The function that determines which base state is active. Can be replaced for more control over the Slider's base states.
-        """
-
-    def set_as_default(self) -> "SliderStyle":
-        defaults.slider = self
-        return self

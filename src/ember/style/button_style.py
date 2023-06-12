@@ -1,93 +1,100 @@
 import pygame
-from typing import Union, Optional, Sequence, TYPE_CHECKING, Callable
+from typing import Union, Optional, TYPE_CHECKING, Callable
 
 from .. import common as _c
-from .style import Style, MaterialType
-from ..state.state import State, load_state
+from ..common import MaterialType
+from .style import Style
+from ..state.button_state import ButtonState
 from ..transition.transition import Transition
-from . import defaults
 
 if TYPE_CHECKING:
     from ..ui.button import Button
 
 from .text_style import TextStyle
-from .load_material import load_sound
-from ..size import SizeType
-
-
-def default_state_func(button: "Button") -> State:
-    if button._disabled:
-        return button._style.disabled_state
-    elif button.is_clicked:
-        return (
-            button._style.focus_click_state
-            if button.layer.element_focused is button
-            else button._style.click_state
-        )
-    elif button.layer.element_focused is button:
-        return button._style.focus_state
-    elif button.is_hovered:
-        return button._style.hover_state
-    else:
-        return button._style.default_state
+from ember.utility.load_material import load_sound
+from ..size import SizeType, SequenceSizeType
+from ..ui.button import Button
 
 
 class ButtonStyle(Style):
+    _ELEMENT = Button
+
+    @staticmethod
+    def default_state_func(button: "Button") -> ButtonState:
+        if button._disabled:
+            return button._style.disabled_state
+        elif button.is_clicked:
+            return (
+                button._style.focus_click_state
+                if button.layer.element_focused is button
+                else button._style.click_state
+            )
+        elif button.layer.element_focused is button:
+            return button._style.focus_state
+        elif button.is_hovered:
+            return button._style.hover_state
+        else:
+            return button._style.default_state
+
     def __init__(
         self,
-        default_size: Sequence[SizeType] = (300, 80),
-        default_state: Optional[State] = None,
-        hover_state: Optional[State] = None,
-        click_state: Optional[State] = None,
-        focus_state: Optional[State] = None,
-        focus_click_state: Optional[State] = None,
-        disabled_state: Optional[State] = None,
-        default_material: MaterialType = None,
-        hover_material: MaterialType = None,
-        click_material: MaterialType = None,
-        focus_material: MaterialType = None,
-        focus_click_material: MaterialType = None,
-        disabled_material: MaterialType = None,
+        size: SequenceSizeType = (300, 80),
+        width: SizeType = None,
+        height: SizeType = None,
+        default_state: Optional[ButtonState] = None,
+        hover_state: Optional[ButtonState] = None,
+        click_state: Optional[ButtonState] = None,
+        focus_state: Optional[ButtonState] = None,
+        focus_click_state: Optional[ButtonState] = None,
+        disabled_state: Optional[ButtonState] = None,
+        default_material: Optional[MaterialType] = None,
+        hover_material: Optional[MaterialType] = None,
+        click_material: Optional[MaterialType] = None,
+        focus_material: Optional[MaterialType] = None,
+        focus_click_material: Optional[MaterialType] = None,
+        disabled_material: Optional[MaterialType] = None,
         click_down_sound: Union[pygame.mixer.Sound, str, None] = None,
         click_up_sound: Union[pygame.mixer.Sound, str, None] = None,
         text_style: Optional[TextStyle] = None,
         material_transition: Optional[Transition] = None,
-        state_func: Optional[Callable[["Button"], "State"]] = None,
+        state_func: Callable[["Button"], "ButtonState"] = default_state_func,
     ):
-        self.default_size: Sequence[SizeType] = default_size
+        self.size: tuple[SizeType, SizeType] = self.load_size(size, width, height)
         """
-        The size of the Button if no size is specified in the Button constructor.
+        The size of the Element if no size is specified in the Element constructor.
         """
 
-        self.default_state: State = load_state(default_state, default_material, None)
+        self.default_state: ButtonState = ButtonState._load(
+            default_state, default_material
+        )
         """
         The default State.
         """
-        self.hover_state: State = load_state(
+        self.hover_state: ButtonState = ButtonState._load(
             hover_state, hover_material, self.default_state
         )
         """
         Shown when the Button is hovered over. Uses the default state if no state is specified.
         """
-        self.click_state: State = load_state(
+        self.click_state: ButtonState = ButtonState._load(
             click_state, click_material, self.hover_state
         )
         """
         Shown when the Button is clicked. Uses the hover state if no state is specified.
         """
-        self.focus_state: State = load_state(
+        self.focus_state: ButtonState = ButtonState._load(
             focus_state, focus_material, self.hover_state
         )
         """
         Shown when the Button is focused. Uses the hover state if no state is specified.
         """
-        self.focus_click_state: State = load_state(
+        self.focus_click_state: ButtonState = ButtonState._load(
             focus_click_state, focus_click_material, self.click_state
         )
         """
         Shown when the Button is focused and clicked. Uses the click state if no state is specified.
         """
-        self.disabled_state: State = load_state(
+        self.disabled_state: ButtonState = ButtonState._load(
             disabled_state, disabled_material, self.default_state
         )
         """
@@ -125,13 +132,7 @@ class ButtonStyle(Style):
         The Transition to use when changing States.
         """
 
-        self.state_func: Callable[["Button"], "State"] = (
-            state_func if state_func is not None else default_state_func
-        )
+        self.state_func: Callable[["Button"], "ButtonState"] = state_func
         """
         The function that determines which state is active. Can be replaced for more control over the Button's states.
         """
-
-    def set_as_default(self) -> "ButtonStyle":
-        defaults.button = self
-        return self

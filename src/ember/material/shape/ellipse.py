@@ -2,7 +2,7 @@ import pygame
 import pygame.gfxdraw
 from typing import Optional
 from ..material import Material
-from .shape import Shape
+from .base_shape import Shape
 
 from ...common import ColorType
 
@@ -10,6 +10,9 @@ from .draw_circle import draw_ellipse
 
 
 class Ellipse(Shape):
+    """
+    Masks the given material or color to an ellipse shape.
+    """
     def __init__(
         self,
         material: Optional[Material] = None,

@@ -1,19 +1,22 @@
 import pygame
-from typing import Optional, Sequence, Union
 
-from ember.common import InheritType, INHERIT
+from typing import Optional, Sequence, Union, Literal, TYPE_CHECKING
+
+from ember.common import InheritType, INHERIT, FocusType
 from ember import log
 from ember.ui.base.element import Element
-from ember.size import SizeType
-from ember.position import PositionType
+from ember.size import SizeType, SequenceSizeType
+from ember.position import PositionType, SequencePositionType
 
 from ember.state.state_controller import StateController
-from ember.state.state import State, load_background
+from ember.state.background_state import BackgroundState
 
-from ember.style.container_style import ContainerStyle
 from ember.material.material import Material
 
 from ember.ui.base.multi_element_container import MultiElementContainer
+
+if TYPE_CHECKING:
+    from ember.style.container_style import ContainerStyle
 
 
 class Stack(MultiElementContainer):
@@ -21,18 +24,21 @@ class Stack(MultiElementContainer):
     A Stack is a collection of Elements. There are two subclasses of Stack - :py:class:`ember.ui.VStack`
     and :py:class:`ember.ui.HStack`. This base class should not be instantiated directly.
     """
+
     def __init__(
         self,
-        style: ContainerStyle,
-        background: Union[State, Material, None],
+        style: "ContainerStyle",
+        material: Union[BackgroundState, Material, None],
         spacing: Union[InheritType, int],
         min_spacing: Union[InheritType, int],
-        focus_self: Union[InheritType, bool],
-        position: PositionType,
-        size: Sequence[SizeType],
-        width: SizeType,
-        height: SizeType,
-        default_size: Sequence[SizeType] = (20, 20),
+        focus_on_entry: Union[InheritType, FocusType],
+        rect: Union[pygame.rect.RectType, Sequence, None],
+        pos: Optional[SequencePositionType],
+        x: Optional[PositionType],
+        y: Optional[PositionType],
+        size: Optional[SequenceSizeType],
+        width: Optional[SizeType],
+        height: Optional[SizeType],
     ):
         """
         The base class for VStack and HStack.
@@ -42,11 +48,6 @@ class Stack(MultiElementContainer):
         self._fit_height: int = 0
 
         self.set_style(style)
-
-        self.background: Optional[State] = load_background(self, background)
-        """
-        The State to use for the background of the Stack. Overrides the states from the ContainerStyle.
-        """
 
         self.spacing: Optional[int] = (
             self._style.spacing if spacing is INHERIT else spacing
@@ -69,14 +70,6 @@ class Stack(MultiElementContainer):
                 self._style.min_spacing if min_spacing is INHERIT else min_spacing
             )
 
-        self.focus_self: bool = (
-            self._style.focus_self if focus_self is INHERIT else focus_self
-        )
-        """
-        Modifies how the Stack behaves with keyboard / controller navigation. If set to True, the Stack itself 
-        is focusable. If you press enter when the Stack is focused, the first child of the Stack is focused.
-        """
-
         self._first_visible_element: Optional[Element] = None
 
         self.state_controller: StateController = StateController(self)
@@ -84,8 +77,7 @@ class Stack(MultiElementContainer):
         The :py:class:`ember.state.StateController` object is responsible for managing the Stack's 
         background states.
         """
-
-        super().__init__(position, size, width, height, default_size=default_size)
+        super().__init__(material, rect, pos, x, y, size, width, height, focus_on_entry)
 
     def _render_elements(
         self,
@@ -105,22 +97,6 @@ class Stack(MultiElementContainer):
                 break
 
     def _event(self, event: pygame.event.Event) -> bool:
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_RETURN:
-                if self.layer.element_focused is self:
-                    log.nav.info(self, "Enter key pressed, starting focus chain.")
-                    with log.nav.indent:
-                        self.layer._focus_element(
-                            self._enter_in_first_element(
-                                "in_first", ignore_self_focus=True
-                            )
-                        )
-                    log.nav.info(
-                        self,
-                        f"Focus chain ended. Focused {self.layer.element_focused}.",
-                    )
-                    return True
-
         for i in self._elements[self._first_visible_element :]:
             if i._event(event):
                 return True

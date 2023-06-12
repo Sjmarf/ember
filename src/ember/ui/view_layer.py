@@ -1,37 +1,47 @@
 import pygame
 from .. import event as ember_event
 from .. import common as _c
+from ..common import INHERIT, InheritType
 from .. import log
-from typing import Optional, TYPE_CHECKING, Any, Sequence
+from typing import Optional, TYPE_CHECKING, Any, Sequence, Union
 
 if TYPE_CHECKING:
     from ..transition.transition import Transition
-    from .base.element import Element
     from .view import View
+    from ..style.view_style import ViewStyle
+
+from .base.element import Element
 
 from .base.scroll import Scroll
-from ..style.view_style import ViewStyle
-from ..style.load_style import load as load_style
-from ..style.get_style import _get_style
 from ember.state.state import State, load_background, StateType
+
+from ..size import FIT, FILL, SizeType, SequenceSizeType
+from ..position import PositionType, CENTER, SequencePositionType
 
 from ..state.state_controller import StateController
 
-class ViewLayer:
+
+class ViewLayer(Element):
     def __init__(
         self,
         element: "Element",
         view: Optional["View"] = None,
-        rect: Optional[pygame.rect.RectType] = None,
         focused: Optional["Element"] = None,
-        background: StateType = None,
-        listen_for_exit: bool = True,
-        transition: Optional["Transition"] = None,
-        transition_in: Optional["Transition"] = None,
-        transition_out: Optional["Transition"] = None,
+        material: StateType = None,
+        listen_for_exit: Union[InheritType, bool] = INHERIT,
+        transition: Union[InheritType, "Transition", None] = INHERIT,
+        transition_in: Union[InheritType, "Transition", None] = INHERIT,
+        transition_out: Union[InheritType, "Transition", None] = INHERIT,
         clamp: bool = True,
-        close_when_click_off: bool = True,
-        style: Optional["ViewStyle"] = None
+        exit_on_click_off: bool = False,
+        rect: Union[pygame.rect.RectType, Sequence, None] = None,
+        pos: Optional[SequencePositionType] = CENTER,
+        x: Optional[PositionType] = None,
+        y: Optional[PositionType] = None,
+        size: Optional[SequenceSizeType] = None,
+        width: Optional[SizeType] = None,
+        height: Optional[SizeType] = None,
+        style: Optional["ViewStyle"] = None,
     ):
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
@@ -45,7 +55,7 @@ class ViewLayer:
         Whether the layer should be kept inside of the view.
         """
 
-        self.close_when_click_off: bool = close_when_click_off
+        self.exit_on_click_off: bool = exit_on_click_off
         """
         Exit the ViewLayer when the user clicks outside of its rect.
         """
@@ -55,14 +65,20 @@ class ViewLayer:
         The element that is currently focused.
         """
 
-        self.listen_for_exit: bool = listen_for_exit
-        """
-        Whether pressing escape should exit the menu.
-        """
-
         self.set_style(style)
 
-        self.background: Optional[State] = load_background(self, background)
+        self.listen_for_exit: bool = (
+            self._style.listen_for_exit
+            if listen_for_exit is INHERIT
+            else listen_for_exit
+        )
+        """
+        If True, the ViewLayer triggers its exit transition when the Escape key 
+        (or the equivalent controller button) is pressed. 
+        You can trigger the exit transition yourself by calling ViewLayer.exit() if you prefer.
+        """
+
+        self.material: Optional[State] = load_background(self, material)
         """
         The State to use for the background of the ViewLayer. Overrides the default state from the ViewStyle.
         """
@@ -71,11 +87,11 @@ class ViewLayer:
         """
         The :py:class`Transition<ember.transition.Transition>` to use when the ViewLayer is transitioning in.
         """
-        if transition_in:
+        if transition_in is not INHERIT:
             self.transition_in = transition_in
-        elif transition:
+        elif transition is not INHERIT:
             self.transition_in = transition
-        elif self._style and self._style.transition_in:
+        elif self._style:
             self.transition_in = self._style.transition_in
         else:
             self.transition_in = None
@@ -84,11 +100,11 @@ class ViewLayer:
         """
         The :py:class`Transition<ember.transition.Transition>` to use when the ViewLayer is transitioning out.
         """
-        if transition_out:
+        if transition_out is not INHERIT:
             self.transition_out = transition_out
-        elif transition:
+        elif transition is not INHERIT:
             self.transition_out = transition
-        elif self._style and self._style.transition_out:
+        elif self._style:
             self.transition_out = self._style.transition_out
         else:
             self.transition_out = None
@@ -100,29 +116,21 @@ class ViewLayer:
         with log.layer.indent:
             element._set_layer_chain(self)
 
-        if self.transition_in:
-            element._transition = self.transition_in._new_element_controller()
-            element._transition.new_element = element
-
         log.size.info(self, "ViewLayer created, starting chain down next tick...")
-        self._check_size = True
+        self._chain_down_from = self._element
         """
         When True, _update_rect_chain_down will be started on the next tick
         """
 
         self._prev_rect: tuple[float, float, float, float] = (0, 0, 0, 0)
         self._waiting_for_transition_finish = False
-        self._block_rendering = False
+
         self._exit_cause: Optional[Element] = None
+        self._exit_kwargs: dict[Any:Any] = {}
 
         self._joy_axis_motion: Sequence[int] = [0, 0]
         """
         The rect of the bottommost layer.
-        """
-
-        self.rect: pygame.Rect = pygame.Rect(rect) if rect is not None else None
-        """
-        The rect within which to draw the view.
         """
 
         self.state_controller: StateController = StateController(self)
@@ -130,95 +138,103 @@ class ViewLayer:
         The :py:class:`ember.state.StateController` object responsible for managing the ViewLayer's states.
         """
 
-        self._rect: pygame.Rect = pygame.Rect(0,0,0,0)
+        super().__init__(
+            rect, pos, x, y, size, width, height, default_size=(FILL, FILL)
+        )
+
+        if self.transition_in:
+            self._block_rendering = True
+        else:
+            self._block_rendering = False
+
+        if self._style.auto_transition_in:
+            self.start_transition_in()
 
     def __repr__(self) -> str:
         return f"<ViewLayer({self._element})>"
 
-    def _update_positions(
-        self, surface: pygame.Surface, rect: Optional[pygame.rect.RectType] = None
+    def _render(
+        self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
+        self.state_controller.set_state(
+            self._style.state_func(self), transitions=(self._style.material_transition,)
+        )
+        self.state_controller.render(
+            surface,
+            self.rect.topleft,
+            self.rect.size,
+            alpha,
+        )
+        if not self._block_rendering:
+            self._element._render_a(surface, (0, 0), alpha)
 
-        if isinstance(rect, (Sequence, pygame.Rect)):
-            pos = (
-                rect[0] + rect[2] // 2 - self._element.get_abs_width(rect[2]) // 2,
-                rect[1] + rect[3] // 2 - self._element.get_abs_height(rect[3]) // 2,
-                *rect[2:],
-            )
-            self._rect.update(rect)
+    def _update(self) -> None:
+        self._element._update_a()
 
-        elif self.rect:
-            if self.clamp:
-                if rect is not None:
-                    pos = tuple(self.rect.clamp(rect))
-                else:
-                    pos = tuple(self.rect.clamp((0,0,*surface.get_size())))
-            else:
-                pos = tuple(self.rect)
-            self._rect.update(self.rect)
-
-        else:
-            pos = (
-                surface.get_width() // 2
-                - self._element.get_abs_width(surface.get_width()) // 2,
-                surface.get_height() // 2
-                - self._element.get_abs_height(surface.get_height()) // 2,
-                *surface.get_size(),
-            )
-            self._rect.update(0,0,*surface.get_size())
-
-        if self._prev_rect != pos:
-            self._prev_rect = pos
-            if not self._check_size:
-                log.size.info(self, "ViewLayer rect changed size, starting chain down next tick...")
-                self._check_size = True
+    def _update_rect_chain_down(
+        self,
+        surface: pygame.Surface,
+        pos: tuple[float, float],
+        max_size: tuple[float, float],
+        _ignore_fill_width: bool = False,
+        _ignore_fill_height: bool = False,
+    ) -> None:
+        super()._update_rect_chain_down(
+            surface,
+            pos,
+            max_size,
+            _ignore_fill_width=_ignore_fill_width,
+            _ignore_fill_height=_ignore_fill_height,
+        )
 
         i = 0
-        while self._check_size:
+        while self._chain_down_from is not None:
             log.size.line_break()
             if i > 0:
-                log.size.info(self, f"Starting chain down again (iteration {i + 1}).")
+                log.size.info(
+                    self,
+                    f"Starting chain down again (iteration {i + 1}) from {self._chain_down_from}.",
+                )
             else:
-                log.size.info(self, f"Starting chain down.")
-
-            self._check_size = False
+                log.size.info(
+                    self, f"Starting chain down from {self._chain_down_from}."
+                )
 
             with log.size.indent:
-                self._element._update_rect_chain_down(surface, pos[:2], pos[2:])
+                element_x = (
+                    pos[0]
+                    + self.get_ideal_width(max_size[0]) // 2
+                    - self._element.get_ideal_width(self.rect.w) // 2
+                )
+                element_y = (
+                    pos[1]
+                    + self.get_ideal_height(max_size[1]) // 2
+                    - self._element.get_ideal_height(self.rect.h) // 2
+                )
+
+                self._element._update_rect_chain_down(
+                    surface, (element_x, element_y), self.rect.size
+                )
+
+            self._chain_down_from = None
 
             log.size.info(self, "Chain finished.")
             i += 1
             if i > 30:
                 raise _c.Error("Maximimum chain-down count exceeded.")
 
-    def _render(self, surface: pygame.Surface, alpha: int) -> None:
-        self.state_controller.render(
-            self._style.state_func(self),
-            surface,
-            (
-                self._rect.x,
-                self._rect.y,
-            ),
-            self._rect.size,
-            alpha,
-        )
-        if not self._block_rendering:
-            self._element._render_a(surface, (0, 0), alpha)
-
-    def _event(self, event: pygame.event.Event, layer: int) -> bool:
+    def _event(self, event: pygame.event.Event) -> bool:
         if self._element._event(event):
             return True
 
-        if event.type == pygame.MOUSEBUTTONDOWN and layer > 0:
-            if event.button == 1 and self.close_when_click_off:
+        if event.type == pygame.MOUSEBUTTONDOWN and self.view._layers[0] is not self:
+            if event.button == 1 and self.exit_on_click_off:
                 if not pygame.Rect(self._prev_rect).collidepoint(_c.mouse_pos):
                     self.start_transition_out()
-                    self._waiting_for_transition_finish = True
 
         elif event.type == ember_event.TRANSITIONFINISHED:
-            if event.element is self._element:
-                if self._waiting_for_transition_finish:
-                    self._exit_menu()
+            if event.controller.old is self:
+                self._exit_menu()
 
         return False
 
@@ -240,10 +256,10 @@ class ViewLayer:
         pass
 
     def _focus_chain(
-        self, previous: "Element" = None, direction: str = ""
+        self, direction: _c.FocusDirection, previous: Optional["Element"] = None
     ) -> "Element":
         log.nav.info(self, "Reached ViewLayer. Focus wasn't changed.")
-        if direction == "out":
+        if direction == _c.FocusDirection.OUT:
             self._exit_pressed()
         return self.element_focused
 
@@ -254,7 +270,6 @@ class ViewLayer:
         elif self.listen_for_exit:
             if self.transition_out:
                 self.start_transition_out()
-                self._waiting_for_transition_finish = True
             else:
                 self._exit_menu()
             return True
@@ -262,19 +277,33 @@ class ViewLayer:
 
     def _exit_menu(self) -> None:
         """
-        Start fading out the ViewLayer.
+        Finish transitioning.
         """
         self._block_rendering = True
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
         new_event = pygame.event.Event(
-            ember_event.MENUEXITFINISHED, view=self.view, layer=self, cause=self._exit_cause
+            ember_event.VIEWEXITFINISHED,
+            view=self.view,
+            layer=self,
+            index=self.view._layers.index(self),
+            cause=self._exit_cause,
+            **self._exit_kwargs,
         )
         pygame.event.post(new_event)
+        if self.view._layers[0] is not self:
+            self.view._layers.remove(self)
 
-    def set_element(self, element: "Element") -> None:
+    def set_element(
+        self, element: "Element", transition: Optional["Transition"] = None
+    ) -> None:
         """
         Replace the ViewLayer's element with the specified element.
         """
+        if transition:
+            self._transition = transition._new_element_controller()
+            self._transition.old = self.copy()
+            self._transition.new = self
+
         self._element = element
         element._set_parent(self)
         log.layer.line_break()
@@ -282,57 +311,74 @@ class ViewLayer:
         with log.layer.indent:
             element._set_layer_chain(self)
 
+    def start_transition_in(self, transition: Optional["Transition"] = None) -> None:
+        """
+        Start transitioning the ViewLayer in.
+        """
+        if transition is None:
+            transition = self.transition_in
+        if transition is not None:
+            self._transition = transition._new_element_controller()
+            self._transition.new = self
+            self._block_rendering = False
+
     def start_transition_out(
-        self, transition: Optional["Transition"] = None, cause: Any = None
+        self, transition: Optional["Transition"] = None, cause: Any = None, **kwargs
     ) -> None:
         """
-        Start transitioning the view out. When the transition is finished, an ember.MENUEXIT event will be posted.
+        Start transitioning the ViewLayer out. When the transition is finished, an ember.MENUEXIT event will be posted.
         This event will have the 'cause' attribute, the value of which can be specified in the 'cause'
-        parameter of this method.
+        parameter of this method. You can also specify any other keyword argument(s) - they'll be added to the
+        event too.
         """
-        if (
-            transition
-            or self.transition_out
-            and not self._waiting_for_transition_finish
-        ):
-            self._waiting_for_transition_finish = True
+        if transition or self.transition_out:
             transition = transition if transition else self.transition_out
-            self._element._transition = transition._new_element_controller()
-            self._element._transition.old_element = self._element
+            self._transition = transition._new_element_controller()
+            self._transition.old = self
             self._exit_cause = cause
+            self._exit_kwargs = kwargs
 
-            new_event = pygame.event.Event(ember_event.MENUEXITSTARTED, cause=cause)
-            pygame.event.post(new_event)
+        else:
+            self._exit_menu()
 
-    def shift_focus(self, direction: str) -> None:
+        new_event = pygame.event.Event(
+            ember_event.VIEWEXITSTARTED,
+            cause=cause,
+            index=self.view._layers.index(self),
+            layer=self,
+            **kwargs,
+        )
+        pygame.event.post(new_event)
+
+    def shift_focus(
+        self, direction: _c.FocusDirection, element: Optional["Element"] = None
+    ) -> None:
         """
-        Shift the focus in a direction. Directions can be 'left', 'right', 'up', 'down', 'foward'
-        (equivalent to pressing tab), 'backward' (equivalent to pressing shift + tab), 'in'
-        (equivalent to pressing enter), or 'out' (equivalent to pressing escape).
+        Shift the focus in a direction.
         """
         if self.element_focused is None:
             log.nav.info(
                 self,
                 f"Starting focus chain for {self._element} with direction"
-                f" 'select'.",
+                f" {_c.FocusDirection.SELECT}.",
             )
             with log.nav.indent:
-                new_element = self._element._focus_chain(None)
+                new_element = self._element._focus_chain(_c.FocusDirection.SELECT)
         else:
+            if element is None:
+                element = self.element_focused
             log.nav.info(
                 self,
-                f"Starting focus chain for {self.element_focused} with direction '{direction}'.",
+                f"Starting focus chain for {element} with direction {direction}.",
             )
             with log.nav.indent:
-                new_element = self.element_focused._focus_chain(
-                    None, direction=direction
-                )
+                new_element = element._focus_chain(direction)
 
         self._focus_element(new_element)
 
         log.nav.info(self, f"Focus chain ended. Focused {self.element_focused}.")
 
-        # Determine if the element being selected is inside a VScroll
+        # Determine if the element being selected is inside a Scroll
         if self.element_focused is not None:
             for element in self.element_focused.get_parent_tree():
                 if isinstance(element, Scroll):
@@ -346,10 +392,12 @@ class ViewLayer:
         """
         Sets the ViewStyle of the ViewLayer.
         """
-        self._style: ViewStyle = _get_style(style, "view")
+        self._style: "ViewStyle" = self._get_style(style)
 
     style: "ViewStyle" = property(
         fget=lambda self: self._style,
         fset=_set_style,
         doc="The ViewStyle of the ViewLayer. Synonymous with the set_style() method.",
     )
+
+    index: int = property(fget=lambda self: self.view._layers.index(self))

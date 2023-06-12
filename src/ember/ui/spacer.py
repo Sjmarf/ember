@@ -1,28 +1,24 @@
 import pygame
-from typing import Union
+from typing import Union, Optional, Sequence
 
 from .base.element import Element
-from ..size import Size, FILL
+from ..size import Size, FILL, SizeType, SequenceSizeType
+from ..position import PositionType, SequencePositionType
 
 
 class Spacer(Element):
     def __init__(
         self,
-        size: Union[tuple[Union[Size, int], Union[Size, int]]] = (0, 0),
-        width: int = None,
-        height: int = None,
+        rect: Union[pygame.rect.RectType, Sequence, None] = None,
+        pos: Optional[SequencePositionType] = None,
+        x: Optional[PositionType] = None,
+        y: Optional[PositionType] = None,
+        size: Optional[SequenceSizeType] = None,
+        width: Optional[SizeType] = None,
+        height: Optional[SizeType] = None,
     ):
-        if width is not None:
-            size = (width, size[1])
-        if height is not None:
-            size = (size[0], height)
-        super().__init__(*size, can_focus=False)
+
+        super().__init__(rect, pos, x, y, size, width, height, can_focus=False, default_size=(0,0))
 
     def __repr__(self) -> str:
         return "<Spacer>"
-
-    def _update(self) -> None:
-        pass
-
-    def _render(self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255) -> None:
-        pass

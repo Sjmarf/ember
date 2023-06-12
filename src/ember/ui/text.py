@@ -1,58 +1,64 @@
 import pygame
-from typing import Union, Optional, Literal
+from typing import Union, Optional, Literal, TYPE_CHECKING, Sequence
 from .. import log
 from .. import common as _c
+from ..common import ColorType, InheritType, INHERIT
 from .base.element import Element
 from .base.surfacable import Surfacable
-from ..style.text_style import TextStyle
+
 from ..transition.transition import Transition
 
 from ..font.ttf_font import Line
 
-from ..size import FIT, SizeType, SequenceSizeType
-from ..position import PositionType
-from ..style.load_style import load as load_style
-from ..style.get_style import _get_style
+from ..size import FIT, SizeType, SequenceSizeType, SizeMode
+from ..position import PositionType, CENTER, SequencePositionType, Position
+
+if TYPE_CHECKING:
+    from ..style.text_style import TextStyle
 
 
 class Text(Surfacable):
     def __init__(
         self,
         text,
-        position: PositionType = None,
-        size: SequenceSizeType = None,
-        width: SizeType = None,
-        height: SizeType = None,
-        align: Literal["left", "center", "right"] = "center",
-        color: Union[str, tuple[int, int, int], pygame.Color, None] = None,
-        style: Union[TextStyle, None] = None,
+        color: Optional[ColorType] = None,
+        align: Union[InheritType, Sequence[Position], None] = INHERIT,
+        rect: Union[pygame.rect.RectType, Sequence, None] = None,
+        pos: Optional[SequencePositionType] = None,
+        x: Optional[PositionType] = None,
+        y: Optional[PositionType] = None,
+        size: Optional[SequenceSizeType] = None,
+        width: Optional[SizeType] = None,
+        height: Optional[SizeType] = None,
+        style: Union["TextStyle", None] = None,
     ):
         # Load the TextStyle object.
         self.set_style(style)
 
         # Determine which colour to use.
-        self._color = color if color else self._style.color
+        self._color = color
 
         self._text: str = text
-        self._align: Literal["left", "center", "right"] = align
+
+        self._align: Sequence[Position]
+        """
+        The alignment of the text within the element.
+        """
 
         self._fit_width: float = 0
         self._fit_height: float = 0
         self._surface: Optional[pygame.Surface] = None
 
-        super().__init__(position, size, width, height, default_size=(FIT, FIT), can_focus=False)
+        super().__init__(rect, pos, x, y, size, width, height, can_focus=False)
 
         self.lines: list[Line] = []
 
-        self._update_surface()
+        self.set_align(align)
 
     def __repr__(self) -> str:
         if len(self._text) > 15:
             return f"<Text('{self._text[:16]}...')>"
         return f"<Text('{self._text}')>"
-
-    def _render(self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255) -> None:
-        self._draw_surface(surface, offset, self._get_surface(alpha))
 
     def _get_surface(self, alpha: int = 255) -> pygame.Surface:
         self._check_for_surface_update(self.rect.w if self.rect.w != 0 else None)
@@ -65,38 +71,62 @@ class Text(Surfacable):
         offset: tuple[int, int],
         my_surface: pygame.Surface,
     ) -> None:
-        rect = self._draw_rect.move(*offset)
+        rect = self._int_rect.move(*offset)
         pos = (
             rect.centerx - my_surface.get_width() // 2,
             rect.centery - my_surface.get_height() // 2,
         )
-        surface.blit(
-            my_surface,
-            (
-                pos[0] - surface.get_abs_offset()[0],
-                pos[1] - surface.get_abs_offset()[1] + self._style.font.y_offset,
-            ),
-        )
 
-    def _update_rect_chain_down(self, surface: pygame.Surface, pos: tuple[float, float], max_size: tuple[float, float],
-                                _ignore_fill_width: bool = False, _ignore_fill_height: bool = False) -> None:
+        if self._text:
+            if self._color is None:
+                new_surface = my_surface.copy()
+                self._style.material.render(
+                    self, surface, pos, new_surface.get_size(), alpha=255
+                )
+                new_surface.blit(
+                    self._style.material.get(self),
+                    (0, 0),
+                    special_flags=pygame.BLEND_RGB_ADD,
+                )
+            else:
+                new_surface = my_surface
+
+            surface.blit(
+                new_surface,
+                (
+                    pos[0] - surface.get_abs_offset()[0],
+                    pos[1] - surface.get_abs_offset()[1] + self._style.font.y_offset,
+                ),
+            )
+
+    def _update_rect_chain_down(
+        self,
+        surface: pygame.Surface,
+        pos: tuple[float, float],
+        max_size: tuple[float, float],
+        _ignore_fill_width: bool = False,
+        _ignore_fill_height: bool = False,
+    ) -> None:
         super()._update_rect_chain_down(surface, pos, max_size)
-        self._check_for_surface_update(max_width=self.get_abs_width(max_size[0]))
+        self._check_for_surface_update(max_width=self.get_ideal_width(max_size[0]))
 
     @Element._chain_up_decorator
     def _update_rect_chain_up(self) -> None:
         if self._surface:
-            if self._width.mode == 1:
+            if self._w._has_fit_size:
                 self._fit_width = self._surface.get_width()
-            if self._height.mode == 1:
+            if self._h._has_fit_size:
                 self._fit_height = self._surface.get_height()
 
     def _check_for_surface_update(self, max_width: Optional[float] = None) -> bool:
+        """
+        Checks if the text surfaces needs to be redrawn, and redraws it if so.
+        """
         # This is in a separate method because some elements need to call this before its scroll calculations
         if self._surface is None or (
-            max_width is not None
-            and self._width.mode == 2
-            and (round(max_width) != self._surface.get_width())
+                max_width is not None
+                and self._w.mode == SizeMode.FILL
+                and (round(max_width - abs(self.align[0].value)) != self._surface.get_width())
         ):
             if max_width is not None:
                 max_width = round(max_width)
@@ -114,7 +144,7 @@ class Text(Surfacable):
 
     def _update_surface(self, max_width: Optional[float] = None) -> None:
         if max_width is None:
-            max_width = None if self._width.mode == 1 else self.rect.w
+            max_width = None if self._w.ideal.mode == SizeMode.FIT else self.rect.w
             if max_width == 0:
                 log.size.info(
                     self,
@@ -123,10 +153,9 @@ class Text(Surfacable):
                 return
         self._surface, self.lines = self._style.font.render(
             self._text,
-            col=self._color,
-            outline_col=self._style.outline_color,
+            color=self._color if self._color is not None else (0, 0, 0),
             max_width=max_width,
-            align=self._align if self._align else self._style.align,
+            align=self._align[0],
         )
         log.size.info(
             self,
@@ -200,24 +229,35 @@ class Text(Surfacable):
         super().set_width(value, _update_rect_chain_up)
         self._update_surface()
 
-    def _set_align(self, align: Literal["left", "center", "right"]) -> None:
+    @property
+    def align(self) -> Sequence[Position]:
+        return self._align
+
+    @align.setter
+    def align(self, align: Union[InheritType, Sequence[Position], None]) -> None:
         self.set_align(align)
 
-    def set_align(self, align: Literal["left", "center", "right"]) -> None:
+    def set_align(self, align: Union[InheritType, Sequence[Position], None]) -> None:
         """
         Set the alignment of the text. Must be 'left', 'center' or 'right'.
         """
         self._align = align
+        if align is INHERIT or align is None:
+            self._align = self._style.align
+        elif isinstance(align, Position):
+            self._align = (align, CENTER)
+        else:
+            self._align = align
         self._update_surface()
 
-    def _set_style(self, style: Optional[TextStyle]) -> None:
+    def _set_style(self, style: Optional["TextStyle"]) -> None:
         self.set_style(style)
 
-    def set_style(self, style: Optional[TextStyle]) -> None:
+    def set_style(self, style: Optional["TextStyle"]) -> None:
         """
         Sets the TextStyle of the Text.
         """
-        self._style: TextStyle = _get_style(style, "text")
+        self._style: "TextStyle" = self._get_style(style)
 
     text: str = property(fget=lambda self: self._text, doc="The text string.")
 
@@ -225,14 +265,8 @@ class Text(Surfacable):
         fget=lambda self: self._color, fset=_set_color, doc="The color of the text."
     )
 
-    style: TextStyle = property(
+    style: "TextStyle" = property(
         fget=lambda self: self._style, fset=_set_style, doc="The TextStyle of the Text."
-    )
-
-    align: Literal["left", "center", "right"] = property(
-        fget=lambda self: self._align,
-        fset=_set_align,
-        doc="The alignment of the Text. Must be 'left', 'center' or 'right'.",
     )
 
     surface: pygame.Surface = property(
