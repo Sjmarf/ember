@@ -172,19 +172,15 @@ class ViewLayer(Element):
         self._element._update_a()
 
     def _update_rect_chain_down(
-        self,
-        surface: pygame.Surface,
-        pos: tuple[float, float],
-        max_size: tuple[float, float],
-        _ignore_fill_width: bool = False,
-        _ignore_fill_height: bool = False,
+        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        super()._update_rect_chain_down(
-            surface,
-            pos,
-            max_size,
-            _ignore_fill_width=_ignore_fill_width,
-            _ignore_fill_height=_ignore_fill_height,
+
+        self.rect.update(x, y, w, h)
+        self._int_rect.update(
+            round(x),
+            round(y),
+            round(w),
+            round(h),
         )
 
         i = 0
@@ -202,18 +198,18 @@ class ViewLayer(Element):
 
             with log.size.indent:
                 element_x = (
-                    pos[0]
-                    + self.get_ideal_width(max_size[0]) // 2
-                    - self._element.get_ideal_width(self.rect.w) // 2
+                    x
+                    + w // 2
+                    - self._element.get_abs_width(w) // 2
                 )
                 element_y = (
-                    pos[1]
-                    + self.get_ideal_height(max_size[1]) // 2
-                    - self._element.get_ideal_height(self.rect.h) // 2
+                    y
+                    + h // 2
+                    - self._element.get_abs_height(h) // 2
                 )
 
                 self._element._update_rect_chain_down(
-                    surface, (element_x, element_y), self.rect.size
+                    surface, element_x, element_y, self._element.get_abs_width(w), self._element.get_abs_height(h)
                 )
 
             self._chain_down_from = None

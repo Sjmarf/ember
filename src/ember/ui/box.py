@@ -25,7 +25,7 @@ class Box(SingleElementContainer):
 
     def __init__(
         self,
-        element: Optional[Element],
+        element: Optional[Element] = None,
         material: Union["BackgroundState", Material, None] = None,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
         pos: Optional[SequencePositionType] = None,
@@ -38,8 +38,8 @@ class Box(SingleElementContainer):
     ):
         self.set_style(style)
 
-        self._fit_width: float = 0
-        self._fit_height: float = 0
+        self._min_w: float = 0
+        self._min_h: float = 0
 
         self.layer = None
 
@@ -65,30 +65,25 @@ class Box(SingleElementContainer):
             self._element._update_a()
 
     def _update_rect_chain_down(
-        self,
-        surface: pygame.Surface,
-        pos: tuple[float, float],
-        max_size: tuple[float, float],
-        _ignore_fill_width: bool = False,
-        _ignore_fill_height: bool = False,
+            self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
         super()._update_rect_chain_down(
-            surface, pos, max_size, _ignore_fill_width, _ignore_fill_height
+            surface, x, y, w, h
         )
 
         if self._element:
             element_x = (
-                pos[0]
-                + self.get_ideal_width(max_size[0]) // 2
-                - self._element.get_ideal_width(self.rect.w) // 2
+                    x
+                    + w // 2
+                    - self._element.get_abs_width(w) // 2
             )
             element_y = (
-                pos[1]
-                + self.get_ideal_height(max_size[1]) // 2
-                - self._element.get_ideal_height(self.rect.h) // 2
+                    y
+                    + h // 2
+                    - self._element.get_abs_height(h) // 2
             )
-            element_w = self._element.get_ideal_width(self.rect.w)
-            element_h = self._element.get_ideal_height(self.rect.h)
+            element_w = self._element.get_abs_width(w)
+            element_h = self._element.get_abs_height(h)
 
             if not self.is_visible:
                 self._element.is_visible = False
@@ -104,23 +99,24 @@ class Box(SingleElementContainer):
 
             self._element._update_rect_chain_down(
                 surface,
-                (element_x, element_y),
-                self.rect.size,
+                element_x, element_y,
+                element_w,
+                element_h
             )
 
     @Element._chain_up_decorator
     def _update_rect_chain_up(self) -> None:
         if self._h.mode == SizeMode.FIT:
             if self._element:
-                self._fit_height = self._element.get_ideal_height()
+                self._min_h = self._element.get_abs_height()
             else:
-                self._fit_height = 20
+                self._min_h = 20
 
         if self._w.mode == SizeMode.FIT:
             if self._element:
-                self._fit_width = self._element.get_ideal_width()
+                self._min_w = self._element.get_abs_width()
             else:
-                self._fit_width = 20
+                self._min_w = 20
 
     def _set_layer_chain(self, layer: ViewLayer) -> None:
         log.layer.info(self, f"Set layer to {layer}")

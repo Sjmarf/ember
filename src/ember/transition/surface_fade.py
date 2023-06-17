@@ -60,10 +60,8 @@ class SurfaceFade(Transition):
 
         if old is not None and new is not None:
             amount = max(0.0, timer / self.duration)
-            old.render(element, surface, pos, size, alpha)
-            old_surf = old.get(element)
-            new.render(element, surface, pos, size, alpha)
-            new_surf = new.get(element)
+            old_surf = old.render(element, surface, pos, size, alpha)
+            new_surf = new.render(element, surface, pos, size, alpha)
             if (old_surf is None) and (new_surf is None):
                 return
             result = surface_fade(old_surf, new_surf, amount)
@@ -72,13 +70,11 @@ class SurfaceFade(Transition):
         else:
             if old is not None:
                 new_alpha = round(timer / self.duration * alpha)
-                old.render(element, surface, pos, size, new_alpha)
-                old.draw(element, surface, pos)
+                old.draw(element, surface, pos, size, new_alpha)
 
             else:
                 new_alpha = round((1 - timer / self.duration) * alpha)
-                new.render(element, surface, pos, size, new_alpha)
-                new.draw(element, surface, pos)
+                new.draw(element, surface, pos, size, new_alpha)
 
 
 def surface_fade(old_surf: pygame.Surface, new_surf: pygame.Surface, amount: float) -> pygame.Surface:

@@ -1,3 +1,5 @@
+import abc
+
 import pygame
 import inspect
 import copy
@@ -11,13 +13,13 @@ if TYPE_CHECKING:
     from ember.transition.transition import Transition, TransitionController
     from ...style.style import Style
 
-from ember.size import Size, SizeType, SequenceSizeType, create_range, SizeRange
+from ember.size import Size, SizeType, SequenceSizeType
 from ember.position import PositionType, SequencePositionType, Position, CENTER
 
 from ... import common as _c
 
 
-class Element:
+class Element(abc.ABC):
     """
     The base element class. All UI elements in the library inherit from this class.
     """
@@ -84,35 +86,26 @@ class Element:
             else:
                 width, height = size, size
 
+        self._min_w: float = 0
+        self._min_h: float = 0
+
         self.set_size(width, height, _update=False)
 
         self._transition: Optional["TransitionController"] = None
 
-    def _update_rect(self, x: float, y: float, w: float, h: float) -> None:
-        self.rect.update(x, y, w, h)
-        self._int_rect.update(
-            round(self.rect.x),
-            round(self.rect.y),
-            round(self.rect.w),
-            round(self.rect.h),
-        )
-
     def _update_rect_chain_down(
-        self,
-        surface: pygame.Surface,
-        pos: tuple[float, float],
-        max_size: tuple[float, float],
-        _ignore_fill_width: bool = False,
-        _ignore_fill_height: bool = False,
+        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
         """
         Used internally by the library. Calling this method calls the same method for the element's child elements.
         """
 
-        self._update_rect(
-            *pos,
-            self.get_ideal_width(max_size[0], _ignore_fill_width=_ignore_fill_width),
-            self.get_ideal_height(max_size[1], _ignore_fill_height=_ignore_fill_height),
+        self.rect.update(x, y, w, h)
+        self._int_rect.update(
+            round(x),
+            round(y),
+            round(w),
+            round(h),
         )
 
         log.size.info(self, f"Chain down {self.rect[:]}, visible = {self.is_visible}.")
@@ -127,32 +120,32 @@ class Element:
     @staticmethod
     def _chain_up_decorator(func: callable) -> callable:
         def wrapper(self) -> None:
-            old_width, old_height = self._fit_width, self._fit_height
+            old_width, old_height = self._min_w, self._min_h
             log.size.info(self, "Chain up.")
             cut_chain = False
 
             func(self)
 
-            if old_width != self._fit_width and old_height != self._fit_height:
+            if old_width != self._min_w and old_height != self._min_h:
                 log.size.info(
                     self,
                     f"Fit size changed from {(old_width, old_height)} to "
-                    f"{self._fit_width, self._fit_height}.",
+                    f"{self._min_w, self._min_h}.",
                 )
-            elif old_width != self._fit_width:
+            elif old_width != self._min_w:
                 log.size.info(
-                    self, f"Fit width changed from {old_width} to {self._fit_width}."
+                    self, f"Fit width changed from {old_width} to {self._min_w}."
                 )
-            elif old_height != self._fit_height:
+            elif old_height != self._min_h:
                 log.size.info(
-                    self, f"Fit height changed from {old_height} to {self._fit_height}."
+                    self, f"Fit height changed from {old_height} to {self._min_h}."
                 )
             else:
                 cut_chain = True
 
             if self.parent:
                 if cut_chain:
-                    if self._fit_width == 1 or self._fit_height == 1:
+                    if self._min_w == 1 or self._min_h == 1:
                         log.size.info(self, "Size wasn't changed - cutting chain...")
                     else:
                         log.size.info(
@@ -277,39 +270,34 @@ class Element:
         else:
             return style
 
-    def set_pos(self, *pos: SequencePositionType, _update=True) -> None:
+    def set_pos(self, *pos: Optional[SequencePositionType], _update=True) -> None:
         """
         Set the position of the element.
         """
         if isinstance(pos[0], Sequence):
             pos = pos[0]
 
-        self._x: Position = (
-            Position(pos[0]) if isinstance(pos[0], (int, float)) else pos[0]
-        )
-        self._y: Position = (
-            Position(pos[1]) if isinstance(pos[1], (int, float)) else pos[1]
-        )
+        if not isinstance(pos, Sequence):
+            pos = (pos, pos)
+
+        self._x: Position = Position._load(pos[0])
+        self._y: Position = Position._load(pos[1])
         if _update:
             self._update_rect_chain_up()
 
-    def set_x(self, value: PositionType, _update=True) -> None:
+    def set_x(self, value: Optional[PositionType], _update=True) -> None:
         """
         Set the x position of the element.
         """
-        self._x: Position = (
-            Position(value) if isinstance(value, (int, float)) else value
-        )
+        self._x: Position = Position._load(value)
         if _update:
             self._update_rect_chain_up()
 
-    def set_y(self, value: PositionType, _update=True) -> None:
+    def set_y(self, value: Optional[PositionType], _update=True) -> None:
         """
         Set the y position of the element.
         """
-        self._y: Position = (
-            Position(value) if isinstance(value, (int, float)) else value
-        )
+        self._y: Position = Position._load(value)
         if _update:
             self._update_rect_chain_up()
 
@@ -320,8 +308,8 @@ class Element:
         if isinstance(size[0], Sequence):
             size = size[0]
 
-        self._w: SizeRange = create_range(size[0])
-        self._h: SizeRange = create_range(size[1])
+        self._w: Size = Size._load(size[0])
+        self._h: Size = Size._load(size[1])
 
         if _update:
             self._update_rect_chain_up()
@@ -330,7 +318,7 @@ class Element:
         """
         Set the width of the element.
         """
-        self._w: SizeRange = create_range(value)
+        self._w: Size = Size._load(value)
         if _update:
             self._update_rect_chain_up()
 
@@ -338,46 +326,48 @@ class Element:
         """
         Set the height of the element.
         """
-        self._h: SizeRange = create_range(value)
+        self._h: Size = Size._load(value)
         if _update:
             self._update_rect_chain_up()
 
-    def get_size(self) -> tuple[SizeRange, SizeRange]:
+    def get_size(self) -> tuple[Size, Size]:
         """
         Get the size of the element. Returns ember.size.Size objects.
         If you want float sizes, use get_abs_size() instead.
         """
         return self._w, self._h
 
-    def get_width(self) -> SizeRange:
+    def get_width(self) -> Size:
         """
         Get the width of the element. Returns ember.size.Size object.
         If you want the width as a float, use get_ideal_width() instead.
         """
         return self._w
 
-    def get_height(self) -> SizeRange:
+    def get_height(self) -> Size:
         """
         Get the height of the element. Returns ember.size.Size object.
         If you want the height as a float, use get_ideal_height() instead.
         """
         return self._h
 
-    def get_ideal_width(
-        self, max_width: float = 0, _ignore_fill_width: bool = False
-    ) -> float:
+    def get_abs_width(self, max_width: float = 0) -> float:
         """
         Get the width of the element as a float, given the maximum width to fill.
         """
-        return self._w._ideal.get(self, max_width, _ignore_fill_width, mode="width")
+        return self._w.get(self, max_width, mode="width")
 
-    def get_ideal_height(
-        self, max_height: float = 0, _ignore_fill_height: bool = False
-    ) -> float:
+    def get_abs_height(self, max_height: float = 0) -> float:
         """
         Get the height of the element as a float, given the maximum height to fill.
         """
-        return self._h._ideal.get(self, max_height, _ignore_fill_height, mode="height")
+        return self._h.get(self, max_height, mode="height")
+
+    def get_default_width(self) -> Size:
+        return self._style.default_size[0]
+
+    def get_default_height(self) -> Size:
+        return self._style.default_size[1]
 
     def focus(self) -> None:
         """

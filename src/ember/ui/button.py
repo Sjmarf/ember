@@ -71,7 +71,7 @@ class Button(Element, Interactive):
         """
         Is :code:`True` when the button is clicked down. Read-only.
         """
-        
+
         self.on_click: Optional[Callable[["Button"], None]] = on_click
         """
         A function to run when the button is clicked.
@@ -83,8 +83,8 @@ class Button(Element, Interactive):
         """
 
         self._style: "ButtonStyle"
-        self._fit_width: float = 0
-        self._fit_height: float = 0
+        self._min_w: float = 0
+        self._min_h: float = 0
         self._hold_timer: float = hold_start_delay
         self._is_held: bool = False
 
@@ -92,9 +92,7 @@ class Button(Element, Interactive):
 
         self.set_style(style)
 
-        Element.__init__(
-            self, rect, pos, x, y, size, width, height
-        )
+        Element.__init__(self, rect, pos, x, y, size, width, height)
         Interactive.__init__(self, disabled)
         self.set_element(*element)
 
@@ -106,21 +104,28 @@ class Button(Element, Interactive):
     ) -> None:
         # Decide which image to draw
         rect = self._int_rect.move(*offset)
-        
-        self.state_controller.set_state(self.style.state_func(self), transitions=(self._style.material_transition,))
+
+        self.state_controller.set_state(
+            self.style.state_func(self), transitions=(self._style.material_transition,)
+        )
+
+        offset2 = self.state_controller.current_state.get_offset(self.state_controller)
+        offset = (offset[0] + offset2[0], offset[1] + offset2[1])
 
         self.state_controller.render(
             surface,
             (
-                rect.x - surface.get_abs_offset()[0],
-                rect.y - surface.get_abs_offset()[1],
+                rect.x - surface.get_abs_offset()[0] + offset[0],
+                rect.y - surface.get_abs_offset()[1] + offset[1],
             ),
             rect.size,
             alpha,
         )
 
         if self._element:
-            offset2 = self.state_controller.current_state.get_element_offset(self.state_controller)
+            offset2 = self.state_controller.current_state.get_element_offset(
+                self.state_controller
+            )
 
             self._element._render_a(
                 surface, (offset[0] + offset2[0], offset[1] + offset2[1]), alpha=alpha
@@ -149,30 +154,18 @@ class Button(Element, Interactive):
             self._element._update_a()
 
     def _update_rect_chain_down(
-        self,
-        surface: pygame.Surface,
-        pos: tuple[float, float],
-        max_size: tuple[float, float],
-        _ignore_fill_width: bool = False,
-        _ignore_fill_height: bool = False,
+        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        super()._update_rect_chain_down(
-            surface, pos, max_size, _ignore_fill_width, _ignore_fill_height
-        )
-        
+        super()._update_rect_chain_down(surface, x, y, w, h)
+
         with log.size.indent:
             if self._element:
                 self._element._update_rect_chain_down(
                     surface,
-                    (
-                        pos[0]
-                        + self.rect.w // 2
-                        - self._element.get_ideal_width(self.rect.w) // 2,
-                        self._int_rect.y
-                        + self.rect.h // 2
-                        - self._element.get_ideal_height(self.rect.h) // 2,
-                    ),
-                    self.rect.size,
+                    x + w // 2 - self._element.get_abs_width(w) // 2,
+                    y + h // 2 - self._element.get_abs_height(h) // 2,
+                    self._element.get_abs_width(w),
+                    self._element.get_abs_height(h),
                 )
 
     @Element._chain_up_decorator
@@ -183,9 +176,9 @@ class Button(Element, Interactive):
                     raise ValueError(
                         "Cannot have elements of FILL width inside of a FIT width Button."
                     )
-                self._fit_width = self._element.get_ideal_width()
+                self._min_w = self._element.get_abs_width()
             else:
-                self._fit_width = self._style.size[0]
+                self._min_w = self._style.size[0]
 
         if self._h.mode == SizeMode.FIT:
             if self._element:
@@ -193,9 +186,9 @@ class Button(Element, Interactive):
                     raise ValueError(
                         "Cannot have elements of FILL height inside of a FIT height Button."
                     )
-                self._fit_height = self._element.get_ideal_width()
+                self._min_h = self._element.get_abs_height()
             else:
-                self._fit_height = self._style.size[1]
+                self._min_h = self._style.size[1]
 
     def _set_layer_chain(self, layer: "ViewLayer") -> None:
         log.layer.info(self, f"Set layer to {layer}")

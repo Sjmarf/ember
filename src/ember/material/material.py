@@ -16,17 +16,46 @@ class Material(abc.ABC):
     """
 
     def __init__(self, alpha: int):
-        self._cache: WeakKeyDictionary = WeakKeyDictionary()
-
         self.alpha: int = alpha
         """
         The transparency of the material, where 0 is fully transparent and 255 is opaque.
         """
 
-    def __repr__(self) -> str:
-        return "<Material>"
+    @abc.abstractmethod
+    def render(
+        self,
+        element: "Element",
+        surface: pygame.Surface,
+        pos: tuple[int, int],
+        size: tuple[int, int],
+        alpha: int,
+    ) -> Optional[pygame.Surface]:
+        pass
 
-    def _clear_cache(self) -> None:
+    def draw(
+        self,
+        element: "Element",
+        surface: pygame.Surface,
+        pos: tuple[int, int],
+        size: tuple[int, int],
+        alpha: int,
+    ) -> None:
+        surf = self.render(element, surface, pos, size, alpha)
+        if surf is not None:
+            surface.blit(surf, pos)
+
+
+class MaterialWithElementCache(Material):
+    """
+    Materials that have an element cache inherit from this class.
+    This base class should not be instantiated.
+    """
+
+    def __init__(self, alpha: int):
+        self._cache: WeakKeyDictionary = WeakKeyDictionary()
+        super().__init__(alpha)
+
+    def clear_cache(self) -> None:
         self._cache.clear()
 
     def _needs_to_render(
@@ -59,26 +88,14 @@ class Material(abc.ABC):
         """
         return self._cache.get(element)
 
-    def draw(
-        self,
-        element: "Element",
-        destination_surface: pygame.Surface,
-        pos: tuple[float, float]
-    ) -> None:
-        """
-        Draw the material to a destination surface.
-        """
-        if element in self._cache:
-            destination_surface.blit(self.get(element), pos)
-
     def render(
         self,
         element: "Element",
         surface: pygame.Surface,
-        pos: tuple[float, float],
-        size: tuple[float, float],
+        pos: tuple[int, int],
+        size: tuple[int, int],
         alpha: int,
-    ) -> bool:
+    ) -> Optional[pygame.Surface]:
         """
         Render the material to a surface, which is saved in a cache.
         Returns True if the Surface needed to be re-rendered.
@@ -86,14 +103,14 @@ class Material(abc.ABC):
         if self._needs_to_render(element, surface, pos, size):
             log.material.info(self, element, f"Rendering...")
             self._cache[element] = self._render_surface(element, surface, pos, size)
-            self.get(element).set_alpha(alpha * self.alpha / 255)
-            return True
-        else:
-            self.get(element).set_alpha(alpha * self.alpha / 255)
-            return False
+
+        new_surface = self.get(element)
+        new_surface.set_alpha(alpha * self.alpha / 255)
+
+        return new_surface
 
 
-class MaterialWithSizeCache(Material, abc.ABC):
+class MaterialWithSizeCache(MaterialWithElementCache, abc.ABC):
     """
     Materials that have a size cache in addition to an element cache inherit from this class.
     This base class should not be instantiated.
@@ -109,7 +126,7 @@ class MaterialWithSizeCache(Material, abc.ABC):
             tuple[float, float], Element
         ] = WeakValueDictionary()
 
-    def _clear_cache(self) -> None:
+    def clear_cache(self) -> None:
         self._cache.clear()
         self._size_cache_v.clear()
         self._size_cache_k.clear()
@@ -118,27 +135,29 @@ class MaterialWithSizeCache(Material, abc.ABC):
         self,
         element: "Element",
         surface: pygame.Surface,
-        pos: tuple[float, float],
-        size: tuple[float, float],
+        pos: tuple[int, int],
+        size: tuple[int, int],
         alpha: int,
-    ) -> bool:
+    ) -> Optional[pygame.Surface]:
         if self._needs_to_render(element, surface, pos, size):
             if size in self._size_cache_v:
                 log.material.info(self, element, f"Reusing size {size}...")
                 if self.get(self._size_cache_v[size]).get_size() != size:
                     log.material.info(self, element, f"Rendering...")
-                    self._cache[element] = self._render_surface(element, surface, pos, size)
-                    
+                    self._cache[element] = self._render_surface(
+                        element, surface, pos, size
+                    )
+
                     other_element = self._size_cache_v[size]
                     if other_element in self._size_cache_k:
                         del self._size_cache_v[self._size_cache_k[other_element]]
                         del self._size_cache_k[other_element]
-                        
+
                     self._size_cache_v[size] = element
                     self._size_cache_k[element] = size
-                else:            
+                else:
                     self._cache[element] = self._cache[self._size_cache_v[size]]
-                
+
             else:
                 log.material.info(self, element, f"Rendering...")
                 self._cache[element] = self._render_surface(element, surface, pos, size)
@@ -148,8 +167,6 @@ class MaterialWithSizeCache(Material, abc.ABC):
                 self._size_cache_v[size] = element
                 self._size_cache_k[element] = size
 
-            self.get(element).set_alpha(alpha * self.alpha / 255)
-            return True
-        else:
-            self.get(element).set_alpha(alpha * self.alpha / 255)
-            return False
+        material_surface = self._cache[element]
+        material_surface.set_alpha(alpha * self.alpha / 255)
+        return material_surface

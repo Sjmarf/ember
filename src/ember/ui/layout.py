@@ -48,8 +48,8 @@ class Layout(MultiElementContainer):
         self.set_elements(*elements, _update=False)
         super().__init__(material, rect, pos, x, y, size, width, height, focus_on_entry)
 
-        self._fit_width: float = 0
-        self._fit_height: float = 0
+        self._min_w: float = 0
+        self._min_h: float = 0
 
         self._update_elements()
 
@@ -70,65 +70,61 @@ class Layout(MultiElementContainer):
             i._update_a()
 
     def _update_rect_chain_down(
-        self,
-        surface: pygame.Surface,
-        pos: tuple[float, float],
-        max_size: tuple[float, float],
-        _ignore_fill_width: bool = False,
-        _ignore_fill_height: bool = False,
+        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        self_width = self.get_ideal_width(max_size[0])
-        self_height = self.get_ideal_height(max_size[1])
 
         super()._update_rect_chain_down(
-            surface, pos, max_size, _ignore_fill_width, _ignore_fill_height
+            surface, x, y, w, h
         )
 
         for element in self.elements:
-            element_x = element._x if element._x is not None else CENTER
-            element_y = element._y if element._y is not None else CENTER
+            element_x_obj = element._x if element._x is not None else CENTER
+            element_y_obj = element._y if element._y is not None else CENTER
 
-            x = pos[0] + element_x.get(
+            element_w = element.get_abs_width(w - abs(element_x_obj.value))
+            element_h = element.get_abs_height(h - abs(element_y_obj.value))
+
+            element_x = x + element_x_obj.get(
                 element,
-                self_width,
-                element.get_ideal_width(self_width - abs(element_x.value)),
+                w,
+                element_w
             )
-            y = pos[1] + element_y.get(
+            element_y = y + element_y_obj.get(
                 element,
-                self_height,
-                element.get_ideal_height(self_height - abs(element_y.value)),
+                h,
+                element_h
             )
             element._update_rect_chain_down(
                 surface,
-                (x, y),
-                (self_width - abs(element_x.value), self_height - abs(element_y.value)),
+                element_x, element_y,
+                element_w, element_h
             )
 
     @Element._chain_up_decorator
     def _update_rect_chain_up(self) -> None:
         if self._w.mode == SizeMode.FIT:
-            self._fit_width = 0
+            self._min_w = 0
             for i in self._elements:
                 if i._w.mode == SizeMode.FILL:
                     raise ValueError(
                         "Cannot have elements of FILL width inside of a FIT width Layout."
                     )
-                if (w := i.get_ideal_width()) > self._fit_width:
-                    self._fit_width = w
+                if (w := i.get_abs_width()) > self._min_w:
+                    self._min_w = w
             else:
-                self._fit_width = 20
+                self._min_w = 20
 
         if self._h.mode == SizeMode.FIT:
-            self._fit_height = 0
+            self._min_h = 0
             for i in self._elements:
                 if i._h.mode == SizeMode.FILL:
                     raise ValueError(
                         "Cannot have elements of FILL height inside of a FIT height Layout."
                     )
-                if (h := i.get_ideal_height()) > self._fit_height:
-                    self._fit_height = h
+                if (h := i.get_abs_height()) > self._min_h:
+                    self._min_h = h
             else:
-                self._fit_height = 20
+                self._min_h = 20
 
     def _focus_chain(
         self, direction: _c.FocusDirection, previous: Optional["Element"] = None

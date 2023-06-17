@@ -19,7 +19,7 @@ except ModuleNotFoundError:
 
 pygame.init()
 
-log = logging.getLogger("ember.nav")
+log = logging.getLogger("ember.material")
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.FileHandler("log.log", "w+"))
 
@@ -35,8 +35,6 @@ start_time = time.time()
 style = ember.style.load("pixel_dark")
 print(f"Style load took {time.time() - start_time}s")
 
-ember.default_styles.get(ember.ViewLayer).listen_for_exit = True
-
 display = pygame.Surface((WIDTH / ZOOM, HEIGHT / ZOOM), pygame.SRCALPHA)
 clock = pygame.time.Clock()
 ember.set_clock(clock)
@@ -44,16 +42,22 @@ ember.set_display_zoom(ZOOM)
 
 wallpaper = pygame.image.load("wallpaper3.png").convert_alpha()
 
-red_button = ember.ButtonStyle(
-    default_material=ember.material.Color("red")
-)
+image = pygame.image.load("image.png").convert_alpha()
+# material = ember.material.StretchedSurface(image)
 
-fps = ember.Text("")
 
 view = ember.View(
-    ember.VStack(
-        ember.Text("Hello"),
-        ember.Text("World")
+    ember.Resizable(
+        ember.VStack(
+            ember.Button("1",width=50),
+            ember.Button("2", width=50, height=ember.FILL),
+            ember.Button("3",width=50),
+            spacing=5,
+            size=ember.FILL,
+        ),
+        size=100,
+        handles=[ember.LEFT, ember.RIGHT, ember.TOP, ember.BOTTOM],
+        material=ember.material.AverageColor((0,0,10))
     )
 )
 
@@ -77,14 +81,14 @@ while is_running:
             ember.joysticks.append(joystick)
 
     display.fill(style["background_color"])
-    #display.blit(wallpaper, (0,0))
+    # display.blit(wallpaper, (0,0))
     ember.update()
     view.update(display)
 
     screen.blit(pygame.transform.scale(display, (WIDTH, HEIGHT)), (0, 0))
 
     clock.tick(60)
-    #fps.set_text(str(round(clock.get_fps())))
+    # fps.set_text(str(round(clock.get_fps())))
     pygame.display.flip()
 
 pygame.quit()

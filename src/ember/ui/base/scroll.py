@@ -23,7 +23,7 @@ from ember.state.state import load_background
 
 from ember.state.state_controller import StateController
 
-from ember.utility.timer import BasicTimer
+from ember.utility.timekeeper import BasicTimekeeper
 
 
 class Scroll(SingleElementContainer, abc.ABC):
@@ -38,7 +38,6 @@ class Scroll(SingleElementContainer, abc.ABC):
         element: Optional[Element],
         material: Union["BackgroundState", Material, None] = None,
         over_scroll: Union[InheritType, Sequence[int]] = INHERIT,
-        align: Union[InheritType, SequencePositionType] = INHERIT,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
@@ -46,6 +45,7 @@ class Scroll(SingleElementContainer, abc.ABC):
         size: Optional[SequenceSizeType] = None,
         width: Optional[SizeType] = None,
         height: Optional[SizeType] = None,
+        content_pos: Union[InheritType, SequencePositionType] = INHERIT,
         style: Optional["ScrollStyle"] = None,
     ):
         self.set_style(style)
@@ -86,26 +86,26 @@ class Scroll(SingleElementContainer, abc.ABC):
 
         self._subsurf: Optional[pygame.Surface] = None
 
-        self._fit_width: int = 0
-        self._fit_height: int = 0
+        self._min_w: int = 0
+        self._min_h: int = 0
 
         self.layer = None
 
         self._element: Optional[Element] = None
         self.set_element(element, _update=False)
 
-        self.scroll = BasicTimer(self.over_scroll[0] * -1)
+        self.scroll = BasicTimekeeper(self.over_scroll[0] * -1)
         self._scrollbar_pos: int = 0
         self._scrollbar_size: int = 0
         self._scrollbar_grabbed_pos: int = 0
 
         super().__init__(material, rect, pos, x, y, size, width, height)
 
-        if not isinstance(align, (Sequence, InheritType)):
-            align = (align, align)
+        if not isinstance(content_pos, (Sequence, InheritType)):
+            content_pos = (content_pos, content_pos)
 
-        self.align: Sequence[Position] = (
-            self._style.align if align is INHERIT else align
+        self.content_pos: Sequence[Position] = (
+            self._style.content_pos if content_pos is INHERIT else content_pos
         )
 
     def _render_elements(
@@ -127,26 +127,21 @@ class Scroll(SingleElementContainer, abc.ABC):
         pass
 
     def _update_rect_chain_down(
-        self,
-        surface: pygame.Surface,
-        pos: tuple[float, float],
-        max_size: tuple[float, float],
-        _ignore_fill_width: bool = False,
-        _ignore_fill_height: bool = False,
+        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        self._check_element(max_size)
+        #self._check_element(max_size)
 
         super()._update_rect_chain_down(
-            surface, pos, max_size, _ignore_fill_width, _ignore_fill_height
+            surface, x, y, w, h
         )
 
         if (
             self._subsurf is None
-            or (*self._subsurf.get_abs_offset(), *self._subsurf.get_size()) != self.rect
+            or (*self._subsurf.get_abs_offset(), *self._subsurf.get_size()) != self._int_rect
             or self._subsurf.get_abs_parent() is not surface.get_abs_parent()
         ) and self.is_visible:
             parent_surface = surface.get_abs_parent()
-            rect = self.rect.copy().clip(parent_surface.get_rect())
+            rect = self._int_rect.copy().clip(parent_surface.get_rect())
             try:
                 self._subsurf = parent_surface.subsurface(rect)
             except ValueError as e:
@@ -169,9 +164,9 @@ class Scroll(SingleElementContainer, abc.ABC):
                     raise ValueError(
                         "Cannot have elements of FILL height inside of a FIT height Scroll."
                     )
-                self._fit_height = self._element.get_ideal_height()
+                self._min_h = self._element.get_abs_height()
             else:
-                self._fit_height = 20
+                self._min_h = 20
 
         if self._w.mode == SizeMode.FIT:
             if self._element:
@@ -179,9 +174,9 @@ class Scroll(SingleElementContainer, abc.ABC):
                     raise ValueError(
                         "Cannot have elements of FILL width inside of a FIT width Scroll."
                     )
-                self._fit_width = self._element.get_ideal_width()
+                self._min_w = self._element.get_abs_width()
             else:
-                self._fit_width = 20
+                self._min_w = 20
 
     def _set_layer_chain(self, layer: "ViewLayer") -> None:
         log.layer.info(self, f"Set layer to {layer}")

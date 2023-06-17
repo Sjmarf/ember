@@ -2,7 +2,7 @@ from .. import common as _c
 from typing import Optional
 
 
-class BasicTimer:
+class BasicTimekeeper:
     def __init__(self, value: float):
         self.val = value
         self.stop_at = 0

@@ -45,8 +45,8 @@ class Text(Surfacable):
         The alignment of the text within the element.
         """
 
-        self._fit_width: float = 0
-        self._fit_height: float = 0
+        self._min_w: float = 0
+        self._min_h: float = 0
         self._surface: Optional[pygame.Surface] = None
 
         super().__init__(rect, pos, x, y, size, width, height, can_focus=False)
@@ -61,7 +61,6 @@ class Text(Surfacable):
         return f"<Text('{self._text}')>"
 
     def _get_surface(self, alpha: int = 255) -> pygame.Surface:
-        self._check_for_surface_update(self.rect.w if self.rect.w != 0 else None)
         self._surface.set_alpha(alpha)
         return self._surface
 
@@ -100,51 +99,33 @@ class Text(Surfacable):
             )
 
     def _update_rect_chain_down(
-        self,
-        surface: pygame.Surface,
-        pos: tuple[float, float],
-        max_size: tuple[float, float],
-        _ignore_fill_width: bool = False,
-        _ignore_fill_height: bool = False,
+        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        super()._update_rect_chain_down(surface, pos, max_size)
-        self._check_for_surface_update(max_width=self.get_ideal_width(max_size[0]))
+        super()._update_rect_chain_down(surface, x, y, w, h)
+        if self._surface is None or self._int_rect.x != self._surface.get_width():
+            self._update_surface(max_width=w)
 
     @Element._chain_up_decorator
     def _update_rect_chain_up(self) -> None:
-        if self._surface:
-            if self._w._has_fit_size:
-                self._fit_width = self._surface.get_width()
-            if self._h._has_fit_size:
-                self._fit_height = self._surface.get_height()
+        if self._w.mode == SizeMode.FIT:
+            self._min_w = self.surface.get_width()
 
-    def _check_for_surface_update(self, max_width: Optional[float] = None) -> bool:
-        """
-        Checks if the text surfaces needs to be redrawn, and redraws it if so.
-        """
-        # This is in a separate method because some elements need to call this before its scroll calculations
-        if self._surface is None or (
-                max_width is not None
-                and self._w.mode == SizeMode.FILL
-                and (round(max_width - abs(self.align[0].value)) != self._surface.get_width())
-        ):
-            if max_width is not None:
-                max_width = round(max_width)
-            if self._surface is None:
-                log.size.info(self, "Surface is None, creating Surface...")
-            else:
-                log.size.info(
-                    self,
-                    f"Width is FILL and max_width '{max_width}' != surface_width "
-                    f"'{self._surface.get_width()}' - creating Surface...",
-                )
-            self._update_surface(max_width=max_width)
-            return True
-        return False
+        if self._h.mode == SizeMode.FIT:
+            self._min_h = self.surface.get_height()
+        # if self._surface and self.parent:
+        #     max_height = self.get_abs_height(self.parent.rect.h)
+        #     self._min_w = self._style.font.get_width_of(
+        #         self._text, max_height=max_height
+        #     )
+        #
+        #     max_width = self.parent.rect.w
+        #     self._min_h = self._style.font.get_height_of(
+        #         self._text, max_width=max_width
+        #     )
 
     def _update_surface(self, max_width: Optional[float] = None) -> None:
         if max_width is None:
-            max_width = None if self._w.ideal.mode == SizeMode.FIT else self.rect.w
+            max_width = None if self._w.mode == SizeMode.FIT else self.rect.w
             if max_width == 0:
                 log.size.info(
                     self,

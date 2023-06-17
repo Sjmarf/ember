@@ -57,5 +57,5 @@ class IconMorph(Transition):
         frame = int((timer/self.duration)*controller.frame_count)
         if controller.direction == 1:
             frame = controller.frame_count - frame - 1
-        frame_surf = controller.sheet.subsurface((0, frame * controller.frame_height, controller.sheet.get_ideal_width(), controller.frame_height))
+        frame_surf = controller.sheet.subsurface((0, frame * controller.frame_height, controller.sheet.get_abs_width(), controller.frame_height))
         new.draw_surface(surface, offset, frame_surf)

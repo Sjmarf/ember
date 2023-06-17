@@ -11,6 +11,10 @@ class Position:
         self.value: int = value
         self.percent: float = percent
         self.size_offset: float = size_offset
+    
+    @classmethod
+    def _load(cls, pos) -> "Position":
+        return cls(pos) if isinstance(pos, (int, float)) else pos    
 
     def get(
         self,

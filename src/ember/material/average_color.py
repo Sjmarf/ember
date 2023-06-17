@@ -1,12 +1,12 @@
 import pygame
 from typing import Sequence, Optional, Any, TYPE_CHECKING
-from .material import Material
+from .material import MaterialWithElementCache
 
 if TYPE_CHECKING:
     from ember.ui.base.element import Element
 
 
-class AverageColor(Material):
+class AverageColor(MaterialWithElementCache):
     def __init__(self, hsv_adjustment: Sequence[int] = (0, 0, 0), alpha: int = 255):
         super().__init__(alpha)
         self.hsv_adjustment: Sequence[int] = hsv_adjustment

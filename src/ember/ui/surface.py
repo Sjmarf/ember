@@ -25,8 +25,8 @@ class Surface(Surfacable):
     ):
         self._surface: Optional[pygame.Surface] = None
 
-        self._fit_width: float = 0
-        self._fit_height: float = 0
+        self._min_w: float = 0
+        self._min_h: float = 0
 
         super().__init__(rect, pos, x, y, size, width, height, default_size=(FIT, FIT), can_focus=False)
         self.set_surface(surface)
@@ -68,21 +68,21 @@ class Surface(Surfacable):
     def _update_rect_chain_up(self) -> None:
         if self._w.mode == SizeMode.FIT:
             if self._surface is not None:
-                self._fit_width = (
+                self._min_w = (
                     self._surface.get_width() * self._w.percentage
                     + self._w.value
                 )
             else:
-                self._fit_width = 20
+                self._min_w = 20
 
         if self._h.mode == SizeMode.FIT:
             if self._surface is not None:
-                self._fit_height = (
+                self._min_h = (
                     self._surface.get_height() * self._h.percentage
                     + self._h.value
                 )
             else:
-                self._fit_height = 20
+                self._min_h = 20
 
     def _set_surface(self, surface: Union[pygame.Surface, str, None]) -> None:
         self.set_surface(surface)

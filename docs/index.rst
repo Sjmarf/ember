@@ -22,6 +22,7 @@ To get started with Ember, follow through the series of articles listed below.
 - :ref:`style_guide`
 - :ref:`material_guide`
 - :ref:`transition_guide`
+- :ref:`state_guide`
 
 Support
 ---------
@@ -39,9 +40,10 @@ Alternative Pygame UI libraries
 
    .. quick_start
    element_guide
-   style_guide
    material_guide
    transition_guide
+   style_guide
+   state_guide
 
 .. toctree::
    :caption: Articles

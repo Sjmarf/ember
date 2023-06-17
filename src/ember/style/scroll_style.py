@@ -49,7 +49,7 @@ class ScrollStyle(Style):
         padding: int = 10,
         scroll_speed: int = 5,
         over_scroll: tuple[int, int] = (0, 0),
-        align: SequencePositionType = CENTER,
+        content_pos: SequencePositionType = CENTER,
         material_transition: Optional[Transition] = None,
         base_material_transition: Optional[Transition] = None,
         handle_material_transition: Optional[Transition] = None,
@@ -101,10 +101,10 @@ class ScrollStyle(Style):
         The distance in pixels that the user can scroll past the child element. tuple[top, bottom].
         """
 
-        if not isinstance(align, Sequence):
-            align = (align, align)  
+        if not isinstance(content_pos, Sequence):
+            content_pos = (content_pos, content_pos)
             
-        self.align: Position = align
+        self.content_pos: SequencePositionType = content_pos
         """
         The alignment of elements within the container.
         """

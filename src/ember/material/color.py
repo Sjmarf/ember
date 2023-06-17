@@ -63,6 +63,6 @@ class Color(MaterialWithSizeCache):
 
     def set_color(self, color: ColorType) -> None:
         self._color = pygame.Color(color)
-        self._clear_cache()
+        self.clear_cache()
 
     color: ColorType = property(fget=lambda self: self._color, fset=_set_color)

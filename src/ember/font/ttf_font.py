@@ -24,7 +24,7 @@ class Font(BaseFont):
         self.cursor.fill((255, 255, 255))
         self.cursor_offset = (-self.cursor.get_width() // 2, 0)
 
-    def get_width_of(self, text: str) -> int:
+    def get_width_of_line(self, text: str) -> int:
         return self.font.size(text)[0]
 
     def _render_text(

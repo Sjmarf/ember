@@ -96,6 +96,7 @@ You can access existing Style defaults by calling :code:`ember.default_styles.ge
 Alternatively, you can access the defaults using properties. Each property just calls :code:`.get()` under the hood, but the property is typehinted to allow for code completion in your IDE.
 
 .. code-block:: python
+
     ember.default_styles.view
     ember.default_styles.button
     ember.default_styles.text_field

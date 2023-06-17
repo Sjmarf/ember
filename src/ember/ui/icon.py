@@ -33,8 +33,8 @@ class Icon(Surfacable):
     ):
         self._name: Optional[str] = None
 
-        self._fit_width: float = 0
-        self._fit_height: float = 0
+        self._min_w: float = 0
+        self._min_h: float = 0
 
         self.set_style(style)
 
@@ -82,9 +82,9 @@ class Icon(Surfacable):
     def _update_rect_chain_up(self) -> None:
         if self._surface:
             if self._w.mode == SizeMode.FIT:
-                self._fit_width = self._surface.get_width()
+                self._min_w = self._surface.get_width()
             if self._h.mode == SizeMode.FIT:
-                self._fit_height = self._surface.get_height()
+                self._min_h = self._surface.get_height()
 
     def _set_icon(self, name: str) -> None:
         self.set_icon(name)

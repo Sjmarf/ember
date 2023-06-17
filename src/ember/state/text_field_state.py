@@ -1,4 +1,3 @@
-from .element_state import ElementState
-
-class TextFieldState(ElementState):
+from .material_state import SingleMaterialState
+class TextFieldState(SingleMaterialState):
     pass

@@ -36,7 +36,7 @@ class ContainerStyle(Style):
         spacing: Optional[int] = None,
         min_spacing: int = 20,
         focus_on_entry: FocusType = FOCUS_CLOSEST,
-        align: SequencePositionType = CENTER,
+        content_pos: SequencePositionType = CENTER,
         material_transition: Optional[Transition] = None,
         state_func: Callable[["Container"], "BackgroundState"] = default_state_func,
     ):
@@ -68,10 +68,10 @@ class ContainerStyle(Style):
         when the container is entered. 
         """
         
-        if not isinstance(align, Sequence):
-            align = (align, align)  
+        if not isinstance(content_pos, Sequence):
+            content_pos = (content_pos, content_pos)
             
-        self.align: Sequence[Position] = align
+        self.content_pos: Sequence[Position] = content_pos
         """
         The alignment of elements within the container.
         """

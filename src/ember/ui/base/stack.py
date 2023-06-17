@@ -44,8 +44,8 @@ class Stack(MultiElementContainer):
         The base class for VStack and HStack.
         """
 
-        self._fit_width: int = 0
-        self._fit_height: int = 0
+        self._min_w: int = 0
+        self._min_h: int = 0
 
         self.set_style(style)
 

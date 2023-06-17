@@ -96,10 +96,7 @@ class StateController:
             if material_controller.timer <= 0:
                 material_controller.playing = False
 
-        elif self.current_state:
-            self.current_state.get_material(material_index).render(
-                self.element, surface, pos, size, alpha
-            )
+        elif self.current_state is not None:
             self.current_state.get_material(material_index).draw(
-                self.element, surface, pos
+                self.element, surface, pos, size, alpha
             )

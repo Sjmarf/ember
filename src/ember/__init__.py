@@ -47,6 +47,7 @@ from .state import State, ButtonState, TextFieldState
 from . import material
 from . import transition
 from . import font
+from . import timer
 
 from . import size
 from .size import FIT, FILL, Size

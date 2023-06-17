@@ -1,6 +1,6 @@
 import pygame
 import warnings
-from .material import Material
+from .material import MaterialWithElementCache
 from typing import Optional, Literal, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -17,7 +17,7 @@ except ModuleNotFoundError:
     pillow_installed = False
 
 
-class Blur(Material):
+class Blur(MaterialWithElementCache):
     """
     Applies a gaussian blur to the material's area. Experimental.
     """

@@ -41,7 +41,7 @@ class RoundedRect(Shape):
         draw_circle(
             self._corner_surf, (0, 0), self._radius, self.antialias, self._outline
         )
-        self._clear_cache()
+        self.clear_cache()
 
     def _create_surface(self, size: tuple[float, float]) -> pygame.Surface:
         surface = pygame.Surface(size, pygame.SRCALPHA)

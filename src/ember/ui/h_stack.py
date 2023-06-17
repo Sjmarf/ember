@@ -25,7 +25,6 @@ class HStack(Stack):
         spacing: Union[InheritType, int] = INHERIT,
         min_spacing: Union[InheritType, int] = INHERIT,
         focus_on_entry: Union[InheritType, FocusType] = INHERIT,
-        align: Union[InheritType, Position] = INHERIT,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
@@ -33,6 +32,7 @@ class HStack(Stack):
         size: Optional[SequenceSizeType] = None,
         width: Optional[SizeType] = None,
         height: Optional[SizeType] = None,
+        content_y: Union[InheritType, Position] = INHERIT,
         style: Optional["ContainerStyle"] = None,
     ):
         self.layer: Optional[ViewLayer] = None
@@ -55,7 +55,7 @@ class HStack(Stack):
             height,
         )
 
-        self.align: Position = self._style.align[1] if align is INHERIT else align
+        self.content_y: Position = self._style.content_pos[1] if content_y is INHERIT else content_y
 
         self._update_elements()
 
@@ -63,15 +63,9 @@ class HStack(Stack):
         return f"<HStack({len(self._elements)} elements)>"
 
     def _update_rect_chain_down(
-        self,
-        surface: pygame.Surface,
-        pos: tuple[float, float],
-        max_size: tuple[float, float],
-        _ignore_fill_width: bool = False,
-        _ignore_fill_height: bool = False,
+        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
         # Calculate own width
-        stack_width = self.get_ideal_width(max_size[0])
         padding = self._w.value if self._w.mode == SizeMode.FIT else 0
 
         # Calculate the total width of the elements, and the spacing between them
@@ -83,7 +77,7 @@ class HStack(Stack):
                 element_fill_width += i._w.percentage
                 element_fill_count += 1
             else:
-                width_of_elements += i.get_ideal_width()
+                width_of_elements += i.get_abs_width()
 
         if self.spacing is not None:
             spacing = self.spacing
@@ -95,7 +89,7 @@ class HStack(Stack):
                 spacing = max(
                     self.min_spacing,
                     int(
-                        (round(stack_width) - padding - width_of_elements)
+                        (round(w) - padding - width_of_elements)
                         / (len(self._elements) - 1)
                     ),
                 )
@@ -103,16 +97,10 @@ class HStack(Stack):
             spacing = self.min_spacing
 
         remaining_width = (
-            round(stack_width)
-            - padding
-            - width_of_elements
-            - spacing * (len(self._elements) - 1)
+            round(w) - padding - width_of_elements - spacing * (len(self._elements) - 1)
         )
 
-        # Update own width and height
-        stack_height = self.get_ideal_height(max_size[1])
-
-        super()._update_rect_chain_down(surface, pos, max_size)
+        super()._update_rect_chain_down(surface, x, y, w, h)
 
         # Update width and height of elements
         if not self._elements:
@@ -121,15 +109,14 @@ class HStack(Stack):
         if element_fill_width == 0 and (
             self.spacing is not None or len(self._elements) == 1
         ):
-            x = remaining_width / 2 + padding / 2
-            # x += pos[0] - self._draw_rect.x
+            element_x = remaining_width / 2 + padding / 2
         else:
-            x = padding / 2
+            element_x = padding / 2
 
         if element_fill_count:
             remainder = remaining_width % element_fill_count
             left_rem = (
-                math.ceil(remainder / 2) if pos[0] - self.rect.x > 0 else remainder // 2
+                math.ceil(remainder / 2) if x - self.rect.x > 0 else remainder // 2
             )
             fill_n = -1
 
@@ -137,36 +124,33 @@ class HStack(Stack):
 
         with log.size.indent:
             for n, element in enumerate(self._elements):
-                element_y = element._y if element._y is not None else self.align
+                element_y_obj = element._y if element._y is not None else self.content_y
 
-                y = pos[1] + element_y.get(
+                element_y = y + element_y_obj.get(
                     element,
-                    stack_height,
-                    element.get_ideal_height(stack_height - abs(element_y.value)),
+                    h,
+                    element.get_abs_height(h - abs(element_y_obj.value)),
                 )
 
                 if element._w.mode == SizeMode.FILL:
                     fill_n += 1
-                    w = (
-                        remaining_width
-                        // element_fill_width
-                        * element._w.percentage
+                    element_w = (
+                        remaining_width // element_fill_width * element._w.percentage
                         + element._w.value
                     )
-                    x -= element._w.value / 2
+                    element_x -= element._w.value / 2
                     if fill_n < left_rem or fill_n >= element_fill_count - (
                         remainder - left_rem
                     ):
-                        w += 1
+                        element_w += 1
                 else:
-                    w = element.get_ideal_width()
+                    element_w = element.get_abs_width()
 
                 if not self.is_visible:
                     element.is_visible = False
                 elif (
-                    self.rect.x + x + w < surface.get_abs_offset()[0]
-                    or self.rect.x + x
-                    > surface.get_abs_offset()[0] + surface.get_width()
+                    x + element_x + element_w < surface.get_abs_offset()[0]
+                    or x + element_x > surface.get_abs_offset()[0] + surface.get_width()
                 ):
                     element.is_visible = False
                 else:
@@ -176,14 +160,13 @@ class HStack(Stack):
 
                 element._update_rect_chain_down(
                     surface,
-                    (self._int_rect.x + x, y),
-                    max_size=(w, self.rect.h - abs(element_y.value)),
-                    _ignore_fill_width=True,
+                    self._int_rect.x + element_x,
+                    element_y, element_w, element.get_abs_height(h - abs(element_y_obj.value)),
                 )
 
-                x += spacing + w
+                element_x += spacing + element_w
                 if element._w.mode == SizeMode.FILL:
-                    x -= element._w.value / 2
+                    element_x -= element._w.value / 2
 
     @Element._chain_up_decorator
     def _update_rect_chain_up(self) -> None:
@@ -195,12 +178,12 @@ class HStack(Stack):
                         raise ValueError(
                             "Cannot have elements of FILL width inside of a FIT width HStack."
                         )
-                    total_width += i.get_ideal_width()
-                self._fit_width = total_width + self.min_spacing * (
+                    total_width += i.get_abs_width()
+                self._min_w = total_width + self.min_spacing * (
                     len(self._elements) - 1
                 )
             else:
-                self._fit_width = 20
+                self._min_w = 20
 
         if self._h.mode == SizeMode.FIT:
             if self._elements:
@@ -208,9 +191,9 @@ class HStack(Stack):
                     raise ValueError(
                         "Cannot have elements of FILL height inside of a FIT height HStack."
                     )
-                self._fit_height = max(i.get_ideal_height() for i in self._elements)
+                self._min_h = max(i.get_abs_height() for i in self._elements)
             else:
-                self._fit_height = 20
+                self._min_h = 20
 
     def _focus_chain(
         self, direction: _c.FocusDirection, previous: Optional["Element"] = None

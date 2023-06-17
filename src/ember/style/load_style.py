@@ -13,7 +13,7 @@ from .. import state
 import logging
 import pygame
 
-from ..size import FIT, FILL, Size
+from ..size import FIT, FILL, Size, SizeMode
 
 
 def _decode_element(data, styles):
@@ -64,11 +64,11 @@ def _decode_size(
             return FILL
     if isinstance(size, list):
         if len(size) == 3:
-            new_size = Size(size[2], size[1], 0)
+            new_size = Size(size[2], size[1], SizeMode.ABSOLUTE)
             if size[0] == "FIT":
-                new_size.mode = 1
+                new_size.mode = SizeMode.FIT
             elif size[0] == "FILL":
-                new_size.mode = 2
+                new_size.mode = SizeMode.FILL
             return new_size
         else:
             sizes = []

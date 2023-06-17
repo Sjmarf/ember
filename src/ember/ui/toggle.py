@@ -5,7 +5,7 @@ from .. import common as _c
 from ..event import TOGGLECLICKED
 from .base.element import Element
 from .base.interactive import Interactive
-from ..utility.timer import BasicTimer
+from ..utility.timekeeper import BasicTimekeeper
 
 from ..size import SizeType, SequenceSizeType
 from ..position import PositionType, CENTER, SequencePositionType
@@ -65,7 +65,7 @@ class Toggle(Element, Interactive):
 
         Interactive.__init__(self, disabled)
 
-        self._timer = BasicTimer(
+        self._timer = BasicTimekeeper(
             self._w.value
             - round(self._h.value * self._style.handle_width_ratio)
             if self._is_active

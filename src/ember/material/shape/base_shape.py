@@ -5,12 +5,12 @@ from typing import Optional, TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from ember.ui.base.element import Element
 
-from ..material import Material
+from ..material import MaterialWithElementCache, Material
 
 from ...common import ColorType
 
 
-class Shape(Material, abc.ABC):
+class Shape(MaterialWithElementCache, abc.ABC):
     """
     All shape materials inherit from this class. This base class should not be instantiated.
     """
@@ -39,7 +39,7 @@ class Shape(Material, abc.ABC):
         pass
 
     def _update_generic_surface(self):
-        self._clear_cache()
+        self.clear_cache()
 
     def _needs_to_render(
         self,
@@ -72,8 +72,9 @@ class Shape(Material, abc.ABC):
         surface = self._create_surface(size)
 
         if self._material:
+            material_surf = self._material.render(element, surface, pos, size, 255)
             surface.blit(
-                self._material.get(element),
+                material_surf,
                 (0, 0),
                 special_flags=pygame.BLEND_RGB_ADD,
             )
@@ -82,18 +83,6 @@ class Shape(Material, abc.ABC):
         elif self._color:
             surface.fill(self._color, special_flags=pygame.BLEND_RGB_ADD)
         return surface
-
-    def render(
-        self,
-        element: "Element",
-        surface: pygame.Surface,
-        pos: tuple[float, float],
-        size: tuple[float, float],
-        alpha: int,
-    ) -> bool:
-        if self._material:
-            self._material.render(element, surface, pos, size, alpha)
-        return super().render(element, surface, pos, size, alpha)
 
     def _set_outline(self, outline: int) -> None:
         self.set_outline(outline)

@@ -1,7 +1,9 @@
 import pygame
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from .material import Material
 
+if TYPE_CHECKING:
+    from ..ui.base.element import Element
 
 class Blank(Material):
     def __init__(self):
@@ -17,8 +19,8 @@ class Blank(Material):
         self,
         element: "Element",
         surface: pygame.Surface,
-        pos: tuple[float, float],
-        size: tuple[float, float],
+        pos: tuple[int, int],
+        size: tuple[int, int],
         alpha: int,
-    ) -> bool:
-        return False
+    ) -> Optional[pygame.Surface]:
+        return None

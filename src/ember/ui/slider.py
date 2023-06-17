@@ -4,7 +4,7 @@ from typing import Union, Optional, TYPE_CHECKING, Sequence
 from .. import common as _c
 from .base.element import Element
 from .base.interactive import Interactive
-from ..utility.timer import BasicTimer
+from ..utility.timekeeper import BasicTimekeeper
 from ..position import PositionType, CENTER, SequencePositionType
 from ..size import SizeType, SequenceSizeType
 from ..event import SLIDERMOVED
@@ -81,7 +81,7 @@ class Slider(Element, Interactive):
         The :py:class:`ember.state.StateController` object responsible for managing the Slider's states.
         """
 
-        self._timer: BasicTimer = BasicTimer(value if value is not None else min_value)
+        self._timer: BasicTimekeeper = BasicTimekeeper(value if value is not None else min_value)
 
     def __repr__(self):
         return "<Slider>"

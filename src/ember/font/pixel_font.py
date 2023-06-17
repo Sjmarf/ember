@@ -14,7 +14,7 @@ class PixelFont(BaseFont):
         self,
         filename,
         order="abcdefghijklmnopqrstuvwxyz0123456789: ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "/_-.?)(,<>%;][—=`\\'éôàèêù!œë+•|",
+        "/_-.?)(,<>%;][—=`\\'éôàèêù!œë+•|*",
         variants=("regular", "underlined", "outlined"),
     ):
         self.letters = {}
@@ -61,7 +61,7 @@ class PixelFont(BaseFont):
         self.cursor.fill((255, 255, 255))
         self.cursor_offset = (0, 0)
 
-    def get_width_of(self, text):
+    def get_width_of_line(self, text):
         return sum(self.letters[i][1] - 5 for i in text) - 1
 
     def _render_text(

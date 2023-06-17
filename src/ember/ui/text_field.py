@@ -156,7 +156,7 @@ class TextField(Element, Interactive):
                 size=self._style.default_h_scroll_size,
                 over_scroll=[self._text_element._style.font.cursor.get_width()] * 2,
                 style=self._style.scroll_style,
-                align=(self._text_element.align[0], CENTER),
+                content_pos=(self._text_element.align[0], CENTER)
             )
 
         self._scroll._set_parent(self)
@@ -397,31 +397,25 @@ class TextField(Element, Interactive):
             self._prompt._update()
 
     def _update_rect_chain_down(
-        self,
-        surface: pygame.Surface,
-        pos: tuple[float, float],
-        max_size: tuple[float, float],
-        _ignore_fill_width: bool = False,
-        _ignore_fill_height: bool = False,
+            self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
         super()._update_rect_chain_down(
-            surface, pos, max_size, _ignore_fill_width, _ignore_fill_height
+            surface, x, y, w, h
         )
 
-        pos = (
-            pos[0] + self.rect.w / 2 - self._scroll.get_ideal_width(self.rect.w) / 2,
-            pos[1] + self.rect.h / 2 - self._scroll.get_ideal_height(self.rect.h) / 2,
-        )
-        scroll_w = self._scroll.get_ideal_width(self.rect.w)
-        scroll_h = self._scroll.get_ideal_height(self.rect.h)
+        element_w = self._scroll.get_abs_width(w)
+        element_h = self._scroll.get_abs_height(h)
+
+        element_x = x + w / 2 - element_w / 2
+        element_y = y + h / 2 - element_h / 2
 
         if not self.is_visible:
             self._scroll.is_visible = False
         elif (
-            pos[0] + scroll_w < surface.get_abs_offset()[0]
-            or pos[0] > surface.get_abs_offset()[0] + surface.get_width()
-            or pos[1] + scroll_h < surface.get_abs_offset()[1]
-            or pos[1] > surface.get_abs_offset()[1] + surface.get_height()
+            element_x + element_w < surface.get_abs_offset()[0]
+            or element_x > surface.get_abs_offset()[0] + surface.get_width()
+            or element_y + element_h < surface.get_abs_offset()[1]
+            or element_y > surface.get_abs_offset()[1] + surface.get_height()
         ):
             self._scroll.is_visible = False
         else:
@@ -429,7 +423,7 @@ class TextField(Element, Interactive):
 
         with log.size.indent:
             self._scroll._update_rect_chain_down(
-                surface, pos, self.get_abs_size(max_size)
+                surface, element_x, element_y, element_w, element_h
             )
 
         # if self.is_active:
@@ -680,9 +674,10 @@ class TextField(Element, Interactive):
             pygame.event.post(event)
         if text != "":
             if self._scroll.element == self._prompt:
-                self._text_element._check_for_surface_update(
-                    max_width=self._prompt.get_ideal_width()
-                )
+                pass
+                # self._text_element._check_for_surface_update(
+                #     max_width=self._prompt.get_abs_width()
+                # )
             self._scroll.set_element(self._text_element)
         elif self._prompt is not None:
             self._scroll.set_element(self._prompt)
@@ -755,7 +750,7 @@ class TextField(Element, Interactive):
 
         if mode == Cursor.MAIN:
             if not self._scroll.scroll.playing:
-                self._text_element._check_for_surface_update()
+                #self._text_element._check_for_surface_update()
                 if update_scroll:
                     self._scroll._scrollbar_calc()
                     if self._multiline:
@@ -920,7 +915,7 @@ class TextField(Element, Interactive):
                 size=self._style.default_h_scroll_size,
                 style=self._style.scroll_style,
                 over_scroll=[self._text_element._style.font.cursor.get_width()] * 2,
-                align=(self._text_element.align[0], CENTER),
+                content_pos=(self._text_element.align[0], CENTER),
             )
 
         self._scroll._set_parent(self)

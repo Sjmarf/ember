@@ -145,8 +145,8 @@ class View:
 
         for layer in self._layers:
             if update_positions:
-                layer_w = layer.get_ideal_width(rect[2])
-                layer_h = layer.get_ideal_height(rect[3])
+                layer_w = layer.get_abs_width(rect[2])
+                layer_h = layer.get_abs_height(rect[3])
 
                 layer_x = rect[0] + layer._x.get(layer, rect[2], layer_w)
 
@@ -165,7 +165,7 @@ class View:
                         self, "View rect changed size, starting chain down..."
                     )
                     layer._chain_down_from = layer._element
-                layer._update_rect_chain_down(surface, (layer_x, layer_y), rect[2:])
+                layer._update_rect_chain_down(surface, layer_x, layer_y, layer_w, layer_h)
             if render:
                 layer._render_a(surface, alpha)
 

@@ -44,10 +44,8 @@ class Fade(Transition):
 
         if old is not None:
             new_alpha = int(timer / self.duration * alpha)
-            old.render(element, surface, pos, size, new_alpha)
-            old.draw(element, surface, pos)
+            old.draw(element, surface, pos, size, new_alpha)
 
         if new is not None:
             new_alpha = int((1 - timer / self.duration) * alpha)
-            new.render(element, surface, pos, size, new_alpha)
-            new.draw(element, surface, pos)
+            new.draw(element, surface, pos, size, new_alpha)
