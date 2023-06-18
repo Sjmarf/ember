@@ -1,11 +1,13 @@
 import pygame
-from typing import Union, Optional, TYPE_CHECKING, Callable
+from typing import Union, Optional, TYPE_CHECKING, Callable, Sequence
 
 from .. import common as _c
 from ..common import MaterialType
 from .style import Style
 from ..state.button_state import ButtonState
 from ..transition.transition import Transition
+from ..size import OptionalSequenceSizeType, Size
+from ..position import SequencePositionType, CENTER, Position
 
 if TYPE_CHECKING:
     from ..ui.button import Button
@@ -41,6 +43,8 @@ class ButtonStyle(Style):
         size: SequenceSizeType = (300, 80),
         width: SizeType = None,
         height: SizeType = None,
+        content_pos: SequencePositionType = CENTER,
+        content_size: OptionalSequenceSizeType = None,
         default_state: Optional[ButtonState] = None,
         hover_state: Optional[ButtonState] = None,
         click_state: Optional[ButtonState] = None,
@@ -62,6 +66,22 @@ class ButtonStyle(Style):
         self.size: tuple[SizeType, SizeType] = self.load_size(size, width, height)
         """
         The size of the Element if no size is specified in the Element constructor.
+        """
+
+        if not isinstance(content_pos, Sequence):
+            content_pos = (content_pos, content_pos)
+
+        self.content_pos: Sequence[Position] = content_pos
+        """
+        The alignment of elements within the button.
+        """
+
+        if not isinstance(content_size, Sequence):
+            content_size = (content_size, content_size)
+
+        self.content_size: Sequence[Optional[Size]] = content_size
+        """
+        The size of elements within the button.
         """
 
         self.default_state: ButtonState = ButtonState._load(

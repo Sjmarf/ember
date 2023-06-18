@@ -54,8 +54,8 @@ class RepeatedSurface(MaterialWithSizeCache):
         new_surface.fill((30, 30, 30))
         surf_size = self._surface.get_size()
 
-        offset_x = self._content_x.get(element, size[0], 0) % surf_size[0] - surf_size[0]
-        offset_y = self._content_y.get(element, size[1], 0) % surf_size[1] - surf_size[1]
+        offset_x = self._content_x.get(size[0], 0) % surf_size[0] - surf_size[0]
+        offset_y = self._content_y.get(size[1], 0) % surf_size[1] - surf_size[1]
 
         print(size, (offset_x, offset_y), surf_size)
 

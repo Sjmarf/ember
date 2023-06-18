@@ -10,7 +10,7 @@ from ember import log
 from ember.ui.base.element import Element
 from ember.ui.view import ViewLayer
 from ember.size import SizeType, SequenceSizeType, SizeMode
-from ember.position import PositionType, SequencePositionType
+from ember.position import PositionType, SequencePositionType, OptionalSequencePositionType
 from ember.transition.transition import Transition
 from ...size import FIT, FILL
 
@@ -25,6 +25,7 @@ class MultiElementContainer(Container):
     def __init__(
         self,
         material: Union[BackgroundState, Material, None],
+        focus_on_entry: Union[InheritType, FocusType],
         rect: Union[pygame.rect.RectType, Sequence, None],
         pos: Optional[SequencePositionType],
         x: Optional[PositionType],
@@ -32,17 +33,21 @@ class MultiElementContainer(Container):
         size: Optional[SequenceSizeType],
         width: Optional[SizeType],
         height: Optional[SizeType],
-        focus_on_entry: Union[InheritType, FocusType]
+        content_pos: OptionalSequencePositionType = None,
+        content_x: Optional[PositionType] = None,
+        content_y: Optional[PositionType] = None,
     ):
         """
         Base class for Containers that hold more than one element. Should not be instantiated directly.
         """
-        
-        self.focus_on_entry: FocusType = self._style.focus_on_entry if focus_on_entry is INHERIT else focus_on_entry
+
+        self.focus_on_entry: FocusType = (
+            self._style.focus_on_entry if focus_on_entry is INHERIT else focus_on_entry
+        )
         """
         Whether the closest or first element of the container should be focused when the container is entered.
-        """        
-        
+        """
+
         default_size = self._style.size
         if self._style.sizes is not None:
             for cls in inspect.getmro(type(self)):
@@ -55,17 +60,34 @@ class MultiElementContainer(Container):
 
         if default_size[0] == FIT:
             default_size = (
-                FILL if any(i._w.mode == SizeMode.FILL for i in self._elements) else FIT,
-                default_size[1]
+                FILL
+                if any(i._active_w.mode == SizeMode.FILL for i in self._elements)
+                else FIT,
+                default_size[1],
             )
 
         if default_size[1] == FIT:
             default_size = (
                 default_size[0],
-                FILL if any(i._h.mode == SizeMode.FILL for i in self._elements) else FIT,
+                FILL
+                if any(i._active_h.mode == SizeMode.FILL for i in self._elements)
+                else FIT,
             )
 
-        super().__init__(material, rect, pos, x, y, size, width, height, default_size=default_size)
+        super().__init__(
+            material,
+            rect,
+            pos,
+            x,
+            y,
+            size,
+            width,
+            height,
+            default_size,
+            content_pos,
+            content_x,
+            content_y,
+        )
 
     def __getitem__(self, item: int) -> Element:
         if isinstance(item, int):
@@ -103,7 +125,9 @@ class MultiElementContainer(Container):
 
     def _load_element(self, element: Element) -> Element:
         if not isinstance(element, Element):
-            raise ValueError(f"{type(self).__name__} element must be of type Element, not {type(element).__name__}.")
+            raise ValueError(
+                f"{type(self).__name__} element must be of type Element, not {type(element).__name__}."
+            )
         element._set_parent(self)
         log.layer.line_break()
         log.layer.info(self, "Element added to container - starting chain...")

@@ -3,7 +3,7 @@ from .. import event as ember_event
 from .. import common as _c
 from ..common import INHERIT, InheritType
 from .. import log
-from typing import Optional, TYPE_CHECKING, Any, Sequence, Union
+from typing import Optional, TYPE_CHECKING, Any, Sequence, Union, Callable
 
 if TYPE_CHECKING:
     from ..transition.transition import Transition
@@ -11,17 +11,18 @@ if TYPE_CHECKING:
     from ..style.view_style import ViewStyle
 
 from .base.element import Element
+from .base.single_element_container import SingleElementContainer
 
 from .base.scroll import Scroll
 from ember.state.state import State, load_background, StateType
 
-from ..size import FIT, FILL, SizeType, SequenceSizeType
-from ..position import PositionType, CENTER, SequencePositionType
+from ..size import FIT, FILL, SizeType, SequenceSizeType, OptionalSequenceSizeType
+from ..position import PositionType, CENTER, SequencePositionType, OptionalSequencePositionType
 
 from ..state.state_controller import StateController
 
 
-class ViewLayer(Element):
+class ViewLayer(SingleElementContainer):
     def __init__(
         self,
         element: "Element",
@@ -41,8 +42,16 @@ class ViewLayer(Element):
         size: Optional[SequenceSizeType] = None,
         width: Optional[SizeType] = None,
         height: Optional[SizeType] = None,
+        content_pos: OptionalSequencePositionType = None,
+        content_x: Optional[PositionType] = None,
+        content_y: Optional[PositionType] = None,
+        content_size: OptionalSequenceSizeType = None,
+        content_w: Optional[SizeType] = None,
+        content_h: Optional[SizeType] = None,
         style: Optional["ViewStyle"] = None,
     ):
+        self.layer = self
+
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
         self.view: "View" = view
@@ -110,17 +119,18 @@ class ViewLayer(Element):
             self.transition_out = None
 
         self._element: Element = element
-        element._set_parent(self)
-        log.layer.line_break()
-        log.layer.info(self, "ViewLayer created - starting chain...")
-        with log.layer.indent:
-            element._set_layer_chain(self)
 
         log.size.info(self, "ViewLayer created, starting chain down next tick...")
         self._chain_down_from = self._element
         """
         When True, _update_rect_chain_down will be started on the next tick
         """
+
+        log.layer.line_break()
+        log.layer.info(self, "ViewLayer created - starting chain...")
+        with log.layer.indent:
+            element._set_layer_chain(self)
+        element._set_parent(self)
 
         self._prev_rect: tuple[float, float, float, float] = (0, 0, 0, 0)
         self._waiting_for_transition_finish = False
@@ -139,7 +149,20 @@ class ViewLayer(Element):
         """
 
         super().__init__(
-            rect, pos, x, y, size, width, height, default_size=(FILL, FILL)
+            material,
+            rect,
+            pos,
+            x,
+            y,
+            size,
+            width,
+            height,
+            content_pos,
+            content_x,
+            content_y,
+            content_size,
+            content_w,
+            content_h
         )
 
         if self.transition_in:
@@ -153,19 +176,13 @@ class ViewLayer(Element):
     def __repr__(self) -> str:
         return f"<ViewLayer({self._element})>"
 
-    def _render(
-        self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
+    def _render_elements(
+        self,
+        surface: pygame.Surface,
+        offset: tuple[int, int],
+        alpha: int = 255,
     ) -> None:
-        self.state_controller.set_state(
-            self._style.state_func(self), transitions=(self._style.material_transition,)
-        )
-        self.state_controller.render(
-            surface,
-            self.rect.topleft,
-            self.rect.size,
-            alpha,
-        )
-        if not self._block_rendering:
+        if self._element and not self._block_rendering:
             self._element._render_a(surface, (0, 0), alpha)
 
     def _update(self) -> None:
@@ -174,7 +191,6 @@ class ViewLayer(Element):
     def _update_rect_chain_down(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-
         self.rect.update(x, y, w, h)
         self._int_rect.update(
             round(x),
@@ -186,6 +202,8 @@ class ViewLayer(Element):
         i = 0
         while self._chain_down_from is not None:
             log.size.line_break()
+            self._chain_down_from = None
+
             if i > 0:
                 log.size.info(
                     self,
@@ -197,22 +215,7 @@ class ViewLayer(Element):
                 )
 
             with log.size.indent:
-                element_x = (
-                    x
-                    + w // 2
-                    - self._element.get_abs_width(w) // 2
-                )
-                element_y = (
-                    y
-                    + h // 2
-                    - self._element.get_abs_height(h) // 2
-                )
-
-                self._element._update_rect_chain_down(
-                    surface, element_x, element_y, self._element.get_abs_width(w), self._element.get_abs_height(h)
-                )
-
-            self._chain_down_from = None
+                super()._update_rect_chain_down(surface, x, y, w, h)
 
             log.size.info(self, "Chain finished.")
             i += 1
@@ -247,9 +250,6 @@ class ViewLayer(Element):
                 self.element_focused = None
             else:
                 new_element.focus()
-
-    def _update_rect_chain_up(self) -> None:
-        pass
 
     def _focus_chain(
         self, direction: _c.FocusDirection, previous: Optional["Element"] = None
@@ -301,11 +301,11 @@ class ViewLayer(Element):
             self._transition.new = self
 
         self._element = element
-        element._set_parent(self)
         log.layer.line_break()
         log.layer.info(self, "Element added to ViewLayer - starting chain...")
         with log.layer.indent:
             element._set_layer_chain(self)
+        element._set_parent(self)
 
     def start_transition_in(self, transition: Optional["Transition"] = None) -> None:
         """

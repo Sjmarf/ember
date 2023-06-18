@@ -3,10 +3,11 @@ import abc
 from typing import Optional, Sequence, Union, TYPE_CHECKING
 
 from ember import common as _c
+from ...common import INHERIT, InheritType
 from ember import log
 from ember.ui.base.element import Element
 from ember.size import SizeType, SequenceSizeType
-from ember.position import PositionType, SequencePositionType
+from ember.position import PositionType, SequencePositionType, Position, OptionalSequencePositionType
 
 from ember.state.state import load_background
 from ember.state.background_state import BackgroundState
@@ -29,13 +30,35 @@ class Container(Element, abc.ABC):
         width: Optional[SizeType],
         height: Optional[SizeType],
         default_size: Sequence[SizeType],
+        content_pos: OptionalSequencePositionType = None,
+        content_x: Optional[PositionType] = None,
+        content_y: Optional[PositionType] = None,
     ):
         """
         Base class for Containers. Should not be instantiated directly.
         """
         self._state: Optional[BackgroundState] = load_background(self, material)
 
-        super().__init__(rect, pos, x, y, size, width, height, default_size=default_size)
+        if not isinstance(content_pos, Sequence):
+            content_pos = content_pos, content_pos
+
+        content_x = content_x if content_x is not None else content_pos[0]
+        content_y = content_y if content_y is not None else content_pos[1]
+
+        self.content_x: Optional[Position] = (
+            self._style.content_pos[0]
+            if content_x is None
+            else Position._load(content_x)
+        )
+        self.content_y: Optional[Position] = (
+            self._style.content_pos[1]
+            if content_y is None
+            else Position._load(content_y)
+        )
+
+        super().__init__(
+            rect, pos, x, y, size, width, height, default_size=default_size
+        )
 
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255

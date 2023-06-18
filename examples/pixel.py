@@ -19,7 +19,7 @@ except ModuleNotFoundError:
 
 pygame.init()
 
-log = logging.getLogger("ember.material")
+log = logging.getLogger("ember.size")
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.FileHandler("log.log", "w+"))
 
@@ -48,16 +48,10 @@ image = pygame.image.load("image.png").convert_alpha()
 
 view = ember.View(
     ember.Resizable(
-        ember.VStack(
-            ember.Button("1",width=50),
-            ember.Button("2", width=50, height=ember.FILL),
-            ember.Button("3",width=50),
-            spacing=5,
-            size=ember.FILL,
-        ),
+        ember.HStack([ember.Button(width=ember.FILL) for i in range(3)]),
         size=100,
-        handles=[ember.LEFT, ember.RIGHT, ember.TOP, ember.BOTTOM],
-        material=ember.material.AverageColor((0,0,10))
+        material=ember.material.Color("indianred"),
+        handles=(ember.LEFT, ember.RIGHT)
     )
 )
 

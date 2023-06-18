@@ -6,12 +6,17 @@ from typing import Union, Optional, Sequence, TYPE_CHECKING, Literal
 
 from .base.multi_element_container import MultiElementContainer
 from .. import log
-from ..size import FILL, SizeType, SequenceSizeType, SizeMode
 from .view import ViewLayer
 from .base.element import Element
 from ..state.state_controller import StateController
 from ..state.state import State, load_background
-from ..position import PositionType, CENTER, SequencePositionType
+from ..position import (
+    PositionType,
+    CENTER,
+    SequencePositionType,
+    OptionalSequencePositionType,
+)
+from ..size import FILL, SizeType, SequenceSizeType, SizeMode, OptionalSequenceSizeType
 
 if TYPE_CHECKING:
     from ..style.container_style import ContainerStyle
@@ -31,6 +36,9 @@ class Layout(MultiElementContainer):
         size: Optional[SequenceSizeType] = None,
         width: Optional[SizeType] = None,
         height: Optional[SizeType] = None,
+        content_pos: OptionalSequencePositionType = None,
+        content_x: Optional[PositionType] = None,
+        content_y: Optional[PositionType] = None,
         style: Optional["ContainerStyle"] = None,
     ):
         self.layer: Optional[ViewLayer] = None
@@ -46,10 +54,20 @@ class Layout(MultiElementContainer):
 
         self._elements = []
         self.set_elements(*elements, _update=False)
-        super().__init__(material, rect, pos, x, y, size, width, height, focus_on_entry)
-
-        self._min_w: float = 0
-        self._min_h: float = 0
+        super().__init__(
+            material,
+            focus_on_entry,
+            rect,
+            pos,
+            x,
+            y,
+            size,
+            width,
+            height,
+            content_pos,
+            content_x,
+            content_y,
+        )
 
         self._update_elements()
 
@@ -72,59 +90,39 @@ class Layout(MultiElementContainer):
     def _update_rect_chain_down(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-
-        super()._update_rect_chain_down(
-            surface, x, y, w, h
-        )
+        super()._update_rect_chain_down(surface, x, y, w, h)
 
         for element in self.elements:
-            element_x_obj = element._x if element._x is not None else CENTER
-            element_y_obj = element._y if element._y is not None else CENTER
+            element.set_active_width()
+            element.set_active_height()
+
+            element_x_obj = element._x if element._x is not None else self.content_x
+            element_y_obj = element._y if element._y is not None else self.content_y
 
             element_w = element.get_abs_width(w - abs(element_x_obj.value))
             element_h = element.get_abs_height(h - abs(element_y_obj.value))
 
-            element_x = x + element_x_obj.get(
-                element,
-                w,
-                element_w
-            )
-            element_y = y + element_y_obj.get(
-                element,
-                h,
-                element_h
-            )
+            element_x = x + element_x_obj.get(w, element_w)
+            element_y = y + element_y_obj.get(h, element_h)
             element._update_rect_chain_down(
-                surface,
-                element_x, element_y,
-                element_w, element_h
+                surface, element_x, element_y, element_w, element_h
             )
 
     @Element._chain_up_decorator
     def _update_rect_chain_up(self) -> None:
-        if self._w.mode == SizeMode.FIT:
-            self._min_w = 0
-            for i in self._elements:
-                if i._w.mode == SizeMode.FILL:
-                    raise ValueError(
-                        "Cannot have elements of FILL width inside of a FIT width Layout."
-                    )
-                if (w := i.get_abs_width()) > self._min_w:
-                    self._min_w = w
-            else:
-                self._min_w = 20
+        self._min_w = 0
+        for i in self._elements:
+            if (w := i.get_abs_width()) > self._min_w:
+                self._min_w = w
+        else:
+            self._min_w = 20
 
-        if self._h.mode == SizeMode.FIT:
-            self._min_h = 0
-            for i in self._elements:
-                if i._h.mode == SizeMode.FILL:
-                    raise ValueError(
-                        "Cannot have elements of FILL height inside of a FIT height Layout."
-                    )
-                if (h := i.get_abs_height()) > self._min_h:
-                    self._min_h = h
-            else:
-                self._min_h = 20
+        self._min_h = 0
+        for i in self._elements:
+            if (h := i.get_abs_height()) > self._min_h:
+                self._min_h = h
+        else:
+            self._min_h = 20
 
     def _focus_chain(
         self, direction: _c.FocusDirection, previous: Optional["Element"] = None
@@ -136,7 +134,8 @@ class Layout(MultiElementContainer):
         element = None
         if (
             direction in {_c.FocusDirection.IN, _c.FocusDirection.IN_FIRST}
-            and self.focus_on_entry is FOCUS_FIRST or direction == _c.FocusDirection.SELECT
+            and self.focus_on_entry is FOCUS_FIRST
+            or direction == _c.FocusDirection.SELECT
         ):
             log.nav.info(self, f"-> child {self._elements[0]}.")
             element = self._elements[0]

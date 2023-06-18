@@ -15,6 +15,7 @@ from ..position import PositionType, CENTER, SequencePositionType, Position
 
 if TYPE_CHECKING:
     from ..style.text_style import TextStyle
+    from .view_layer import ViewLayer
 
 
 class Text(Surfacable):
@@ -48,8 +49,9 @@ class Text(Surfacable):
         self._min_w: float = 0
         self._min_h: float = 0
         self._surface: Optional[pygame.Surface] = None
+        self._redraw_next_tick: bool = True
 
-        super().__init__(rect, pos, x, y, size, width, height, can_focus=False)
+        super().__init__(rect, pos, x, y, size, width, height, default_size=self._style.size, can_focus=False)
 
         self.lines: list[Line] = []
 
@@ -102,36 +104,29 @@ class Text(Surfacable):
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
         super()._update_rect_chain_down(surface, x, y, w, h)
-        if self._surface is None or self._int_rect.x != self._surface.get_width():
+        if (
+            self._surface is None
+            or self._int_rect.w != self._surface.get_width()
+            or self._redraw_next_tick
+        ):
             self._update_surface(max_width=w)
+            self._redraw_next_tick = False
 
     @Element._chain_up_decorator
-    def _update_rect_chain_up(self) -> None:
-        if self._w.mode == SizeMode.FIT:
-            self._min_w = self.surface.get_width()
+    def _update_rect_chain_up(self):
+        self._min_w = (
+            self.surface.get_width()
+            if self.surface
+            else self._style.font.get_width_of_line(self._text)
+        )
 
-        if self._h.mode == SizeMode.FIT:
-            self._min_h = self.surface.get_height()
-        # if self._surface and self.parent:
-        #     max_height = self.get_abs_height(self.parent.rect.h)
-        #     self._min_w = self._style.font.get_width_of(
-        #         self._text, max_height=max_height
-        #     )
-        #
-        #     max_width = self.parent.rect.w
-        #     self._min_h = self._style.font.get_height_of(
-        #         self._text, max_width=max_width
-        #     )
+        self._min_h = self.surface.get_height() if self.surface else self._style.font.line_height
 
-    def _update_surface(self, max_width: Optional[float] = None) -> None:
-        if max_width is None:
-            max_width = None if self._w.mode == SizeMode.FIT else self.rect.w
-            if max_width == 0:
-                log.size.info(
-                    self,
-                    "Attempted to create Surface but maximum width is 0, deferring.",
-                )
-                return
+    def _update_surface(self, max_width: float) -> None:
+        if max_width == 0:
+            max_width = None
+        else:
+            max_width = round(max_width)
         self._surface, self.lines = self._style.font.render(
             self._text,
             color=self._color if self._color is not None else (0, 0, 0),
@@ -140,8 +135,9 @@ class Text(Surfacable):
         )
         log.size.info(
             self,
-            f"Surface created of size {self._surface.get_size()}, starting chain up.",
+            f"Surface created of size {self._surface.get_size()}. Starting chain up...",
         )
+
         with log.size.indent:
             self._update_rect_chain_up()
 
@@ -165,7 +161,9 @@ class Text(Surfacable):
 
             self._text = text
             self._color = color if color is not None else self._color
-            self._update_surface()
+            self._redraw_next_tick = True
+            with log.size.indent:
+                self._update_rect_chain_up()
 
     def get_line(self, line_index) -> Optional[Line]:
         """
@@ -204,11 +202,15 @@ class Text(Surfacable):
             self._transition = transition
 
         self._color = color
-        self._update_surface()
+        self._redraw_next_tick = True
+        with log.size.indent:
+            self._update_rect_chain_up()
 
     def set_width(self, value: SizeType, _update_rect_chain_up=True) -> None:
         super().set_width(value, _update_rect_chain_up)
-        self._update_surface()
+        self._redraw_next_tick = True
+        with log.size.indent:
+            self._update_rect_chain_up()
 
     @property
     def align(self) -> Sequence[Position]:
@@ -229,7 +231,10 @@ class Text(Surfacable):
             self._align = (align, CENTER)
         else:
             self._align = align
-        self._update_surface()
+        self._redraw_next_tick = True
+        log.size.info(self, "Text alignment changed, starting chain up...")
+        with log.size.indent:
+            self._update_rect_chain_up()
 
     def _set_style(self, style: Optional["TextStyle"]) -> None:
         self.set_style(style)

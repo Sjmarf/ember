@@ -16,8 +16,20 @@ from ember import common as _c
 from ember.ui.base.element import Element
 from .single_element_container import SingleElementContainer
 from ember.material.material import Material
-from ember.size import FIT, SizeType, SequenceSizeType, SizeMode
-from ember.position import PositionType, CENTER, SequencePositionType, Position
+from ember.size import (
+    FIT,
+    SizeType,
+    SequenceSizeType,
+    SizeMode,
+    OptionalSequenceSizeType,
+)
+from ember.position import (
+    PositionType,
+    CENTER,
+    SequencePositionType,
+    Position,
+    OptionalSequencePositionType,
+)
 
 from ember.state.state import load_background
 
@@ -45,7 +57,12 @@ class Scroll(SingleElementContainer, abc.ABC):
         size: Optional[SequenceSizeType] = None,
         width: Optional[SizeType] = None,
         height: Optional[SizeType] = None,
-        content_pos: Union[InheritType, SequencePositionType] = INHERIT,
+        content_pos: OptionalSequencePositionType = None,
+        content_x: Optional[PositionType] = None,
+        content_y: Optional[PositionType] = None,
+        content_size: OptionalSequenceSizeType = None,
+        content_w: Optional[SizeType] = None,
+        content_h: Optional[SizeType] = None,
         style: Optional["ScrollStyle"] = None,
     ):
         self.set_style(style)
@@ -99,13 +116,21 @@ class Scroll(SingleElementContainer, abc.ABC):
         self._scrollbar_size: int = 0
         self._scrollbar_grabbed_pos: int = 0
 
-        super().__init__(material, rect, pos, x, y, size, width, height)
-
-        if not isinstance(content_pos, (Sequence, InheritType)):
-            content_pos = (content_pos, content_pos)
-
-        self.content_pos: Sequence[Position] = (
-            self._style.content_pos if content_pos is INHERIT else content_pos
+        super().__init__(
+            material,
+            rect,
+            pos,
+            x,
+            y,
+            size,
+            width,
+            height,
+            content_pos,
+            content_x,
+            content_y,
+            content_size,
+            content_w,
+            content_h,
         )
 
     def _render_elements(
@@ -129,15 +154,14 @@ class Scroll(SingleElementContainer, abc.ABC):
     def _update_rect_chain_down(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        #self._check_element(max_size)
+        # self._check_element(max_size)
 
-        super()._update_rect_chain_down(
-            surface, x, y, w, h
-        )
+        super()._update_rect_chain_down(surface, x, y, w, h)
 
         if (
             self._subsurf is None
-            or (*self._subsurf.get_abs_offset(), *self._subsurf.get_size()) != self._int_rect
+            or (*self._subsurf.get_abs_offset(), *self._subsurf.get_size())
+            != self._int_rect
             or self._subsurf.get_abs_parent() is not surface.get_abs_parent()
         ) and self.is_visible:
             parent_surface = surface.get_abs_parent()

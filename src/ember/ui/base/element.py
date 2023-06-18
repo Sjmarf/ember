@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from ember.transition.transition import Transition, TransitionController
     from ...style.style import Style
 
-from ember.size import Size, SizeType, SequenceSizeType
+from ember.size import Size, SizeType, SequenceSizeType, OptionalSequenceSizeType
 from ember.position import PositionType, SequencePositionType, Position, CENTER
 
 from ... import common as _c
@@ -33,7 +33,7 @@ class Element(abc.ABC):
         size: Optional[SequenceSizeType] = None,
         width: Optional[SizeType] = None,
         height: Optional[SizeType] = None,
-        default_size: Optional[Sequence[SizeType]] = None,
+        default_size: Optional[SequenceSizeType] = None,
         can_focus: bool = True,
     ):
         self.layer: Optional[ViewLayer] = None
@@ -60,6 +60,7 @@ class Element(abc.ABC):
         self._int_rect = pygame.Rect(0, 0, 0, 0)
 
         self._can_focus: bool = can_focus
+        self._transition: Optional["TransitionController"] = None
 
         if rect is not None:
             x, y, width, height = rect[:]
@@ -72,15 +73,7 @@ class Element(abc.ABC):
 
         self.set_pos(x, y, _update=False)
 
-        if default_size is None:
-            default_size = self._style.size
-
-        if size is None:
-            if width is None:
-                width = default_size[0]
-            if height is None:
-                height = default_size[1]
-        else:
+        if size is not None:
             if isinstance(size, Sequence):
                 width, height = size
             else:
@@ -89,9 +82,21 @@ class Element(abc.ABC):
         self._min_w: float = 0
         self._min_h: float = 0
 
+        if default_size is None:
+            default_size = self._style.size
+
+        if not isinstance(default_size, Sequence):
+            default_size = default_size, default_size
+
+        self._default_w: Optional[Size] = default_size[0]
+        self._default_h: Optional[Size] = default_size[1]
+
         self.set_size(width, height, _update=False)
 
-        self._transition: Optional["TransitionController"] = None
+        self._active_w: Optional[Size] = None
+        self._active_h: Optional[Size] = None
+        self.set_active_width()
+        self.set_active_height()
 
     def _update_rect_chain_down(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
@@ -157,7 +162,6 @@ class Element(abc.ABC):
                         self.parent._update_rect_chain_up()
             else:
                 log.size.info(self, "No parent - cutting chain...")
-                return
 
             if self.layer:
                 if self.layer._chain_down_from is None:
@@ -301,15 +305,18 @@ class Element(abc.ABC):
         if _update:
             self._update_rect_chain_up()
 
-    def set_size(self, *size: SequenceSizeType, _update=True) -> None:
+    def set_size(self, *size: OptionalSequenceSizeType, _update=True) -> None:
         """
         Set the size of the element.
         """
         if isinstance(size[0], Sequence):
             size = size[0]
 
-        self._w: Size = Size._load(size[0])
-        self._h: Size = Size._load(size[1])
+        if len(size) == 1:
+            size = size, size
+
+        self._w: Optional[Size] = Size._load(size[0])
+        self._h: Optional[Size] = Size._load(size[1])
 
         if _update:
             self._update_rect_chain_up()
@@ -351,23 +358,41 @@ class Element(abc.ABC):
         """
         return self._h
 
-    def get_abs_width(self, max_width: float = 0) -> float:
+    def get_abs_width(
+        self, max_width: float = 0
+    ) -> float:
         """
         Get the width of the element as a float, given the maximum width to fill.
         """
-        return self._w.get(self, max_width, mode="width")
+        return self._active_w.get(self._min_w, max_width)
 
-    def get_abs_height(self, max_height: float = 0) -> float:
+    def get_abs_height(
+        self, max_height: float = 0
+    ) -> float:
         """
         Get the height of the element as a float, given the maximum height to fill.
         """
-        return self._h.get(self, max_height, mode="height")
+        return self._active_h.get(self._min_h, max_height)
 
-    def get_default_width(self) -> Size:
-        return self._style.default_size[0]
+    def set_active_width(self, *sizes: Optional[Size]) -> None:
+        if self._w is not None:
+            self._active_w = self._w
+            return
+        for i in sizes:
+            if i is not None:
+                self._active_w = i
+                return
+        self._active_w = self._default_w
 
-    def get_default_height(self) -> Size:
-        return self._style.default_size[1]
+    def set_active_height(self, *sizes: Optional[Size]) -> None:
+        if self._h is not None:
+            self._active_h = self._h
+            return
+        for i in sizes:
+            if i is not None:
+                self._active_h = i
+                return
+        self._active_h = self._default_h
 
     def focus(self) -> None:
         """

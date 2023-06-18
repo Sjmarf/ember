@@ -94,37 +94,38 @@ class HScroll(Scroll):
                 padding = self._style.padding if self.can_scroll else 0
 
                 if self.can_scroll:
-                    x = self.rect.x - self.scroll.val
-                    w = self.rect.w
+                    element_x = self.rect.x - self.scroll.val
+                    element_w = self.rect.w
                 else:
-                    element_x = (
+                    element_x_obj = (
                         self._element._x
                         if self._element._x is not None
-                        else self.content_pos[0]
+                        else self.content_x
                     )
-                    w = self.rect.w - abs(element_x.value)
+                    element_w = self.rect.w - abs(element_x_obj.value)
 
-                    x = self.rect.x + element_x.get(
-                        self._element, self.rect.w, self._element.get_abs_width(w)
+                    element_x = self.rect.x + element_x_obj.get(self.rect.w, self._element.get_abs_width(element_w)
                     )
 
-                element_y = (
-                    self._element._y if self._element._y is not None else self.content_pos[1]
+                element_y_obj = (
+                    self._element._y if self._element._y is not None else self.content_y
                 )
-                y = self.rect.y + element_y.get(
-                    self._element,
+                element_y = self.rect.y + element_y_obj.get(
                     self.rect.h - padding,
                     self._element.get_abs_height(
-                        self.rect.h - abs(element_y.value) - padding
+                        self.rect.h - abs(element_y_obj.value) - padding
                     ),
                 )
 
+                self._element.set_active_width(self.content_w)
+                self._element.set_active_height(self.content_h)
+
                 self._element._update_rect_chain_down(
                     self._subsurf,
-                    x,
-                    y,
-                    self._element.get_abs_width(w),
-                    self._element.get_abs_height(self.rect.h - padding - abs(element_y.value)),
+                    element_x,
+                    element_y,
+                    self._element.get_abs_width(element_w),
+                    self._element.get_abs_height(self.rect.h - padding - abs(element_y_obj.value)),
                 )
 
     def _event2(self, event: pygame.event.Event) -> bool:

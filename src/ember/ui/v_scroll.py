@@ -91,48 +91,42 @@ class VScroll(Scroll):
                 padding = self._style.padding if self.can_scroll else 0
 
                 if self.can_scroll:
-                    y = self.rect.y - self.scroll.val
-                    h = self.rect.h
+                    element_y = self.rect.y - self.scroll.val
+                    element_h = self.rect.h
                 else:
-                    element_y = (
+                    element_y_obj = (
                         self._element._y
                         if self._element._y is not None
-                        else self.content_pos[1]
+                        else self.content_y
                     )
-                    h = self.rect.h - abs(element_y.value)
+                    element_h = self.rect.h - abs(element_y_obj.value)
 
-                    y = self.rect.y + element_y.get(
-                        self._element, self.rect.h, self._element.get_abs_height(h)
+                    element_y = self.rect.y + element_y_obj.get(
+                        self.rect.h, self._element.get_abs_height(element_h)
                     )
 
-                element_x = (
-                    self._element._x if self._element._x is not None else self.content_pos[0]
+                element_x_obj = (
+                    self._element._x if self._element._x is not None else self.content_x
                 )
-                x = self.rect.x + element_x.get(
-                    self._element,
+                element_x = self.rect.x + element_x_obj.get(
                     self.rect.w - padding,
                     self._element.get_abs_width(
-                        self.rect.w - abs(element_x.value) - padding
+                        self.rect.w - abs(element_x_obj.value) - padding
                     ),
                 )
+
+                self._element.set_active_width(self.content_w)
+                self._element.set_active_height(self.content_h)
 
                 self._element._update_rect_chain_down(
                     self._subsurf,
-                    x,
-                    y,
+                    element_x,
+                    element_y,
                     self._element.get_abs_width(
-                        self.rect.w - padding - abs(element_x.value)
+                        self.rect.w - padding - abs(element_x_obj.value)
                     ),
-                    self._element.get_abs_height(h),
+                    self._element.get_abs_height(element_h),
                 )
-
-    # def _check_element(self, max_size: tuple[float, float]) -> None:
-    #     if hasattr(self._element, "_check_for_surface_update"):
-    #         padding = self._style.padding if self.can_scroll else 0
-    #         w = self._element.get_abs_width(self.get_abs_width(max_size[0]) - padding)
-    #         log.size.info(self, f"Checking element surface update with width {w}...")
-    #         with log.size.indent:
-    #             self._element._check_for_surface_update(w)
 
     def _event2(self, event: pygame.event.Event) -> bool:
         if self.scrollbar_hovered:

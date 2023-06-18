@@ -151,7 +151,7 @@ class Toggle(Element, Interactive):
         self._is_active = state
         self._timer.play(
             stop=(
-                self._w.value - round(self.rect.h * self._style.handle_width_ratio)
+                self._active_w.value - round(self.rect.h * self._style.handle_width_ratio)
                 if self._is_active
                 else 0
             ),

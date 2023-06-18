@@ -13,19 +13,17 @@ class Position:
         self.size_offset: float = size_offset
     
     @classmethod
-    def _load(cls, pos) -> "Position":
+    def _load(cls, pos: Union["Position", int, float, None]) -> Optional["Position"]:
         return cls(pos) if isinstance(pos, (int, float)) else pos    
 
     def get(
         self,
-        element: Optional["Element"],
-        max_value: float = 0,
-        element_size: float = 0,
-        _ignore_fill: bool = False,
+        container_size: float = 0,
+        element_size: float = 0
     ) -> float:
         return (
-            round(max_value * self.percent)
-            + round(element_size * self.size_offset)
+            int(container_size * self.percent)
+            + int(element_size * self.size_offset)
             + self.value
         )
 
@@ -60,6 +58,7 @@ class Position:
 PositionType = Union[int, Position]
 
 SequencePositionType = Union[PositionType, Sequence[PositionType]]
+OptionalSequencePositionType = Union[Optional[PositionType], Sequence[Optional[PositionType]]]
 
 
 # These exist for type-hinting in Text.align etc

@@ -1,27 +1,33 @@
 import math
 import pygame
 from .. import common as _c
-from ..common import INHERIT, InheritType, FocusType, FOCUS_CLOSEST, FOCUS_FIRST
-from typing import Union, Optional, Sequence, Literal, TYPE_CHECKING
+from ..common import INHERIT, InheritType, FocusType, FOCUS_CLOSEST
+from typing import Union, Optional, Sequence, TYPE_CHECKING
 
 from .base.stack import Stack
 from .. import log
-from ..size import FIT, FILL, SizeType, SequenceSizeType, SizeMode
-from ..position import PositionType, Position, CENTER, SequencePositionType
-from .view import ViewLayer
+from ..size import SizeType, SequenceSizeType, SizeMode, Size, OptionalSequenceSizeType
+from ..position import (
+    PositionType,
+    Position,
+    SequencePositionType,
+    OptionalSequencePositionType,
+)
+
 from .base.element import Element
-from ..material.material import Material
-from ..state.state import State
 
 if TYPE_CHECKING:
     from ..style.container_style import ContainerStyle
+    from ..state.state import State
+    from .view import ViewLayer
+    from ..material.material import Material
 
 
 class VStack(Stack):
     def __init__(
         self,
         *elements: Union[Element, Sequence[Element]],
-        material: Union["State", Material, None] = None,
+        material: Union["State", "Material", None] = None,
         spacing: Union[InheritType, int] = INHERIT,
         min_spacing: Union[InheritType, int] = INHERIT,
         focus_on_entry: Union[InheritType, FocusType] = INHERIT,
@@ -32,8 +38,10 @@ class VStack(Stack):
         size: Optional[SequenceSizeType] = None,
         width: Optional[SizeType] = None,
         height: Optional[SizeType] = None,
-        content_x: Union[InheritType, Position] = INHERIT,
-        content_y: Union[InheritType, Position] = INHERIT,
+        content_pos: OptionalSequencePositionType = None,
+        content_x: Optional[PositionType] = None,
+        content_y: Optional[PositionType] = None,
+        content_w: Optional[SizeType] = None,
         style: Optional["ContainerStyle"] = None,
     ):
         self.layer: Optional[ViewLayer] = None
@@ -54,11 +62,17 @@ class VStack(Stack):
             size,
             width,
             height,
+            content_pos,
+            content_x,
+            content_y,
         )
         self._update_elements()
 
-        self.content_x: Position = self._style.content_pos[0] if content_x is INHERIT else content_x
-        self.content_y: Position = self._style.content_pos[1] if content_y is INHERIT else content_y
+        self.content_w: Optional[Size] = (
+            self._style.content_size[0]
+            if content_w is INHERIT
+            else Size._load(content_w)
+        )
 
     def __repr__(self) -> str:
         return f"<VStack({len(self._elements)} elements)>"
@@ -66,16 +80,19 @@ class VStack(Stack):
     def _update_rect_chain_down(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
+        # This is the additional padding caused by a height value such as ember.FIT + 20
+        vertical_padding = (
+            self._active_h.value if self._active_h.mode == SizeMode.FIT else 0
+        )
 
-        vertical_padding = self._h.value if self._h.mode == SizeMode.FIT else 0
-
-        # Calculate the total height of the elements, and the spacing between them
+        # Calculate the total height of the elements
         total_height_of_elements = 0
         total_element_fill_height = 0
         element_fill_count = 0
         for i in self._elements:
-            if i._h.mode == SizeMode.FILL:
-                total_element_fill_height += i._h.percentage
+            i.set_active_height()
+            if i._active_h.mode == SizeMode.FILL:
+                total_element_fill_height += i._active_h.percentage
                 element_fill_count += 1
             else:
                 total_height_of_elements += i.get_abs_height()
@@ -91,7 +108,7 @@ class VStack(Stack):
                 spacing = max(
                     self.min_spacing,
                     int(
-                        (round(h) - vertical_padding - total_height_of_elements)
+                        (round(h) - total_height_of_elements - vertical_padding)
                         / (len(self._elements) - 1)
                     ),
                 )
@@ -99,7 +116,10 @@ class VStack(Stack):
             spacing = self.min_spacing
 
         remaining_height = (
-            h - vertical_padding - total_height_of_elements - spacing * (len(self._elements) - 1)
+            h
+            - vertical_padding
+            - total_height_of_elements
+            - spacing * (len(self._elements) - 1)
         )
 
         # Update own rect
@@ -112,11 +132,13 @@ class VStack(Stack):
         if total_element_fill_height == 0 and (
             self.spacing is not None or len(self._elements) == 1
         ):
-            if self._h.mode == SizeMode.FIT:
+            if self._active_h.mode == SizeMode.FIT:
                 element_y = remaining_height / 2 + vertical_padding / 2
             else:
-                print(vertical_padding)
-                element_y = self.content_y.get(self, h, total_height_of_elements + spacing * (len(self._elements) - 1))
+                element_y = self.content_y.get(
+                    h,
+                    total_height_of_elements + spacing * (len(self._elements) - 1),
+                )
             element_y += y - self.rect.y
         else:
             element_y = vertical_padding / 2
@@ -125,7 +147,7 @@ class VStack(Stack):
         if element_fill_count != 0:
             remainder = remaining_height % element_fill_count
             # The amount of remainder height that is distributed to elements each side of the stack
-            remainder_per_side = (
+            top_rem = (
                 math.ceil(remainder / 2) if y - self.rect.y > 0 else remainder // 2
             )
             fill_n = -1
@@ -135,24 +157,28 @@ class VStack(Stack):
         # Iterate over child elements
         with log.size.indent:
             for n, element in enumerate(self._elements):
+                element.set_active_width(self.content_w)
+                # We've already set the active height further up; we don't need to do it again
+
                 # Find the x position of the child element
                 element_x_obj = element._x if element._x is not None else self.content_x
                 element_x = x + element_x_obj.get(
-                    element,
                     w,
                     element.get_abs_width(w - abs(element_x_obj.value)),
                 )
 
                 # Find the height of the child element
-                if element._h.mode == SizeMode.FILL:
+                if element._active_h.mode == SizeMode.FILL:
                     fill_n += 1
                     element_h = (
-                        remaining_height // total_element_fill_height * element._h.percentage
-                        + element._h.value
+                        remaining_height
+                        // total_element_fill_height
+                        * element._active_h.percentage
+                        + element._active_h.value
                     )
-                    element_y -= element._h.value / 2
-                    if fill_n < remainder_per_side or fill_n >= element_fill_count - (
-                        remainder - remainder_per_side
+                    element_y -= element._active_h.value / 2
+                    if fill_n < top_rem or fill_n >= element_fill_count - (
+                        remainder - top_rem
                     ):
                         element_h += 1
                 else:
@@ -184,35 +210,20 @@ class VStack(Stack):
 
                 # Increment the y position for the next child element
                 element_y += spacing + element_h
-                if element._h.mode == SizeMode.FILL:
-                    element_y -= element._h.value / 2
+                if element._active_h.mode == SizeMode.FILL:
+                    element_y -= element._active_h.value / 2
 
     @Element._chain_up_decorator
     def _update_rect_chain_up(self) -> None:
-        if self._h.mode == SizeMode.FIT:
-            if self._elements:
-                total_height = 0
-                for i in self.elements:
-                    if i._h.mode == SizeMode.FILL:
-                        raise ValueError(
-                            "Cannot have elements of FILL height inside of a FIT height VStack."
-                        )
-                    total_height += i.get_abs_height()
-                self._min_h = total_height + self.min_spacing * (
-                    len(self._elements) - 1
-                )
-            else:
-                self._min_h = 20
-
-        if self._w.mode == SizeMode.FIT:
-            if self._elements:
-                if any(i._w.mode == SizeMode.FILL for i in self._elements):
-                    raise ValueError(
-                        "Cannot have elements of FILL width inside of a FIT width VStack."
-                    )
-                self._min_w = max(i.get_abs_width() for i in self._elements)
-            else:
-                self._min_w = 20
+        if self._elements:
+            self._min_w = max(i.get_abs_width() for i in self._elements)
+            total_height = 0
+            for i in self.elements:
+                total_height += i.get_abs_height()
+            self._min_h = total_height + self.min_spacing * (len(self._elements) - 1)
+        else:
+            self._min_w = 20
+            self._min_h = 20
 
     def _focus_chain(
         self, direction: _c.FocusDirection, previous: Optional["Element"] = None

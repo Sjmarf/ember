@@ -59,7 +59,7 @@ class BaseFont(abc.ABC):
 
         new_text = text
         text_surf = self._render_text(new_text, color)
-        x = round(align.get(None, max_width, text_surf.get_width()))
+        x = round(align.get(max_width, text_surf.get_width()))
 
         surf.blit(text_surf, (x, y))
         return surf, x, text_surf.get_width()
@@ -68,11 +68,14 @@ class BaseFont(abc.ABC):
     def get_width_of_line(self, text: str) -> int:
         pass
 
-    def get_width_of(self, text: str, max_height: float = math.inf) -> int:
+    def get_width_of(self, text: str, max_width: float = 0, max_height: float = math.inf) -> int:
         if max_height == math.inf:
             return self.get_width_of_line(text)
         if max_height == 0:
             return 0
+
+        if (w := self.get_width_of_line(text)) < max_width:
+            return w
 
         width = 10
         while True:
@@ -160,7 +163,7 @@ class BaseFont(abc.ABC):
 
         if not text:
             return surf, [
-                Line(content="", start_x=int(align.get(None, surf.get_width(), 0)))
+                Line(content="", start_x=int(align.get(surf.get_width(), 0)))
             ]
 
         lines = []
