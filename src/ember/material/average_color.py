@@ -7,6 +7,8 @@ if TYPE_CHECKING:
 
 
 class AverageColor(MaterialWithElementCache):
+    UPDATES_EVERY_TICK = True
+    
     def __init__(self, hsv_adjustment: Sequence[int] = (0, 0, 0), alpha: int = 255):
         super().__init__(alpha)
         self.hsv_adjustment: Sequence[int] = hsv_adjustment

@@ -1,13 +1,9 @@
-from typing import TYPE_CHECKING, Union, TypeVar
+from typing import TYPE_CHECKING, Union
 
 from .element import Element
 
 if TYPE_CHECKING:
     pass
-
-T = TypeVar("T")
-K = TypeVar("K")
-V = TypeVar("V")
 
 
 class Interactive:
@@ -18,14 +14,15 @@ class Interactive:
 
     def __init__(self: "InteractiveElement", disabled: bool) -> None:
         self._disabled: bool = disabled
-
+    
     def _set_disabled(self: "InteractiveElement", value: bool) -> None:
         # Is overriden by subclasses of Interactive to provide extra functionality
         pass
 
     def set_disabled(self: "InteractiveElement", value: bool) -> None:
         """
-        Disabled Elements cannot be interacted with.
+        Disabled Elements cannot be interacted with. This method is synonymous with
+        the :py:property:`ember.ui.base.Interactive.disabled` property setter.
         """
         self._disabled = value
         self._can_focus = not value
@@ -36,11 +33,17 @@ class Interactive:
             if self.layer.element_focused is self:
                 self.layer._focus_element(None)
 
-    disabled: bool = property(
-        fget=lambda self: self._disabled,
-        fset=lambda self, value: self.set_disabled(value),  # noqa
-        doc="Disabled Elements cannot be interacted with.",
-    )
+    @property
+    def disabled(self) -> bool:
+        """
+        Disabled Elements cannot be interacted with. The property setter is synonymous 
+        with the :py:meth:`ember.ui.base.Interactive.set_disabled` method.
+        """
+        return self._disabled
+
+    @disabled.setter
+    def disabled(self, value: bool) -> None:
+        self.set_disabled(value)
 
 
 InteractiveElement = Union[Element, Interactive]

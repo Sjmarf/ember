@@ -4,7 +4,6 @@ import abc
 from typing import Optional, Sequence, Union, TYPE_CHECKING
 
 from ember import common as _c
-from ...common import INHERIT, InheritType
 from ember import log
 from ember.ui.base.element import Element
 from ember.size import SizeType, SequenceSizeType, OptionalSequenceSizeType, Size
@@ -22,6 +21,7 @@ from .container import Container
 
 if TYPE_CHECKING:
     from ember.ui.view import ViewLayer
+    from ...style.style import Style
 
 
 class SingleElementContainer(Container):
@@ -33,40 +33,56 @@ class SingleElementContainer(Container):
         x: Optional[PositionType],
         y: Optional[PositionType],
         size: Optional[SequenceSizeType],
-        width: Optional[SizeType],
-        height: Optional[SizeType],
+        w: Optional[SizeType],
+        h: Optional[SizeType],
         content_pos: OptionalSequencePositionType = None,
         content_x: Optional[PositionType] = None,
         content_y: Optional[PositionType] = None,
         content_size: OptionalSequenceSizeType = None,
         content_w: Optional[SizeType] = None,
         content_h: Optional[SizeType] = None,
+        style: Optional["Style"] = None,
     ):
         """
         Base class for Containers that hold one or zero elements. Should not be instantiated directly.
         """
-        default_size = self._style.size
-        if hasattr(self._style, "sizes") and self._style.sizes is not None:
-            for cls in inspect.getmro(type(self)):
-                if cls in self._style.sizes:
-                    default_size = self._style.sizes[cls]
-                    break
+        #default_size = self._style.size
+        #if hasattr(self._style, "sizes") and self._style.sizes is not None:
+            #for cls in inspect.getmro(type(self)):
+                #if cls in self._style.sizes:
+                    #default_size = self._style.sizes[cls]
+                    #break
 
-        if self._element is not None:
-            if not isinstance(default_size, Sequence):
-                default_size = default_size, default_size
+        #if self._element is not None:
+            #if not isinstance(default_size, Sequence):
+                #default_size = default_size, default_size
 
-            if default_size[0] == FIT:
-                default_size = (
-                    FILL if self._element._active_w.mode == SizeMode.FILL else FIT,
-                    default_size[1],
-                )
+            #if default_size[0] == FIT:
+                #default_size = (
+                    #FILL if self._element._active_w.mode == SizeMode.FILL else FIT,
+                    #default_size[1],
+                #)
 
-            if default_size[1] == FIT:
-                default_size = (
-                    default_size[0],
-                    FILL if self._element._active_h.mode == SizeMode.FILL else FIT,
-                )
+            #if default_size[1] == FIT:
+                #default_size = (
+                    #default_size[0],
+                    #FILL if self._element._active_h.mode == SizeMode.FILL else FIT,
+                #)
+
+        super().__init__(
+            material,
+            rect,
+            pos,
+            x,
+            y,
+            size,
+            w,
+            h,
+            content_pos=content_pos,
+            content_x=content_x,
+            content_y=content_y,
+            style=style
+        )
 
         if not isinstance(content_size, Sequence):
             content_size = content_size, content_size
@@ -83,21 +99,6 @@ class SingleElementContainer(Container):
             self._style.content_size[1]
             if content_h is None
             else Size._load(content_h)
-        )
-
-        super().__init__(
-            material,
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            width,
-            height,
-            default_size,
-            content_pos,
-            content_x,
-            content_y,
         )
 
     def __getitem__(self, item: int) -> Element:
@@ -127,8 +128,8 @@ class SingleElementContainer(Container):
         super()._update_rect_chain_down(surface, x, y, w, h)
 
         if self._element:
-            self._element.set_active_width(self.content_w)
-            self._element.set_active_height(self.content_h)
+            self._element.set_active_w(self.content_w)
+            self._element.set_active_h(self.content_h)
 
             element_x_obj = (
                 self._element._x if self._element._x is not None else self.content_x
@@ -137,11 +138,11 @@ class SingleElementContainer(Container):
                 self._element._y if self._element._y is not None else self.content_y
             )
 
-            element_w = self._element.get_abs_width(w)
-            element_h = self._element.get_abs_height(h)
+            element_w = (self._element.get_abs_w(w))
+            element_h = (self._element.get_abs_h(h))
 
-            element_x = x + element_x_obj.get(w, element_w)
-            element_y = y + element_y_obj.get(h, element_h)
+            element_x = (x + element_x_obj.get(w, element_w))
+            element_y = (y + element_y_obj.get(h, element_h))
 
             if not self.is_visible:
                 self._element.is_visible = False
@@ -154,20 +155,21 @@ class SingleElementContainer(Container):
                 self._element.is_visible = False
             else:
                 self._element.is_visible = True
-
-            self._element._update_rect_chain_down(
-                surface, element_x, element_y, element_w, element_h
-            )
+            
+            with log.size.indent:
+                self._element._update_rect_chain_down(
+                    surface, element_x, element_y, element_w, element_h
+                )
 
     @Element._chain_up_decorator
     def _update_rect_chain_up(self) -> None:
         if self._element:
-            self._min_w = self._element.get_abs_width()
+            self._min_w = self._element.get_abs_w()
         else:
             self._min_w = 20
 
         if self._element:
-            self._min_h = self._element.get_abs_height()
+            self._min_h = self._element.get_abs_h()
         else:
             self._min_h = 20
 
@@ -178,6 +180,11 @@ class SingleElementContainer(Container):
             with log.layer.indent:
                 self._element._set_layer_chain(layer)
 
+    @property
+    def element(self) -> Optional["Element"]:
+        return self._element
+
+    @element.setter
     def _set_element(self, element: Optional[Element]) -> None:
         self.set_element(element)
 
@@ -212,9 +219,3 @@ class SingleElementContainer(Container):
                 log.size.info(self, "Element set, starting chain up...")
                 with log.size.indent:
                     self._update_rect_chain_up()
-
-    element = property(
-        fget=lambda self: self._element,
-        fset=_set_element,
-        doc="The element contained within the Container.",
-    )

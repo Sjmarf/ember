@@ -2,17 +2,21 @@ import pygame
 import abc
 import inspect
 import copy
-from typing import Optional, Sequence, Union, Literal
+from typing import Optional, Sequence, Union, Literal, Generator, TYPE_CHECKING
 
 from ember import common as _c
 from ...common import INHERIT, InheritType, FocusType
 from ember import log
 from ember.ui.base.element import Element
 from ember.ui.view import ViewLayer
-from ember.size import SizeType, SequenceSizeType, SizeMode
-from ember.position import PositionType, SequencePositionType, OptionalSequencePositionType
+
+from ...size import FIT, FILL, OptionalSequenceSizeType, SizeMode, SizeType
+from ember.position import (
+    PositionType,
+    SequencePositionType,
+    OptionalSequencePositionType,
+)
 from ember.transition.transition import Transition
-from ...size import FIT, FILL
 
 
 from ember.state.background_state import BackgroundState
@@ -20,59 +24,58 @@ from ember.material.material import Material
 
 from .container import Container
 
+if TYPE_CHECKING:
+    from ...style.style import Style
+    from ...style.container_style import ContainerStyle
+
 
 class MultiElementContainer(Container):
     def __init__(
         self,
+        elements: tuple[Union[Element, Sequence[Element], Generator[Element, None, None]]],
         material: Union[BackgroundState, Material, None],
         focus_on_entry: Union[InheritType, FocusType],
         rect: Union[pygame.rect.RectType, Sequence, None],
         pos: Optional[SequencePositionType],
         x: Optional[PositionType],
         y: Optional[PositionType],
-        size: Optional[SequenceSizeType],
-        width: Optional[SizeType],
-        height: Optional[SizeType],
+        size: OptionalSequenceSizeType,
+        w: Optional[SizeType],
+        h: Optional[SizeType],
         content_pos: OptionalSequencePositionType = None,
         content_x: Optional[PositionType] = None,
         content_y: Optional[PositionType] = None,
+        style: Optional["Style"] = None,
     ):
         """
         Base class for Containers that hold more than one element. Should not be instantiated directly.
         """
 
-        self.focus_on_entry: FocusType = (
-            self._style.focus_on_entry if focus_on_entry is INHERIT else focus_on_entry
-        )
-        """
-        Whether the closest or first element of the container should be focused when the container is entered.
-        """
+        #default_size = self._style.size
+        #if self._style.sizes is not None:
+            #for cls in inspect.getmro(type(self)):
+                #if cls in self._style.sizes:
+                    #default_size = self._style.sizes[cls]
+                    #break
 
-        default_size = self._style.size
-        if self._style.sizes is not None:
-            for cls in inspect.getmro(type(self)):
-                if cls in self._style.sizes:
-                    default_size = self._style.sizes[cls]
-                    break
+        #if not isinstance(default_size, Sequence):
+            #default_size = default_size, default_size
 
-        if not isinstance(default_size, Sequence):
-            default_size = default_size, default_size
+        #if default_size[0] == FIT:
+            #default_size = (
+                #FILL
+                #if any(i._active_w.mode == SizeMode.FILL for i in self._elements)
+                #else FIT,
+                #default_size[1],
+            #)
 
-        if default_size[0] == FIT:
-            default_size = (
-                FILL
-                if any(i._active_w.mode == SizeMode.FILL for i in self._elements)
-                else FIT,
-                default_size[1],
-            )
-
-        if default_size[1] == FIT:
-            default_size = (
-                default_size[0],
-                FILL
-                if any(i._active_h.mode == SizeMode.FILL for i in self._elements)
-                else FIT,
-            )
+        #if default_size[1] == FIT:
+            #default_size = (
+                #default_size[0],
+                #FILL
+                #if any(i._active_h.mode == SizeMode.FILL for i in self._elements)
+                #else FIT,
+            #)
 
         super().__init__(
             material,
@@ -81,13 +84,22 @@ class MultiElementContainer(Container):
             x,
             y,
             size,
-            width,
-            height,
-            default_size,
-            content_pos,
-            content_x,
-            content_y,
+            w,
+            h,
+            content_pos=content_pos,
+            content_x=content_x,
+            content_y=content_y,
+            style=style
         )
+
+        self.set_elements(*elements, _update=False)
+
+        self.focus_on_entry: FocusType = (
+            self._style.focus_on_entry if focus_on_entry is INHERIT else focus_on_entry
+        )
+        """
+        Whether the closest or first element of the container should be focused when the container is entered.
+        """
 
     def __getitem__(self, item: int) -> Element:
         if isinstance(item, int):
@@ -151,7 +163,7 @@ class MultiElementContainer(Container):
 
     def set_elements(
         self,
-        *elements: Union[Element, Sequence[Element]],
+        *elements: Union[Element, Sequence[Element], Generator[Element, None, None]],
         transition: Optional[Transition] = None,
         _update: bool = True,
     ) -> None:
@@ -159,8 +171,12 @@ class MultiElementContainer(Container):
         Replace the elements in the stack with new elements.
         """
 
-        if elements and isinstance(elements[0], Sequence):
-            elements = list(elements[0])
+        if elements:
+            if isinstance(elements[0], Generator):
+                elements = elements[0]
+            elif isinstance(elements[0], Sequence):
+                elements = list(elements[0])
+
         old_container = self.copy() if transition else None
         if self.layer is not None:
             if (
@@ -230,7 +246,9 @@ class MultiElementContainer(Container):
         """
         return self._elements.index(element)
 
-    elements = property(
-        fget=lambda self: self._elements.copy(),
-        doc="Returns the child elements of the Container as a list. Read-only.",
-    )
+    @property
+    def elements(self) -> list[Element]:
+        """
+        "Returns the child elements of the Container as a list. Read-only.
+        """
+        return self._elements.copy()

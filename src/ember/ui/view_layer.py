@@ -16,8 +16,13 @@ from .base.single_element_container import SingleElementContainer
 from .base.scroll import Scroll
 from ember.state.state import State, load_background, StateType
 
-from ..size import FIT, FILL, SizeType, SequenceSizeType, OptionalSequenceSizeType
-from ..position import PositionType, CENTER, SequencePositionType, OptionalSequencePositionType
+from ..size import FIT, FILL, SizeType, OptionalSequenceSizeType
+from ..position import (
+    PositionType,
+    CENTER,
+    SequencePositionType,
+    OptionalSequencePositionType,
+)
 
 from ..state.state_controller import StateController
 
@@ -39,9 +44,9 @@ class ViewLayer(SingleElementContainer):
         pos: Optional[SequencePositionType] = CENTER,
         x: Optional[PositionType] = None,
         y: Optional[PositionType] = None,
-        size: Optional[SequenceSizeType] = None,
-        width: Optional[SizeType] = None,
-        height: Optional[SizeType] = None,
+        size: OptionalSequenceSizeType = None,
+        w: Optional[SizeType] = None,
+        h: Optional[SizeType] = None,
         content_pos: OptionalSequencePositionType = None,
         content_x: Optional[PositionType] = None,
         content_y: Optional[PositionType] = None,
@@ -74,7 +79,25 @@ class ViewLayer(SingleElementContainer):
         The element that is currently focused.
         """
 
-        self.set_style(style)
+        self._element: Element = element
+
+        super().__init__(
+            material,
+            rect,
+            pos,
+            x,
+            y,
+            size,
+            w,
+            h,
+            content_pos,
+            content_x,
+            content_y,
+            content_size,
+            content_w,
+            content_h,
+            style,
+        )
 
         self.listen_for_exit: bool = (
             self._style.listen_for_exit
@@ -118,8 +141,7 @@ class ViewLayer(SingleElementContainer):
         else:
             self.transition_out = None
 
-        self._element: Element = element
-
+        log.size.line_break()
         log.size.info(self, "ViewLayer created, starting chain down next tick...")
         self._chain_down_from = self._element
         """
@@ -147,23 +169,6 @@ class ViewLayer(SingleElementContainer):
         """
         The :py:class:`ember.state.StateController` object responsible for managing the ViewLayer's states.
         """
-
-        super().__init__(
-            material,
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            width,
-            height,
-            content_pos,
-            content_x,
-            content_y,
-            content_size,
-            content_w,
-            content_h
-        )
 
         if self.transition_in:
             self._block_rendering = True
@@ -202,17 +207,16 @@ class ViewLayer(SingleElementContainer):
         i = 0
         while self._chain_down_from is not None:
             log.size.line_break()
-            self._chain_down_from = None
 
             if i > 0:
                 log.size.info(
                     self,
-                    f"Starting chain down again (iteration {i + 1}) from {self._chain_down_from}.",
+                    f"Starting chain down again (iteration {i + 1}).",
                 )
             else:
-                log.size.info(
-                    self, f"Starting chain down from {self._chain_down_from}."
-                )
+                log.size.info(self, f"Starting chain down.")
+
+            self._chain_down_from = None
 
             with log.size.indent:
                 super()._update_rect_chain_down(surface, x, y, w, h)
@@ -289,23 +293,12 @@ class ViewLayer(SingleElementContainer):
         if self.view._layers[0] is not self:
             self.view._layers.remove(self)
 
-    def set_element(
-        self, element: "Element", transition: Optional["Transition"] = None
-    ) -> None:
+    def start_manual_update(self) -> None:
         """
-        Replace the ViewLayer's element with the specified element.
+        Starts the update chain on the next tick. You shouldn't need to call this manually, it exists incase the
+        library misses something.
         """
-        if transition:
-            self._transition = transition._new_element_controller()
-            self._transition.old = self.copy()
-            self._transition.new = self
-
-        self._element = element
-        log.layer.line_break()
-        log.layer.info(self, "Element added to ViewLayer - starting chain...")
-        with log.layer.indent:
-            element._set_layer_chain(self)
-        element._set_parent(self)
+        self._chain_down_from = self._element
 
     def start_transition_in(self, transition: Optional["Transition"] = None) -> None:
         """
@@ -381,19 +374,6 @@ class ViewLayer(SingleElementContainer):
                     # If the element isn't fully visible in the frame, scroll to that element
                     element.scroll_to_element(self.element_focused)
 
-    def _set_style(self, style: Optional["ViewStyle"]) -> None:
-        self.set_style(style)
-
-    def set_style(self, style: Optional["ViewStyle"]) -> None:
-        """
-        Sets the ViewStyle of the ViewLayer.
-        """
-        self._style: "ViewStyle" = self._get_style(style)
-
-    style: "ViewStyle" = property(
-        fget=lambda self: self._style,
-        fset=_set_style,
-        doc="The ViewStyle of the ViewLayer. Synonymous with the set_style() method.",
-    )
-
-    index: int = property(fget=lambda self: self.view._layers.index(self))
+    @property
+    def index(self) -> int:
+        return self.view._layers.index(self)

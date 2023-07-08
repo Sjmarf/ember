@@ -38,6 +38,10 @@ class DefaultStyleDict(UserDict):
         return self.get(Text)
 
     @property
+    def icon(self) -> Optional[IconStyle]:
+        return self.get(Icon)
+    
+    @property
     def container(self) -> Optional[ContainerStyle]:
         return self.get(Container)
 

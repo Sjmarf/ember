@@ -10,8 +10,6 @@ from .. import log
 from .. import common as _c
 from .base.element import Element
 from ..material.material import Material
-from ..size import SizeType, SequenceSizeType
-from ..position import PositionType, CENTER, SequencePositionType
 from ..state.state import State
 
 from .base.scroll import Scroll
@@ -63,7 +61,7 @@ class HScroll(Scroll):
             return
 
         self._scrollbar_calc()
-        element_w = self._element.get_abs_width(self.rect.w)
+        element_w = self._element.get_abs_w(self.rect.w)
         max_scroll = element_w - self.rect.w + self.over_scroll[1]
 
         # Move the scrollbar if it's grabbed
@@ -104,7 +102,7 @@ class HScroll(Scroll):
                     )
                     element_w = self.rect.w - abs(element_x_obj.value)
 
-                    element_x = self.rect.x + element_x_obj.get(self.rect.w, self._element.get_abs_width(element_w)
+                    element_x = self.rect.x + element_x_obj.get(self.rect.w, self._element.get_abs_w(element_w)
                     )
 
                 element_y_obj = (
@@ -112,20 +110,20 @@ class HScroll(Scroll):
                 )
                 element_y = self.rect.y + element_y_obj.get(
                     self.rect.h - padding,
-                    self._element.get_abs_height(
+                    self._element.get_abs_h(
                         self.rect.h - abs(element_y_obj.value) - padding
                     ),
                 )
 
-                self._element.set_active_width(self.content_w)
-                self._element.set_active_height(self.content_h)
+                self._element.set_active_w(self.content_w)
+                self._element.set_active_h(self.content_h)
 
                 self._element._update_rect_chain_down(
                     self._subsurf,
                     element_x,
                     element_y,
-                    self._element.get_abs_width(element_w),
-                    self._element.get_abs_height(self.rect.h - padding - abs(element_y_obj.value)),
+                    self._element.get_abs_w(element_w),
+                    self._element.get_abs_h(self.rect.h - padding - abs(element_y_obj.value)),
                 )
 
     def _event2(self, event: pygame.event.Event) -> bool:
@@ -152,7 +150,7 @@ class HScroll(Scroll):
         return False
 
     def _scrollbar_calc(self) -> None:
-        element_w = self._element.get_abs_width(self.rect.w)
+        element_w = self._element.get_abs_w(self.rect.w)
         max_scroll = element_w - self.rect.w + self.over_scroll[1]
 
         old_can_scroll = self.can_scroll
@@ -195,13 +193,16 @@ class HScroll(Scroll):
         self, position: int, size: int = 0, offset: int = 0, duration: float = 0.1
     ) -> None:
         if not self.can_scroll:
-            log.size.info(
-                self,
-                f"Attempted scroll to show position, but cannot scroll. "
-                f"Set scroll val to {self.over_scroll[0] * -1}.",
-            )
-            self.scroll.val = self.over_scroll[0] * -1
-            self._update_element_rect()
+            if self.scroll.val != (val := self.over_scroll[0] * -1):
+                self.scroll.val = val            
+                log.size.line_break()
+                log.size.info(
+                    self,
+                    f"Attempted scroll to show position, but cannot scroll. "
+                    f"Set scroll val to {val}. Starting chain down...",
+                )
+                with log.size.indent:
+                    self._update_element_rect()
             return
         if position - offset <= self.rect.x:
             position -= offset
@@ -219,7 +220,7 @@ class HScroll(Scroll):
         destination = pygame.math.clamp(
             destination,
             -self.over_scroll[0],
-            self._element.get_abs_width(self.rect.w)
+            self._element.get_abs_w(self.rect.w)
             - self.rect.w
             + self.over_scroll[1],
         )

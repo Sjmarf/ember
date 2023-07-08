@@ -41,7 +41,7 @@ class IconMorph(Transition):
                                  f" animation.")
 
         controller.sheet.fill(controller.old.col, special_flags=pygame.BLEND_RGB_ADD)
-        controller.frame_height = controller.old.get_surface().get_height()
+        controller.frame_height = controller.old.get_surface().get_h()
         controller.frame_count = controller.sheet.get_height()/controller.frame_height
 
     def _render_element(self,
@@ -57,5 +57,5 @@ class IconMorph(Transition):
         frame = int((timer/self.duration)*controller.frame_count)
         if controller.direction == 1:
             frame = controller.frame_count - frame - 1
-        frame_surf = controller.sheet.subsurface((0, frame * controller.frame_height, controller.sheet.get_abs_width(), controller.frame_height))
+        frame_surf = controller.sheet.subsurface((0, frame * controller.frame_height, controller.sheet.get_abs_w(), controller.frame_height))
         new.draw_surface(surface, offset, frame_surf)

@@ -1,11 +1,11 @@
 import pygame
 
-from typing import Optional, Sequence, Union, Literal, TYPE_CHECKING
+from typing import Optional, Sequence, Union, TYPE_CHECKING, Generator
 
 from ember.common import InheritType, INHERIT, FocusType
 from ember import log
 from ember.ui.base.element import Element
-from ember.size import SizeType, SequenceSizeType, Size
+from ember.size import SizeType, OptionalSequenceSizeType
 from ember.position import (
     PositionType,
     SequencePositionType,
@@ -31,31 +31,48 @@ class Stack(MultiElementContainer):
     """
 
     def __init__(
-            self,
-            style: "ContainerStyle",
-            material: Union[BackgroundState, Material, None],
-            spacing: Union[InheritType, int],
-            min_spacing: Union[InheritType, int],
-            focus_on_entry: Union[InheritType, FocusType],
-            rect: Union[pygame.rect.RectType, Sequence, None],
-            pos: Optional[SequencePositionType],
-            x: Optional[PositionType],
-            y: Optional[PositionType],
-            size: Optional[SequenceSizeType],
-            width: Optional[SizeType],
-            height: Optional[SizeType],
-            content_pos: OptionalSequencePositionType = None,
-            content_x: Optional[PositionType] = None,
-            content_y: Optional[PositionType] = None,
+        self,
+        elements: tuple[
+            Union[Element, Sequence[Element], Generator[Element, None, None]]
+        ],
+        material: Union[BackgroundState, Material, None],
+        spacing: Union[InheritType, int],
+        min_spacing: Union[InheritType, int],
+        focus_on_entry: Union[InheritType, FocusType],
+        rect: Union[pygame.rect.RectType, Sequence, None],
+        pos: Optional[SequencePositionType],
+        x: Optional[PositionType],
+        y: Optional[PositionType],
+        size: OptionalSequenceSizeType,
+        w: Optional[SizeType],
+        h: Optional[SizeType],
+        content_pos: OptionalSequencePositionType = None,
+        content_x: Optional[PositionType] = None,
+        content_y: Optional[PositionType] = None,
+        style: Optional["ContainerStyle"] = None,
     ):
         """
-        The base class for VStack and HStack.
+        The base class for VStack and HStack. Should not be instantiated directly.
         """
 
-        self._min_w: int = 0
-        self._min_h: int = 0
+        self._first_visible_element: Optional[Element] = None
 
-        self.set_style(style)
+        super().__init__(
+            elements,
+            material,
+            focus_on_entry,
+            rect,
+            pos,
+            x,
+            y,
+            size,
+            w,
+            h,
+            content_pos,
+            content_x,
+            content_y,
+            style,
+        )
 
         self.spacing: Optional[int] = (
             self._style.spacing if spacing is INHERIT else spacing
@@ -78,47 +95,29 @@ class Stack(MultiElementContainer):
                 self._style.min_spacing if min_spacing is INHERIT else min_spacing
             )
 
-        self._first_visible_element: Optional[Element] = None
-
-        self.state_controller: StateController = StateController(self)
-        """
-        The :py:class:`ember.state.StateController` object is responsible for managing the Stack's 
-        background states.
-        """
-        super().__init__(
-            material,
-            focus_on_entry,
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            width,
-            height,
-            content_pos,
-            content_x,
-            content_y,
-        )
+        self._total_size_of_nonfill_elements: int = 0
+        self._total_size_of_fill_elements: int = 0
+        self._fill_element_count: int = 0
 
     def _render_elements(
-            self,
-            surface: pygame.Surface,
-            offset: tuple[int, int],
-            alpha: int = 255,
+        self,
+        surface: pygame.Surface,
+        offset: tuple[int, int],
+        alpha: int = 255,
     ) -> None:
-        for n, i in enumerate(self._elements[self._first_visible_element:]):
+        for n, i in enumerate(self._elements[self._first_visible_element :]):
             if not i.is_visible:
                 break
             i._render_a(surface, offset, alpha=alpha)
 
     def _update(self) -> None:
-        for i in self._elements[self._first_visible_element:]:
+        for i in self._elements[self._first_visible_element :]:
             i._update_a()
             if not i.is_visible:
                 break
 
     def _event(self, event: pygame.event.Event) -> bool:
-        for i in self._elements[self._first_visible_element:]:
+        for i in self._elements[self._first_visible_element :]:
             if i._event(event):
                 return True
             if not i.is_visible:
@@ -126,6 +125,26 @@ class Stack(MultiElementContainer):
         return False
 
     def _enter_in_first_element(
-            self, key: str, ignore_self_focus: bool = False
+        self, key: str, ignore_self_focus: bool = False
     ) -> Optional[Element]:
         pass
+
+    def _get_element_spacing(self, padding: int) -> int:
+        """Get the spacing between the elements in the Stack"""
+        if self.spacing is not None:
+            return self.spacing
+
+        elif self._fill_element_count:
+            return self.min_spacing
+
+        else:
+            if len(self._elements) == 1:
+                return 0
+            else:
+                return max(
+                    self.min_spacing,
+                    int(
+                        (self.rect.w - padding - self._total_size_of_nonfill_elements)
+                        / (len(self._elements) - 1)
+                    ),
+                )

@@ -8,21 +8,16 @@ from ..material.material import Material
 from ..state.state_controller import StateController
 
 from ..size import (
-    FIT,
-    FILL,
     SizeType,
-    SequenceSizeType,
-    SizeMode,
     OptionalSequenceSizeType,
 )
-from ..position import PositionType, CENTER, SequencePositionType, OptionalSequencePositionType
+from ..position import PositionType, SequencePositionType, OptionalSequencePositionType
 
 if TYPE_CHECKING:
     from ..style.container_style import ContainerStyle
     from ..state.background_state import BackgroundState
 
 from .. import common as _c
-from ..common import INHERIT, InheritType
 from .. import log
 
 
@@ -39,9 +34,9 @@ class Box(SingleElementContainer):
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
         y: Optional[PositionType] = None,
-        size: Optional[SequenceSizeType] = None,
-        width: Optional[SizeType] = None,
-        height: Optional[SizeType] = None,
+        size: OptionalSequenceSizeType = None,
+        w: Optional[SizeType] = None,
+        h: Optional[SizeType] = None,
         content_pos: OptionalSequencePositionType = None,
         content_x: Optional[PositionType] = None,
         content_y: Optional[PositionType] = None,
@@ -50,7 +45,6 @@ class Box(SingleElementContainer):
         content_h: Optional[SizeType] = None,
         style: Optional["ContainerStyle"] = None,
     ):
-        self.set_style(style)
 
         self.layer = None
 
@@ -65,14 +59,15 @@ class Box(SingleElementContainer):
             x,
             y,
             size,
-            width,
-            height,
+            w,
+            h,
             content_pos,
             content_x,
             content_y,
             content_size,
             content_w,
-            content_h
+            content_h,
+            style
         )
 
         self.state_controller: StateController = StateController(self)

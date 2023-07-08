@@ -31,9 +31,11 @@ def _decode_element(data, styles):
     elif data[0] == "SurfaceFade":
         obj = transition.SurfaceFade
     elif data[0] == "PixelFont":
-        return font.PixelFont(filename=_c.package.joinpath(f"default_fonts/{data[1]}"))
+        return font.PixelFont(path=_c.package.joinpath(f"default_fonts/{data[1]}"))
     elif data[0] == "Font":
         return font.Font(pygame.font.SysFont(data[1], data[2]))
+    elif data[0] == "IconFont":
+        return font.IconFont(path=_c.package.joinpath(f"default_icon_fonts/{data[1]}"))
     elif data[0] in {"RoundedRect", "Capsule", "Ellipse"}:
         if data[0] == "RoundedRect":
             obj = material.shape.RoundedRect
@@ -201,8 +203,11 @@ def load(
 
             style_class = style.SliderStyle
 
-        elif element in {"Text", "Icon"}:
+        elif element == "Text":
             style_class = style.TextStyle
+
+        elif element == "Icon":
+            style_class = style.IconStyle
 
         elif element == "Scroll":
             style_class = style.ScrollStyle

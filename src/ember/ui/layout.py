@@ -2,7 +2,7 @@ import math
 import pygame
 from .. import common as _c
 from ..common import INHERIT, InheritType, FocusType, FOCUS_CLOSEST, FOCUS_FIRST
-from typing import Union, Optional, Sequence, TYPE_CHECKING, Literal
+from typing import Union, Optional, Sequence, TYPE_CHECKING, Literal, Generator
 
 from .base.multi_element_container import MultiElementContainer
 from .. import log
@@ -16,7 +16,7 @@ from ..position import (
     SequencePositionType,
     OptionalSequencePositionType,
 )
-from ..size import FILL, SizeType, SequenceSizeType, SizeMode, OptionalSequenceSizeType
+from ..size import FILL, SizeType, SizeMode, OptionalSequenceSizeType
 
 if TYPE_CHECKING:
     from ..style.container_style import ContainerStyle
@@ -26,16 +26,16 @@ if TYPE_CHECKING:
 class Layout(MultiElementContainer):
     def __init__(
         self,
-        *elements: Union[Element, Sequence[Element]],
+        *elements: Union[Element, Sequence[Element], Generator[Element, None, None]],
         material: Union["State", "Material", None] = None,
         focus_on_entry: Union[InheritType, FocusType] = INHERIT,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
         y: Optional[PositionType] = None,
-        size: Optional[SequenceSizeType] = None,
-        width: Optional[SizeType] = None,
-        height: Optional[SizeType] = None,
+        size: OptionalSequenceSizeType = None,
+        w: Optional[SizeType] = None,
+        h: Optional[SizeType] = None,
         content_pos: OptionalSequencePositionType = None,
         content_x: Optional[PositionType] = None,
         content_y: Optional[PositionType] = None,
@@ -44,8 +44,6 @@ class Layout(MultiElementContainer):
         self.layer: Optional[ViewLayer] = None
         self.parent: Optional[Element] = None
 
-        self.set_style(style)
-
         self.state_controller: StateController = StateController(self)
         """
         The :py:class:`ember.state.StateController` object is responsible for managing the Layout's 
@@ -53,8 +51,9 @@ class Layout(MultiElementContainer):
         """
 
         self._elements = []
-        self.set_elements(*elements, _update=False)
+
         super().__init__(
+            elements,
             material,
             focus_on_entry,
             rect,
@@ -62,11 +61,12 @@ class Layout(MultiElementContainer):
             x,
             y,
             size,
-            width,
-            height,
+            w,
+            h,
             content_pos,
             content_x,
             content_y,
+            style
         )
 
         self._update_elements()
@@ -93,14 +93,14 @@ class Layout(MultiElementContainer):
         super()._update_rect_chain_down(surface, x, y, w, h)
 
         for element in self.elements:
-            element.set_active_width()
-            element.set_active_height()
+            element.set_active_w()
+            element.set_active_h()
 
             element_x_obj = element._x if element._x is not None else self.content_x
             element_y_obj = element._y if element._y is not None else self.content_y
 
-            element_w = element.get_abs_width(w - abs(element_x_obj.value))
-            element_h = element.get_abs_height(h - abs(element_y_obj.value))
+            element_w = element.get_abs_w(w - abs(element_x_obj.value))
+            element_h = element.get_abs_h(h - abs(element_y_obj.value))
 
             element_x = x + element_x_obj.get(w, element_w)
             element_y = y + element_y_obj.get(h, element_h)
@@ -112,14 +112,14 @@ class Layout(MultiElementContainer):
     def _update_rect_chain_up(self) -> None:
         self._min_w = 0
         for i in self._elements:
-            if (w := i.get_abs_width()) > self._min_w:
+            if (w := i.get_abs_w()) > self._min_w:
                 self._min_w = w
         else:
             self._min_w = 20
 
         self._min_h = 0
         for i in self._elements:
-            if (h := i.get_abs_height()) > self._min_h:
+            if (h := i.get_abs_h()) > self._min_h:
                 self._min_h = h
         else:
             self._min_h = 20

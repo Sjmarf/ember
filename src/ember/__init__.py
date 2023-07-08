@@ -38,15 +38,18 @@ from .style import (
     ToggleStyle,
     SliderStyle,
     TextStyle,
+    IconStyle,
     ScrollStyle,
 )
+
+from . import font
+from .font import Font, PixelFont, IconFont, TextVariant, BOLD, ITALIC, UNDERLINE, STRIKETHROUGH, OUTLINE
 
 from . import state
 from .state import State, ButtonState, TextFieldState
 
 from . import material
 from . import transition
-from . import font
 from . import timer
 
 from . import size

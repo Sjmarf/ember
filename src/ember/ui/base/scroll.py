@@ -55,8 +55,8 @@ class Scroll(SingleElementContainer, abc.ABC):
         x: Optional[PositionType] = None,
         y: Optional[PositionType] = None,
         size: Optional[SequenceSizeType] = None,
-        width: Optional[SizeType] = None,
-        height: Optional[SizeType] = None,
+        w: Optional[SizeType] = None,
+        h: Optional[SizeType] = None,
         content_pos: OptionalSequencePositionType = None,
         content_x: Optional[PositionType] = None,
         content_y: Optional[PositionType] = None,
@@ -65,7 +65,6 @@ class Scroll(SingleElementContainer, abc.ABC):
         content_h: Optional[SizeType] = None,
         style: Optional["ScrollStyle"] = None,
     ):
-        self.set_style(style)
 
         self.state_controller: StateController = StateController(self)
         """
@@ -93,6 +92,24 @@ class Scroll(SingleElementContainer, abc.ABC):
         """
         Is :code:`True` when the user is moving the scrollbar handle. Read-only.
         """
+        
+        super().__init__(
+            material,
+            rect,
+            pos,
+            x,
+            y,
+            size,
+            w,
+            h,
+            content_pos,
+            content_x,
+            content_y,
+            content_size,
+            content_w,
+            content_h,
+            style,
+        )        
 
         self.over_scroll: tuple[int, int] = (
             self._style.over_scroll if over_scroll is INHERIT else over_scroll
@@ -103,9 +120,6 @@ class Scroll(SingleElementContainer, abc.ABC):
 
         self._subsurf: Optional[pygame.Surface] = None
 
-        self._min_w: int = 0
-        self._min_h: int = 0
-
         self.layer = None
 
         self._element: Optional[Element] = None
@@ -115,23 +129,6 @@ class Scroll(SingleElementContainer, abc.ABC):
         self._scrollbar_pos: int = 0
         self._scrollbar_size: int = 0
         self._scrollbar_grabbed_pos: int = 0
-
-        super().__init__(
-            material,
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            width,
-            height,
-            content_pos,
-            content_x,
-            content_y,
-            content_size,
-            content_w,
-            content_h,
-        )
 
     def _render_elements(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
@@ -156,7 +153,7 @@ class Scroll(SingleElementContainer, abc.ABC):
     ) -> None:
         # self._check_element(max_size)
 
-        super()._update_rect_chain_down(surface, x, y, w, h)
+        Element._update_rect_chain_down(self, surface, x, y, w, h)
 
         if (
             self._subsurf is None
@@ -188,7 +185,7 @@ class Scroll(SingleElementContainer, abc.ABC):
                     raise ValueError(
                         "Cannot have elements of FILL height inside of a FIT height Scroll."
                     )
-                self._min_h = self._element.get_abs_height()
+                self._min_h = self._element.get_abs_h()
             else:
                 self._min_h = 20
 
@@ -198,7 +195,7 @@ class Scroll(SingleElementContainer, abc.ABC):
                     raise ValueError(
                         "Cannot have elements of FILL width inside of a FIT width Scroll."
                     )
-                self._min_w = self._element.get_abs_width()
+                self._min_w = self._element.get_abs_w()
             else:
                 self._min_w = 20
 
@@ -286,15 +283,6 @@ class Scroll(SingleElementContainer, abc.ABC):
             self._update_element_rect()
             self._scrollbar_calc()
 
-    def _set_style(self, style: "ScrollStyle") -> None:
-        self.set_style(style)
-
-    def set_style(self, style: "ScrollStyle") -> None:
-        """
-        Sets the ScrollStyle of the Scroll.
-        """
-        self._style: "ScrollStyle" = self._get_style(style)
-
     @abc.abstractmethod
     def scroll_to_show_position(
         self, position: int, size: int = 0, offset: int = 0, duration: float = 0.1
@@ -310,9 +298,3 @@ class Scroll(SingleElementContainer, abc.ABC):
         Scroll so that an element is shown within the Scroll.
         """
         pass
-
-    style: "ScrollStyle" = property(
-        fget=lambda self: self._style,
-        fset=_set_style,
-        doc="The ScrollStyle of the Scroll.",
-    )

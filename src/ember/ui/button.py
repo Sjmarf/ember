@@ -1,5 +1,5 @@
 import pygame
-from typing import Union, Optional, Sequence, Callable, TYPE_CHECKING
+from typing import Union, Optional, Sequence, Callable, TYPE_CHECKING, Generator
 
 from .. import common as _c
 from ..event import BUTTONCLICKED
@@ -11,7 +11,7 @@ from .base.element import Element, ElementStrType
 from .base.single_element_container import SingleElementContainer
 from ..ui.load_element import load_element
 
-from ..size import SizeType, SequenceSizeType, OptionalSequenceSizeType
+from ..size import SizeType, OptionalSequenceSizeType
 from ..position import (
     PositionType,
     SequencePositionType,
@@ -37,7 +37,7 @@ class Button(SingleElementContainer, Interactive):
 
     def __init__(
         self,
-        *element: Union[Sequence[ElementStrType], ElementStrType],
+        *element: Union[Sequence[ElementStrType], ElementStrType, Generator[ElementStrType, None, None]],
         can_hold: bool = False,
         hold_delay: float = 0.2,
         hold_start_delay: float = 0.5,
@@ -48,9 +48,9 @@ class Button(SingleElementContainer, Interactive):
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
         y: Optional[PositionType] = None,
-        size: Optional[SequenceSizeType] = None,
-        width: Optional[SizeType] = None,
-        height: Optional[SizeType] = None,
+        size: OptionalSequenceSizeType = None,
+        w: Optional[SizeType] = None,
+        h: Optional[SizeType] = None,
         content_pos: OptionalSequencePositionType = None,
         content_x: Optional[PositionType] = None,
         content_y: Optional[PositionType] = None,
@@ -98,15 +98,10 @@ class Button(SingleElementContainer, Interactive):
         The :py:class:`ember.state.StateController` object responsible for managing the Button's states.
         """
 
-        self._style: "ButtonStyle"
         self._hold_timer: float = hold_start_delay
         self._is_held: bool = False
-
+        
         self._element: Optional[Element] = None
-
-        self.set_style(style)
-
-        self.set_element(*element, _update=False)
 
         SingleElementContainer.__init__(
             self,
@@ -116,16 +111,23 @@ class Button(SingleElementContainer, Interactive):
             x,
             y,
             size,
-            width,
-            height,
+            w,
+            h,
             content_pos,
             content_x,
             content_y,
             content_size,
             content_w,
             content_h,
+            style
         )
         Interactive.__init__(self, disabled)
+        self.set_element(*element, _update=False)
+
+        log.size.line_break()
+        log.size.info(self, "Button created, starting chain up...")
+        with log.size.indent:
+            self._update_rect_chain_up()
 
     def __repr__(self) -> str:
         return f"<Button({self._element})>"
@@ -281,23 +283,19 @@ class Button(SingleElementContainer, Interactive):
         event = pygame.event.Event(BUTTONCLICKED, element=self, text=text)
         pygame.event.post(event)
 
-    def _set_style(self, style: Optional["ButtonStyle"]) -> None:
-        self.set_style(style)
+    @property
+    def element(self) -> Optional["Element"]:
+        return self._element
 
-    def set_style(self, style: Optional["ButtonStyle"]) -> None:
-        """
-        Sets the ButtonStyle of the Button.
-        """
-        self._style: "ButtonStyle" = self._get_style(style)
-
-    def _set_element(
+    @element.setter
+    def element(
         self, *element: Union[None, ElementStrType, Sequence[ElementStrType]]
     ) -> None:
         self.set_element(element)
 
     def set_element(
         self,
-        *element: Union[None, ElementStrType, Sequence[ElementStrType]],
+        *element: Union[None, ElementStrType, Sequence[ElementStrType], Generator[ElementStrType, None, None]],
         transition: Optional["Transition"] = None,
         _update: bool = True,
     ) -> None:
@@ -305,13 +303,14 @@ class Button(SingleElementContainer, Interactive):
         Replace the child element of the Button.
         """
 
-        if not element:
-            element = (None,)
+        if element:
+            if not isinstance(element[0], str) and isinstance(element[0], (Sequence, Generator)):
+                element = list(element[0])
+                if not element:
+                    element = (None,)
 
-        if isinstance(element[0], (list, tuple)):
-            element = element[0]
-            if not element:
-                element = (None,)
+        else:
+            element = (None,)
 
         if element[0] is not self._element:
             if transition:
@@ -345,15 +344,3 @@ class Button(SingleElementContainer, Interactive):
                 log.size.info(self, "Element set, starting chain up...")
                 with log.size.indent:
                     self._update_rect_chain_up()
-
-    element: Optional[Element] = property(
-        fget=lambda self: self._element,
-        fset=_set_element,
-        doc="The child element of the Button. Synonymous with the set_element() method.",
-    )
-
-    style: "ButtonStyle" = property(
-        fget=lambda self: self._style,
-        fset=_set_style,
-        doc="The ButtonStyle of the Button. Synonymous with the set_style() method.",
-    )

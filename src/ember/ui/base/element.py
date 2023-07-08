@@ -3,6 +3,7 @@ import abc
 import pygame
 import inspect
 import copy
+import warnings
 from typing import Union, TYPE_CHECKING, Optional, Sequence, TypeVar
 from ember import log
 
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
     from ...style.style import Style
 
 from ember.size import Size, SizeType, SequenceSizeType, OptionalSequenceSizeType
-from ember.position import PositionType, SequencePositionType, Position, CENTER
+from ember.position import PositionType, SequencePositionType, Position, DualPosition
 
 from ... import common as _c
 
@@ -30,12 +31,16 @@ class Element(abc.ABC):
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
         y: Optional[PositionType] = None,
-        size: Optional[SequenceSizeType] = None,
-        width: Optional[SizeType] = None,
-        height: Optional[SizeType] = None,
+        size: OptionalSequenceSizeType = None,
+        w: Optional[SizeType] = None,
+        h: Optional[SizeType] = None,
+        style: Optional["Style"] = None,
         default_size: Optional[SequenceSizeType] = None,
         can_focus: bool = True,
     ):
+        
+        self.set_style(style)
+
         self.layer: Optional[ViewLayer] = None
         """
         The View that the Element is (directly or indirectly) attributed to.
@@ -63,11 +68,13 @@ class Element(abc.ABC):
         self._transition: Optional["TransitionController"] = None
 
         if rect is not None:
-            x, y, width, height = rect[:]
+            x, y, w, h = rect[:]
 
         if pos is not None:
             if isinstance(pos, Sequence):
                 x, y = pos
+            elif isinstance(pos, DualPosition):
+                x, y = pos.x, pos.y
             else:
                 x, y = pos, pos
 
@@ -75,9 +82,9 @@ class Element(abc.ABC):
 
         if size is not None:
             if isinstance(size, Sequence):
-                width, height = size
+                w, h = size
             else:
-                width, height = size, size
+                w, h = size, size
 
         self._min_w: float = 0
         self._min_h: float = 0
@@ -91,12 +98,12 @@ class Element(abc.ABC):
         self._default_w: Optional[Size] = default_size[0]
         self._default_h: Optional[Size] = default_size[1]
 
-        self.set_size(width, height, _update=False)
+        self.set_size(w, h, _update=False)
 
         self._active_w: Optional[Size] = None
         self._active_h: Optional[Size] = None
-        self.set_active_width()
-        self.set_active_height()
+        self.set_active_w()
+        self.set_active_h()
 
     def _update_rect_chain_down(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
@@ -107,10 +114,10 @@ class Element(abc.ABC):
 
         self.rect.update(x, y, w, h)
         self._int_rect.update(
-            round(x),
-            round(y),
-            round(w),
-            round(h),
+            int(x),
+            int(y),
+            int(w),
+            int(h),
         )
 
         log.size.info(self, f"Chain down {self.rect[:]}, visible = {self.is_visible}.")
@@ -125,25 +132,27 @@ class Element(abc.ABC):
     @staticmethod
     def _chain_up_decorator(func: callable) -> callable:
         def wrapper(self) -> None:
-            old_width, old_height = self._min_w, self._min_h
+            old_w, old_h = self._min_w, self._min_h
             log.size.info(self, "Chain up.")
             cut_chain = False
 
             func(self)
 
-            if old_width != self._min_w and old_height != self._min_h:
+            if old_w != self._min_w and old_h != self._min_h:
                 log.size.info(
                     self,
-                    f"Fit size changed from {(old_width, old_height)} to "
+                    f"Fit size changed from {(old_w, old_h)} to "
                     f"{self._min_w, self._min_h}.",
                 )
-            elif old_width != self._min_w:
+            elif old_w != self._min_w:
                 log.size.info(
-                    self, f"Fit width changed from {old_width} to {self._min_w}."
+                    self,
+                    f"Fit width changed from {old_w} to {self._min_w}. Fit height {self._min_h} not changed.",
                 )
-            elif old_height != self._min_h:
+            elif old_h != self._min_h:
                 log.size.info(
-                    self, f"Fit height changed from {old_height} to {self._min_h}."
+                    self,
+                    f"Fit height changed from {old_h} to {self._min_h}. Fit width {self._min_w} not changed.",
                 )
             else:
                 cut_chain = True
@@ -157,7 +166,7 @@ class Element(abc.ABC):
                             self, "Element doesn't have FIT size - cutting chain..."
                         )
                 else:
-                    log.size.info(self, f"-> parent {self.parent}.")
+                    log.size.info(self, f"-> parent.")
                     with log.size.indent:
                         self.parent._update_rect_chain_up()
             else:
@@ -321,7 +330,7 @@ class Element(abc.ABC):
         if _update:
             self._update_rect_chain_up()
 
-    def set_width(self, value: SizeType, _update=True) -> None:
+    def set_w(self, value: SizeType, _update=True) -> None:
         """
         Set the width of the element.
         """
@@ -329,7 +338,7 @@ class Element(abc.ABC):
         if _update:
             self._update_rect_chain_up()
 
-    def set_height(self, value: SizeType, _update=True) -> None:
+    def set_h(self, value: SizeType, _update=True) -> None:
         """
         Set the height of the element.
         """
@@ -344,37 +353,33 @@ class Element(abc.ABC):
         """
         return self._w, self._h
 
-    def get_width(self) -> Size:
+    def get_w(self) -> Size:
         """
         Get the width of the element. Returns ember.size.Size object.
-        If you want the width as a float, use get_ideal_width() instead.
+        If you want the width as a float, use get_abs_w() instead.
         """
         return self._w
 
-    def get_height(self) -> Size:
+    def get_h(self) -> Size:
         """
         Get the height of the element. Returns ember.size.Size object.
-        If you want the height as a float, use get_ideal_height() instead.
+        If you want the height as a float, use get_abs_h() instead.
         """
         return self._h
 
-    def get_abs_width(
-        self, max_width: float = 0
-    ) -> float:
+    def get_abs_w(self, max_width: float = 0) -> float:
         """
         Get the width of the element as a float, given the maximum width to fill.
         """
         return self._active_w.get(self._min_w, max_width)
 
-    def get_abs_height(
-        self, max_height: float = 0
-    ) -> float:
+    def get_abs_h(self, max_height: float = 0) -> float:
         """
         Get the height of the element as a float, given the maximum height to fill.
         """
         return self._active_h.get(self._min_h, max_height)
 
-    def set_active_width(self, *sizes: Optional[Size]) -> None:
+    def set_active_w(self, *sizes: Optional[Size]) -> None:
         if self._w is not None:
             self._active_w = self._w
             return
@@ -384,7 +389,7 @@ class Element(abc.ABC):
                 return
         self._active_w = self._default_w
 
-    def set_active_height(self, *sizes: Optional[Size]) -> None:
+    def set_active_h(self, *sizes: Optional[Size]) -> None:
         if self._h is not None:
             self._active_h = self._h
             return
@@ -427,6 +432,7 @@ class Element(abc.ABC):
         """
         Returns a list of ancestors, starting with the element's parent, then it's grandparent, and so on.
         """
+        warnings.warn('get_parent_tree is Deprecated.', DeprecationWarning)
         parents = [self.parent]
         while True:
             if not hasattr(parents[-1], "parent"):
@@ -441,6 +447,24 @@ class Element(abc.ABC):
         new = copy.copy(self)
         new.rect = self.rect.copy()
         return new
+
+    @property
+    def style(self) -> "Style":
+        """
+        Get or set the Style of the Element. If you specify None when setting the style, the default Style will be applied.
+        The property setter is synonymous with the :py:meth:`set_style<ember.ui.base.Element.set_style>` method.
+        """
+        return self._style
+
+    @style.setter
+    def style(self, style: "Style") -> None:
+        self.set_style(style)
+
+    def set_style(self, style: "Style") -> None:
+        """
+        Set the style of the Container.
+        """
+        self._style: "Style" = self._get_style(style)
 
 
 ElementStrType = Union[str, Element, None]

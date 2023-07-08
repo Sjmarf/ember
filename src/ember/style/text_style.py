@@ -7,52 +7,68 @@ from .. import common as _c
 from ..common import MaterialType
 from ..common import ColorType
 from ..ui.text import Text
-from ..ui.icon import Icon
 
 from ..material.material import Material
 from ..material.color import Color
 from ..size import SizeType, SequenceSizeType, FIT
 from ..position import CENTER, SequencePositionType, Position
-
+from ..font.variant import TextVariant
 
 class TextStyle(Style):
     _ELEMENT = Text
-    _SECONDARY_ELEMENTS = [Icon]
 
     def __init__(
         self,
         size: SequenceSizeType = (FIT, FIT),
         width: SizeType = None,
         height: SizeType = None,
-        font: Optional[BaseFont] = None,
-        # variant: str = "regular",
-        align: SequencePositionType = CENTER,
-        color: ColorType = (255, 255, 255),
-        # secondary_color: ColorType = (0, 0, 0),
-        material: MaterialType = None,
-        # secondary_material: MaterialType = None,
+        content_pos: SequencePositionType = CENTER,
+        font: Union[BaseFont, pygame.Font, None] = None,
+        variant: Union[TextVariant, Sequence[TextVariant]] = (),
+        color: ColorType = "black",
+        secondary_color: Optional[ColorType] = None,
+        tertiary_color: Optional[ColorType] = None,
+        material: Optional[MaterialType] = None,
+        secondary_material: Optional[MaterialType] = None,
+        tertiary_material: Optional[MaterialType] = None
+        
     ):
         self.size: tuple[SizeType, SizeType] = self.load_size(size, width, height)
         """
-        The size of the Element if no size is specified in the Element constructor.
+        The size of the Text if no size is specified in the Text constructor.
         """
-        # self.variant: str = variant
+        
+        self._variant: Sequence[TextVariant] = variant if isinstance(variant, Sequence) else (variant,)
 
-        self.material: Material = material if material is not None else Color(color)
-        # self.secondary_material: Material = (
-        #     secondary_material
-        #     if secondary_material is not None
-        #     else Color(secondary_color)
-        # )
+        if not isinstance(content_pos, Sequence):
+            content_pos = (content_pos, content_pos)
 
-        if not isinstance(align, Sequence):
-            align = (align, align)
-
-        self.align: Sequence[Position] = align
+        self.content_pos: Sequence[Position] = content_pos
         """
-        The alignment of the text within the element.
+        The alignment of the text within the Text element.
         """
+
+        self.material: Material = Color(color) if material is None else material
+        
+        self.secondary_material: Material
+        if secondary_material is None:
+            if secondary_color is None:
+                self.secondary_material = self.material
+            else:
+                self.secondary_material = Color(secondary_color)
+        else:
+            self.secondary_material = secondary_material
+            
+        self.tertiary_material: Material
+        if tertiary_material is None:
+            if tertiary_color is None:
+                self.tertiary_material = self.secondary_material
+            else:
+                self.tertiary_material = Color(tertiary_color)
+        else:
+            self.tertiary_material = tertiary_material        
 
         self.font: BaseFont = (
             Font(pygame.font.SysFont("arial", 20)) if font is None else font
         )
+
