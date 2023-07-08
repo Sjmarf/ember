@@ -30,20 +30,19 @@ class Size:
         self.mode: SizeMode = mode
 
     @classmethod
-    def _load(cls, size) -> "Size":
+    def _load(cls, size: Union["Size", int, float, None]) -> Optional["Size"]:
         return cls(size) if isinstance(size, (int, float)) else size
 
     def get(
         self,
-        element: "Element",
-        max_value: Optional[float] = None,
-        mode="width",
+        min_value: float = 0,
+        max_value: Optional[float] = None
     ) -> float:
         if self.mode == SizeMode.FILL:
             return max_value * self.percentage + self.value
         elif self.mode == SizeMode.FIT:
             return (
-                element._min_w if mode == "width" else element._min_h
+                min_value
             ) + self.value
         else:
             return self.value
@@ -115,3 +114,4 @@ FILL = Size(0, mode=SizeMode.FILL)
 
 SizeType = Union[Size, int]
 SequenceSizeType = Union[SizeType, Sequence[SizeType]]
+OptionalSequenceSizeType = Union[Optional[SizeType], Sequence[Optional[SizeType]]]

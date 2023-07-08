@@ -4,50 +4,81 @@ from typing import Union, Optional, TYPE_CHECKING, Sequence
 
 from .. import common as _c
 from ..common import ColorType
+from .. import log
 from .base.element import Element
-from .base.surfacable import Surfacable
+from .base.multi_layer_surfacable import MultiLayerSurfacable
 
-from ..size import FIT, SizeType, SequenceSizeType, SizeMode
+from ..size import FIT, SizeType, SequenceSizeType, SizeMode, OptionalSequenceSizeType
 from ..position import PositionType, CENTER, SequencePositionType
 from .text import Text
 
 if TYPE_CHECKING:
-    from ..style.text_style import TextStyle
+    from ..style.icon_style import IconStyle
 
 from ..transition.transition import Transition
 
 
-class Icon(Surfacable):
+class Icon(MultiLayerSurfacable):
+    """
+    An element that displays an icon (arrow, pause, save, etc). 
+    """
+    
     def __init__(
         self,
         name: Union[str, pygame.Surface],
         color: Optional[ColorType] = None,
+        material: Optional["Material"] = None,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
         y: Optional[PositionType] = None,
-        size: Optional[SequenceSizeType] = None,
-        width: Optional[SizeType] = None,
-        height: Optional[SizeType] = None,
-        style: "TextStyle" = None,
+        size: OptionalSequenceSizeType = None,
+        w: Optional[SizeType] = None,
+        h: Optional[SizeType] = None,
+        style: Optional["IconStyle"] = None,
     ):
+        self.set_style(style)
+        
         self._name: Optional[str] = None
 
-        self._min_w: float = 0
-        self._min_h: float = 0
-
-        self.set_style(style)
-
-        self._color = color
-        super().__init__(rect, pos, x, y, size, width, height, (FIT, FIT), can_focus=False)
-        self.set_icon(name)
+        MultiLayerSurfacable.__init__(
+           self,
+           color,
+           material,
+           rect,
+           pos,
+           x,
+           y,
+           size,
+           w,
+           h,
+           style,
+           can_focus=False,
+       )
+        
+        log.size.line_break()
+        log.size.info(self, "Icon created, starting chain up...")
+        
+        with log.size.indent:        
+            self.set_icon(name)
 
     def __repr__(self) -> str:
         return f"<Icon({self._name})>"
+    
+    def _render(
+        self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
+    ) -> None:
+        rect = self._int_rect.move(*offset)
+        pos = (
+                rect.centerx
+                - self._surface_width // 2
+                - surface.get_abs_offset()[0],
+                rect.centery
+                - self._surface_height // 2
+                - surface.get_abs_offset()[1],
+            )
 
-    def _get_surface(self, alpha: int = 255) -> pygame.Surface:
-        self._surface.set_alpha(alpha)
-        return self._surface
+        self._render_surfaces(surface, pos, alpha)    
 
     def _draw_surface(
         self,
@@ -59,34 +90,35 @@ class Icon(Surfacable):
 
         pos = (
                 rect.centerx
-                - my_surface.get_width() // 2
-                - surface.get_abs_offset()[0],
+                - my_surface.get_width() // 2,
                 rect.centery
-                - my_surface.get_height() // 2
-                - surface.get_abs_offset()[1],
+                - my_surface.get_height() // 2,
             )
 
-        if self._color is None:
-            new_surface = my_surface.copy()
-            self._style.material.render(self, surface, pos, new_surface.get_size(), alpha=255)
-            new_surface.blit(self._style.material.get(self), (0, 0), special_flags=pygame.BLEND_RGB_ADD)
-        else:
-            new_surface = my_surface
-
-        surface.blit(
-            new_surface,
-            pos
-        )
+        if self._text:
+            surface.blit(
+                my_surface,
+                (
+                    pos[0] - surface.get_abs_offset()[0],
+                    pos[1] - surface.get_abs_offset()[1],
+                ),
+            )
 
     @Element._chain_up_decorator
     def _update_rect_chain_up(self) -> None:
-        if self._surface:
-            if self._w.mode == SizeMode.FIT:
-                self._min_w = self._surface.get_width()
-            if self._h.mode == SizeMode.FIT:
-                self._min_h = self._surface.get_height()
+        self._min_w = self._surface_width
+        self._min_h = self._surface_height
 
-    def _set_icon(self, name: str) -> None:
+    @property
+    def name(self) -> Optional[str]:
+        """
+        Get or set the name of the icon. The 'name' parameter should be a name of an icon included in the 
+        :py:class`IconFont<ember.font.IconFont` object. The property setter is synonymous
+        """
+        return self._name
+    
+    @name.setter
+    def name(self, name: Union[str, pygame.Surface]) -> None:
         self.set_icon(name)
 
     def set_icon(
@@ -96,76 +128,45 @@ class Icon(Surfacable):
         transition: Optional[Transition] = None,
     ) -> None:
         """
-        Set the icon image.
+        Set the icon image. The 'name' parameter can be a name of an icon included in the :py:class`IconFont<ember.font.IconFont`
+        object, or it can be a pygame Surface. 
+        
+        If it is a Surface, the Surface should contain only black and transparent pixels. Be aware that the Icon will reference
+        the original surface, and may modify it's pixels. If you don't want this to happen, pass a copy of the Surface instead.
+        
+        A color can optionally be specified here too. If no color is specified, the color of the Icon will not change. This method
+        is synonymous with the :code:`name` property setter.
         """
-        try:
-            if transition:
-                old_element = self.copy()
-                transition = transition._new_element_controller(
-                    old_element=old_element, new_element=self
-                )
-                self._transition = transition
-
-            if isinstance(name, str):
-                self._name = name
-                path = (
-                    name if "." in name else f"{self.style.font.name}/icons/{name}.png"
-                )
-                self._surface = pygame.image.load(path).convert_alpha()
-
-            elif isinstance(name, pygame.Surface):
-                self._name = None
-                self._surface = name
-
-            col = self._color if color is None else color
-
-            self._surface.fill(col if col is not None else (0,0,0), special_flags=pygame.BLEND_RGB_ADD)
-        except FileNotFoundError:
-            raise ValueError(f"'{name}' isn't a valid icon name.")
-        self._update_rect_chain_up()
-
-    def set_color(
-        self,
-        color: Optional[ColorType] = None,
-        transition: Optional[Transition] = None,
-    ) -> None:
-        """
-        Set the color of the Icon.
-        """
+        
         if transition:
             old_element = self.copy()
-            old_element._surface = self._surface.copy()
             transition = transition._new_element_controller(
                 old_element=old_element, new_element=self
             )
             self._transition = transition
 
-        self._color = color
+        if isinstance(name, str):
+            self._name = name
+            surfaces = self._style.font.get(name)
+            
+        elif isinstance(name, pygame.Surface):
+            self._name = None
+            surfaces = (name, )
+        
+        layers = list(range(1,len(surfaces)+1))
+        self._layers = layers
+        
+        self._surface_width, self._surface_height = surfaces[0].get_size()
 
-        self._surface.fill((255, 255, 255), special_flags=pygame.BLEND_RGB_SUB)
-        if color is not None:
-            self._surface.fill(self._color, special_flags=pygame.BLEND_RGB_ADD)
-        self._update_rect_chain_up()
-
-    def _set_style(self, style: Optional["TextStyle"]) -> None:
-        self.set_style(style)
-
-    def set_style(self, style: Optional["TextStyle"]) -> None:
-        """
-        Sets the TextStyle of the Icon.
-        """
-        self._style: "TextStyle" = self._get_style(style, type(self), Text, *inspect.getmro(type(self)))
-
-    name: str = property(
-        fget=lambda self: self._name, fset=_set_icon, doc="The Icon name."
-    )
-
-    surface = property(
-        fget=lambda self: self._surface, fset=_set_icon, doc="The Icon surface."
-    )
-
-    color = property(fget=lambda self: self._color, doc="The color of the Icon.")
-
-    style: "TextStyle" = property(
-        fget=lambda self: self._style, fset=_set_style, doc="The TextStyle of the Icon."
-    )
+        log.mls.line_break()
+        log.mls.info(self, "Icon changed, generating surfaces...")
+        with log.mls.indent:
+            self._generate_surface(layers, surfaces)
+        
+        self._color = color if color is not None else self._color
+        
+        log.size.line_break()
+        log.size.info(self, "Icon changed, starting chain up...")
+        
+        with log.size.indent:        
+            self._update_rect_chain_up()

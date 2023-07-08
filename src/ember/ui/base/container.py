@@ -2,22 +2,28 @@ import pygame
 import abc
 from typing import Optional, Sequence, Union, TYPE_CHECKING
 
-from ember import common as _c
-from ember import log
 from ember.ui.base.element import Element
-from ember.size import SizeType, SequenceSizeType
-from ember.position import PositionType, SequencePositionType
+from ember.size import SizeType, SequenceSizeType, OptionalSequenceSizeType
+from ember.position import (
+    PositionType,
+    SequencePositionType,
+    Position,
+    OptionalSequencePositionType,
+)
 
+from .has_content_pos import HasContentPos
 from ember.state.state import load_background
+from ...state.state_controller import StateController
 from ember.state.background_state import BackgroundState
 
 from ember.material.material import Material
 
 if TYPE_CHECKING:
-    from ember.style.container_style import ContainerStyle
+    from ember.style.style import Style
+    from ...style.container_style import ContainerStyle
 
 
-class Container(Element, abc.ABC):
+class Container(Element, HasContentPos, abc.ABC):
     def __init__(
         self,
         material: Union[BackgroundState, Material, None],
@@ -25,17 +31,29 @@ class Container(Element, abc.ABC):
         pos: Optional[SequencePositionType],
         x: Optional[PositionType],
         y: Optional[PositionType],
-        size: Optional[SequenceSizeType],
-        width: Optional[SizeType],
-        height: Optional[SizeType],
-        default_size: Sequence[SizeType],
+        size: OptionalSequenceSizeType,
+        w: Optional[SizeType],
+        h: Optional[SizeType],
+        default_size: Optional[Sequence[SizeType]] = None,
+        content_pos: OptionalSequencePositionType = None,
+        content_x: Optional[PositionType] = None,
+        content_y: Optional[PositionType] = None,
+        style: Optional["Style"] = None,
     ):
         """
         Base class for Containers. Should not be instantiated directly.
         """
-        self._state: Optional[BackgroundState] = load_background(self, material)
 
-        super().__init__(rect, pos, x, y, size, width, height, default_size=default_size)
+        self._style: ContainerStyle
+
+        Element.__init__(
+            self, rect, pos, x, y, size, w, h, style, default_size
+        )
+
+        HasContentPos.__init__(self, content_pos, content_x, content_y)
+
+        self.state_controller: StateController = StateController(self)
+        self._state: Optional[BackgroundState] = load_background(self, material)
 
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
@@ -63,7 +81,6 @@ class Container(Element, abc.ABC):
             alpha,
         )
 
-    @abc.abstractmethod
     def _render_elements(
         self,
         surface: pygame.Surface,
@@ -71,21 +88,6 @@ class Container(Element, abc.ABC):
         alpha: int = 255,
     ) -> None:
         pass
-
-    def _set_style(self, style: "ContainerStyle") -> None:
-        self.set_style(style)
-
-    def set_style(self, style: "ContainerStyle") -> None:
-        """
-        Set the style of the Container.
-        """
-        self._style: "ContainerStyle" = self._get_style(style)
-
-    style: "ContainerStyle" = property(
-        fget=lambda self: self._style,
-        fset=_set_style,
-        doc="The ContainerStyle of the Container. Synonymous with the set_style() method.",
-    )
 
     @property
     def material(self) -> "Material":

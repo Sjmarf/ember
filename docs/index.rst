@@ -3,9 +3,13 @@ Ember Documentation
 
 **THIS LIBRARY AND THIS DOCUMENTATION AND ARE A WIP. DO NOT USE THIS LIBRARY (for now).**
 
-Ember is a UI library built for `Pygame CE <https://github.com/pygame-community/pygame-ce>`_. It allows you to build user interfaces using declarative syntax. Our aim is to build a library that is as easy to get to grips with as possible, but also fully customisable.
+Ember is a UI library built for `Pygame CE <https://github.com/pygame-community/pygame-ce>`_. 
+It allows you to build user interfaces using declarative syntax. Our aim is to build a library that is as easy to
+get to grips with as possible, but also fully customisable.
 
-Ember is currently in alpha, and is likely to be unstable. If you find a bug, or there's a particular feature you want to see, feel free to `create an issue on GitHub <https://github.com/Sjmarf/ember/issues>`_ if one does not already exist. We make no promises of backwards compatibility at this time - features may be changed or removed without warning.
+Ember is currently in alpha, and is likely to be unstable. If you find a bug, or there's a particular feature you want to see, 
+feel free to `create an issue on GitHub <https://github.com/Sjmarf/ember/issues>`_ if one does not already exist. 
+We make no promises of backwards compatibility at this time - features may be changed or removed without warning.
 
 Features
 ---------------
@@ -23,6 +27,7 @@ To get started with Ember, follow through the series of articles listed below.
 - :ref:`material_guide`
 - :ref:`transition_guide`
 - :ref:`state_guide`
+- :ref:`font_guide`
 
 Support
 ---------
@@ -44,6 +49,7 @@ Alternative Pygame UI libraries
    transition_guide
    style_guide
    state_guide
+   font_guide
 
 .. toctree::
    :caption: Articles
@@ -52,6 +58,7 @@ Alternative Pygame UI libraries
    view_layer_guide
    multiple_views_guide
    controller_guide
+   custom_font_guide
 
 .. toctree::
    :caption: API Reference
@@ -61,3 +68,4 @@ Alternative Pygame UI libraries
    style
    material
    transition
+   font

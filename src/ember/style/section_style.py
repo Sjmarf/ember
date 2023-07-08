@@ -1,4 +1,4 @@
-from typing import Optional, Literal, TYPE_CHECKING, Callable
+from typing import Optional, Literal, TYPE_CHECKING, Callable, Sequence
 
 if TYPE_CHECKING:
     pass
@@ -11,7 +11,8 @@ from ..transition.transition import Transition
 
 from ..state.state import State
 from ..state.background_state import BackgroundState
-from ..size import SizeType, SequenceSizeType, FIT
+from ..size import SizeType, SequenceSizeType, FIT, OptionalSequenceSizeType
+from ..position import SequencePositionType, CENTER, Position
 from ..ui.section import Section
 
 
@@ -29,6 +30,8 @@ class SectionStyle(Style):
     def __init__(
         self,
         size: SequenceSizeType = (FIT, FIT),
+        content_pos: SequencePositionType = CENTER,
+        content_size: OptionalSequenceSizeType = None,
         width: SizeType = None,
         height: SizeType = None,
         default_state: Optional[BackgroundState] = None,
@@ -41,6 +44,22 @@ class SectionStyle(Style):
         self.size: tuple[SizeType, SizeType] = self.load_size(size, width, height)
         """
         The size of the Element if no size is specified in the Element constructor.
+        """
+
+        if not isinstance(content_pos, Sequence):
+            content_pos = (content_pos, content_pos)
+
+        self.content_pos: Sequence[Position] = content_pos
+        """
+        The alignment of elements within the container.
+        """
+
+        if not isinstance(content_size, Sequence):
+            content_size = (content_size, content_size)
+
+        self.content_size: Sequence[Optional[Size]] = content_size
+        """
+        The size of elements within the container.
         """
 
         self.default_state: BackgroundState = BackgroundState._load(

@@ -23,7 +23,7 @@ class ButtonState(SingleMaterialState):
 
     @staticmethod
     def get_offset(
-            state_controller: "StateController", material_index: int = 0
+        state_controller: "StateController", material_index: int = 0
     ) -> tuple[int, int]:
         material_controller = state_controller.material_controllers[material_index]
 
@@ -32,12 +32,16 @@ class ButtonState(SingleMaterialState):
                 LINEAR.interpolate(
                     state_controller.previous_state.offset[0],
                     state_controller.current_state.offset[0],
-                    1 - material_controller.timer / material_controller.transition.duration,
+                    1
+                    - material_controller.timer
+                    / material_controller.transition.duration,
                 ),
                 LINEAR.interpolate(
                     state_controller.previous_state.offset[1],
                     state_controller.current_state.offset[1],
-                    1 - material_controller.timer / material_controller.transition.duration,
+                    1
+                    - material_controller.timer
+                    / material_controller.transition.duration,
                 ),
             )
             return offset
@@ -53,14 +57,22 @@ class ButtonState(SingleMaterialState):
         if material_controller.playing:
             offset = (
                 LINEAR.interpolate(
-                    state_controller.previous_state.element_offset[0],
-                    state_controller.current_state.element_offset[0],
-                    1 - material_controller.timer / material_controller.transition.duration,
+                    state_controller.previous_state.offset[0]
+                    + state_controller.previous_state.element_offset[0],
+                    state_controller.previous_state.offset[0]
+                    + state_controller.current_state.element_offset[0],
+                    1
+                    - material_controller.timer
+                    / material_controller.transition.duration,
                 ),
                 LINEAR.interpolate(
-                    state_controller.previous_state.element_offset[1],
-                    state_controller.current_state.element_offset[1],
-                    1 - material_controller.timer / material_controller.transition.duration,
+                    state_controller.previous_state.offset[1]
+                    + state_controller.previous_state.element_offset[1],
+                    state_controller.previous_state.offset[1]
+                    + state_controller.current_state.element_offset[1],
+                    1
+                    - material_controller.timer
+                    / material_controller.transition.duration,
                 ),
             )
             return offset

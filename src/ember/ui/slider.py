@@ -5,8 +5,8 @@ from .. import common as _c
 from .base.element import Element
 from .base.interactive import Interactive
 from ..utility.timekeeper import BasicTimekeeper
-from ..position import PositionType, CENTER, SequencePositionType
-from ..size import SizeType, SequenceSizeType
+from ..position import PositionType, SequencePositionType
+from ..size import SizeType, OptionalSequenceSizeType
 from ..event import SLIDERMOVED
 
 from ..state.state_controller import StateController
@@ -30,12 +30,11 @@ class Slider(Element, Interactive):
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
         y: Optional[PositionType] = None,
-        size: Optional[SequenceSizeType] = None,
-        width: Optional[SizeType] = None,
-        height: Optional[SizeType] = None,
+        size: OptionalSequenceSizeType = None,
+        w: Optional[SizeType] = None,
+        h: Optional[SizeType] = None,
         style: Union["SliderStyle", None] = None,
     ):
-        self.set_style(style)
 
         Element.__init__(
             self,
@@ -44,8 +43,9 @@ class Slider(Element, Interactive):
             x,
             y,
             size,
-            width,
-            height,
+            w,
+            h,
+            style,
             can_focus=True,
         )
 
@@ -221,15 +221,6 @@ class Slider(Element, Interactive):
         self.is_clicked = False
         self.is_clicked_keyboard = False
 
-    def _set_style(self, style: Optional["SliderStyle"]) -> None:
-        self.set_style(style)
-
-    def set_style(self, style: Optional["SliderStyle"]) -> None:
-        """
-        Sets the SliderStyle of the Slider.
-        """
-        self._style: "SliderStyle" = self._get_style(style)
-
     def _get_val_from_mouse_x(self, mouse_x) -> float:
         handle_width = round(self.rect.h * self._style.handle_width_ratio)
         x = mouse_x - self.rect.x - handle_width / 2
@@ -242,21 +233,17 @@ class Slider(Element, Interactive):
             self.min_value,
         )
 
-    def _set_value(self, value: float) -> None:
+    @property
+    def value(self) -> float:
+        """
+        Get or set the Slider's value. Limits are controlled by the :code:`min_value` and :code:`max_value` attributes.
+        """
+        return self._timer.val
+
+    @value.setter
+    def value(self, value: float) -> None:
         self.set_value(value)
 
     def set_value(self, value: float) -> None:
         self._timer.val = value
         self._post_event()
-
-    value: float = property(
-        fget=lambda self: self._timer.val,
-        fset=_set_value,
-        doc="The Slider's value. Limits are controlled by the :code:`min_value` and :code:`max_value` attributes.",
-    )
-
-    style: "SliderStyle" = property(
-        fget=lambda self: self._style,
-        fset=_set_style,
-        doc="The SliderStyle of the Slider. Synonymous with the set_style() method.",
-    )

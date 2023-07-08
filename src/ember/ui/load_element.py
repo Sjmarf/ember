@@ -14,7 +14,7 @@ def load_element(
     text_height: Optional[int] = None,
 ) -> Optional[Element]:
     if type(element) is str:
-        return Text(element, style=text_style, width=text_width, height=text_height)
+        return Text(element, style=text_style, w=text_width, h=text_height)
     elif isinstance(element, Element):
         return element
     elif element is None:

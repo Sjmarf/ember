@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from ..material.material import Material
     from ..state.background_state import BackgroundState
     from ..position import PositionType, SequencePositionType
-    from ..size import SizeType, SequenceSizeType
+    from ..size import SizeType, SequenceSizeType, OptionalSequenceSizeType
 
 from .. import common as _c
 from .. import log
@@ -28,12 +28,12 @@ class Section(Box):
             pos: Optional["SequencePositionType"] = None,
             x: Optional["PositionType"] = None,
             y: Optional["PositionType"] = None,
-            size: Optional["SequenceSizeType"] = None,
-            width: Optional["SizeType"] = None,
-            height: Optional["SizeType"] = None,
+            size: "OptionalSequenceSizeType" = None,
+            w: Optional["SizeType"] = None,
+            h: Optional["SizeType"] = None,
             style: Optional["SectionStyle"] = None,
     ):
-        super().__init__(element, material, rect, pos, x, y, size, width, height, style)
+        super().__init__(element, material, rect, pos, x, y, size, w, h, style)
 
     def __repr__(self) -> str:
         return "<Section>"
@@ -85,15 +85,3 @@ class Section(Box):
                 return True
 
         return super()._event(event)
-
-    def _set_style(self, style: Union["ContainerStyle", "SectionStyle"]) -> None:
-        self.set_style(style)
-
-    def set_style(self, style: Union["ContainerStyle", "SectionStyle"]) -> None:
-        self._style: Union["ContainerStyle", "SectionStyle"] = self._get_style(style)
-
-    style: Union["ContainerStyle", "SectionStyle"] = property(
-        fget=lambda self: self._style,
-        fset=_set_style,
-        doc="The SectionStyle or ContainerStyle of the Section. Synonymous with the set_style() method.",
-    )

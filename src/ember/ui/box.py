@@ -7,8 +7,11 @@ from .view import ViewLayer
 from ..material.material import Material
 from ..state.state_controller import StateController
 
-from ..size import FIT, FILL, SizeType, SequenceSizeType, SizeMode
-from ..position import PositionType, CENTER, SequencePositionType
+from ..size import (
+    SizeType,
+    OptionalSequenceSizeType,
+)
+from ..position import PositionType, SequencePositionType, OptionalSequencePositionType
 
 if TYPE_CHECKING:
     from ..style.container_style import ContainerStyle
@@ -31,15 +34,17 @@ class Box(SingleElementContainer):
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
         y: Optional[PositionType] = None,
-        size: Optional[SequenceSizeType] = None,
-        width: Optional[SizeType] = None,
-        height: Optional[SizeType] = None,
+        size: OptionalSequenceSizeType = None,
+        w: Optional[SizeType] = None,
+        h: Optional[SizeType] = None,
+        content_pos: OptionalSequencePositionType = None,
+        content_x: Optional[PositionType] = None,
+        content_y: Optional[PositionType] = None,
+        content_size: OptionalSequenceSizeType = None,
+        content_w: Optional[SizeType] = None,
+        content_h: Optional[SizeType] = None,
         style: Optional["ContainerStyle"] = None,
     ):
-        self.set_style(style)
-
-        self._min_w: float = 0
-        self._min_h: float = 0
 
         self.layer = None
 
@@ -47,7 +52,23 @@ class Box(SingleElementContainer):
 
         self.set_element(element, _update=False)
 
-        super().__init__(material, rect, pos, x, y, size, width, height)
+        super().__init__(
+            material,
+            rect,
+            pos,
+            x,
+            y,
+            size,
+            w,
+            h,
+            content_pos,
+            content_x,
+            content_y,
+            content_size,
+            content_w,
+            content_h,
+            style
+        )
 
         self.state_controller: StateController = StateController(self)
         """
@@ -63,60 +84,6 @@ class Box(SingleElementContainer):
     def _update(self) -> None:
         if self._element and self._element.is_visible:
             self._element._update_a()
-
-    def _update_rect_chain_down(
-            self, surface: pygame.Surface, x: float, y: float, w: float, h: float
-    ) -> None:
-        super()._update_rect_chain_down(
-            surface, x, y, w, h
-        )
-
-        if self._element:
-            element_x = (
-                    x
-                    + w // 2
-                    - self._element.get_abs_width(w) // 2
-            )
-            element_y = (
-                    y
-                    + h // 2
-                    - self._element.get_abs_height(h) // 2
-            )
-            element_w = self._element.get_abs_width(w)
-            element_h = self._element.get_abs_height(h)
-
-            if not self.is_visible:
-                self._element.is_visible = False
-            elif (
-                element_x + element_w < surface.get_abs_offset()[0]
-                or element_x > surface.get_abs_offset()[0] + surface.get_width()
-                or element_y + element_h < surface.get_abs_offset()[1]
-                or element_y > surface.get_abs_offset()[1] + surface.get_height()
-            ):
-                self._element.is_visible = False
-            else:
-                self._element.is_visible = True
-
-            self._element._update_rect_chain_down(
-                surface,
-                element_x, element_y,
-                element_w,
-                element_h
-            )
-
-    @Element._chain_up_decorator
-    def _update_rect_chain_up(self) -> None:
-        if self._h.mode == SizeMode.FIT:
-            if self._element:
-                self._min_h = self._element.get_abs_height()
-            else:
-                self._min_h = 20
-
-        if self._w.mode == SizeMode.FIT:
-            if self._element:
-                self._min_w = self._element.get_abs_width()
-            else:
-                self._min_w = 20
 
     def _set_layer_chain(self, layer: ViewLayer) -> None:
         log.layer.info(self, f"Set layer to {layer}")

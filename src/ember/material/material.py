@@ -14,6 +14,7 @@ class Material(abc.ABC):
     """
     All materials inherit from this class. This base class should not be instantiated.
     """
+    UPDATES_EVERY_TICK = False
 
     def __init__(self, alpha: int):
         self.alpha: int = alpha
@@ -170,3 +171,4 @@ class MaterialWithSizeCache(MaterialWithElementCache, abc.ABC):
         material_surface = self._cache[element]
         material_surface.set_alpha(alpha * self.alpha / 255)
         return material_surface
+    

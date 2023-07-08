@@ -15,11 +15,13 @@ To do anything in Ember, you must first call these functions at the start of you
 
 .. code-block:: python
 
-    clock = pygame.time.Clock()
-    ember.init(clock)
+    ember.init()
     ember.style.load("dark")
 
-You must pass the clock that you will use to control your project framerate to :py:func:`ember.init()`. The first argument of :py:func:`ember.style.load()` controls what your UI will look like. You can load any style from the list of built-in styles listed below, or create your own custom style (we'll look at this later in the :ref:`Style Guide<style_guide>`).
+    # Where 'clock' is your pygame.Clock object
+    ember.set_clock(clock)
+
+:py:func:`ember.style.load()` loads a 'style' for your project. This controls what your UI will look like. The first argument of the function is the name of the style you want to load - you can use any style from the built-in styles listed below below, or create your own custom style (we'll look at this later in the :ref:`Style Guide<style_guide>`).
 
 Built-in styles:
 
@@ -28,21 +30,23 @@ Built-in styles:
 - :code:`pixel_plastic`
 - :code:`pixel_stone`
 
-In addition to the steps described above, you must also call :code:`ember.update` each game tick where Ember is used.
+In addition to the steps described above, you must also call :code:`ember.update` for each game tick where Ember is used.
 
 Here's some sample code, with Ember-related lines highlighted:
 
 .. code-block:: python
    :linenos:
-   :emphasize-lines: 2,6,7,18
+   :emphasize-lines: 2,7,8,9,20
 
     import pygame
     import ember
 
     pygame.init()
     clock = pygame.time.Clock()
-    ember.init(clock)
+
+    ember.init()
     ember.style.load("dark")
+    ember.set_clock(clock)
 
     screen = pygame.display.set_mode((400, 400))
 
@@ -58,13 +62,15 @@ Here's some sample code, with Ember-related lines highlighted:
         clock.tick(60)
         pygame.display.flip()
 
+This code produces a black screen. Next, we'll look at adding some UI elements to the screen.
+
 .. _element-basics:
 Creating a UI
 ------------------------
 
-The term 'element' refers to a UI object such as a button or text field. There is a different class for each type of element. All element classes can be found under the :code:`ember.ui` module or straight from :code:`ember`, and all inherit from the base :py:class:`ember.ui.base.Element` class.
+The term 'element' refers to a UI object such as a button or text field. There is a different class for each type of element in Ember. All element classes can be found under the :code:`ember.ui` module or straight from :code:`ember`.
 
-The most basic element is the :py:class:`ember.ui.Text` element. Given a string, it will render that string as text on the screen. To display an element on the screen, it must be contained within a :py:class:`ember.ui.View` object like this:
+First, we'll look at the :py:class:`ember.ui.Text` element. Given a string, it will render that string as text on the screen. To display an element on the screen, it must be contained within a :py:class:`ember.ui.View` object like this:
 
 .. code-block:: python
 
@@ -72,21 +78,23 @@ The most basic element is the :py:class:`ember.ui.Text` element. Given a string,
         ember.Text("Hello world")
     )
 
-The View object is responsible for rendering the element that you pass to its constructor. In order for the View to do this, you must call :py:meth:`View.update<ember.ui.View.update>` each tick, and :py:meth:`View.event<ember.ui.View.event>` for each event in the Pygame event stack.
+The View object is responsible for rendering the element that you pass to the View. In order for the View to do this, you must call :py:meth:`View.update<ember.ui.View.update>` each tick, and :py:meth:`View.event<ember.ui.View.event>` for each event in the Pygame event stack.
 
-Below, I've added a View to the previous example script. The changes I've made are highlighted.
+I've added a View to the previous example script. The changes I've made are highlighted.
 
 .. code-block:: python
    :linenos:
-   :emphasize-lines: 11,12,13,17,24
+   :emphasize-lines: 13,14,15,19,26
 
     import pygame
     import ember
 
     pygame.init()
     clock = pygame.time.Clock()
-    ember.init(clock)
+
+    ember.init()
     ember.style.load("dark")
+    ember.set_clock(clock)
 
     screen = pygame.display.set_mode((400, 400))
 
@@ -116,11 +124,13 @@ This code produces the following output:
 .. _element-containers:
 Multiple elements in a View
 ---------------------------------------------
-A View can only hold **one** element at a time. If we want to display more than one element in a View, we have to wrap our elements in a **Container**. A 'container' is a type of element, the primary function of which is to arrange elements that are contained within it.
+A View can only hold **one** element at a time. If we want to display more than one element in a View, we have to wrap our elements in a **Container**. A 'container' is a type of element that can hold other elements inside of it.
 
-There are several different containers that you can use. The first one we'll look at is the :py:class:`VStack<ember.ui.VStack>` container. You can pass any number of elements to the VStack constructor, and they will be displayed in a vertical list on the screen when the View is rendered.
+There are several different containers that you can use. Each type of container arranges its child elements in a different way.
 
-.. image:: _static/element_guide/image2.png
+The first container we'll look at is the :py:class:`VStack<ember.ui.VStack>` container. You can pass any number of elements to the VStack constructor, and they will be displayed in a vertical list on the screen when the View is rendered.
+
+.. image:: _static/element_guide/vstack.png
   :width: 160
   :align: right
 
@@ -135,7 +145,7 @@ There are several different containers that you can use. The first one we'll loo
 
 Similarly, the :py:class:`HStack<ember.ui.HStack>` container displays elements in a horizontal list:
 
-.. image:: _static/element_guide/image3.png
+.. image:: _static/element_guide/hstack.png
   :width: 160
   :align: right
 
@@ -150,7 +160,7 @@ Similarly, the :py:class:`HStack<ember.ui.HStack>` container displays elements i
 
 Remember, containers such as :code:`VStack` and :code:`HStack` are Elements just like :code:`Text` is. This means you can nest them inside of each other like this:
 
-.. image:: _static/element_guide/image4.png
+.. image:: _static/element_guide/nested_container.png
   :width: 160
   :align: right
 
@@ -166,17 +176,17 @@ Remember, containers such as :code:`VStack` and :code:`HStack` are Elements just
         )
     )
 
-There is no limit to how many times you can nest Views.
+There is no limit to how many times you can nest Containers like this.
 
 .. _element-buttons:
 Buttons
 ------------------------
 
-.. image:: _static/element_guide/image5.png
+.. image:: _static/element_guide/button1.png
   :width: 160
   :align: right
 
-Lets look at our first **interactive** element - the :py:class:`Button<ember.ui.Button>`.
+Lets look at our first interactive element - the :py:class:`Button<ember.ui.Button>`.
 
 .. code-block:: python
 
@@ -184,9 +194,9 @@ Lets look at our first **interactive** element - the :py:class:`Button<ember.ui.
         ember.Button()
     )
 
-Just like a container, you can pass any element to the Button constructor. This element will then be displayed on the surface of the button.
+The Button is a container that can hold a single element, as shown below.
 
-.. image:: _static/element_guide/image6.png
+.. image:: _static/element_guide/button2.png
   :width: 160
   :align: right
 
@@ -207,7 +217,7 @@ For convenience, you can pass a string straight to the Button constructor and a 
         ember.Button("Hello world")
     )
 
-When the user clicks the button, an :code:`ember.BUTTONCLICKED` event is emitted. You can listen for this event in the Pygame event stack just like you would with any Pygame event. The :code:`ember.BUTTONCLICKED` Event object has the following attributes:
+When the user clicks the Button, an :code:`ember.BUTTONCLICKED` event is emitted. You can listen for this event in the Pygame event stack just like you would with any Pygame event. The :code:`ember.BUTTONCLICKED` Event object has the following attributes:
 
 - :code:`element` - The Button element that posted the event.
 - :code:`text` - The text displayed on the element (a string) *if* the child of the Button is a Text object.
@@ -223,26 +233,30 @@ Example usage:
 .. _element-sizing:
 Element Sizing
 ------------------------
-All elements have a size. You can change the size of an element using the :code:`size`, :code:`width` and :code:`height` parameters when you initialise the element.
+
+Size Parameters
+.....................
+
+All elements have a size. You can change the size of an element using the :code:`size`, :code:`w` and :code:`h` parameters when you initialise the element.
 
  - The :code:`size` parameter accepts either a sequence of sizes or a single size. If you pass a sequence of sizes, the first and second items of the sequence will be used for the width and height of the element respectively. If you pass a single size, it will be used for *both* the width and height of the element.
- - The :code:`width` and :code:`height` parameters can be used to adjust the width and height of the element seperately, if you so wish. These parameters take priority over the :code:`size` parameter.
+ - The :code:`w` and :code:`h` parameters can be used to adjust the width and height of the element seperately, if you so wish. These parameters take priority over the :code:`size` parameter.
 
 If no size is specified, default values will be used. The default values vary from element to element, and can differ depending on which style you load when calling :py:func:`ember.style.load()` at the start of your program.
 
 Here is some example usage:
 
-.. image:: _static/element_guide/image7.png
+.. image:: _static/element_guide/size1.png
   :width: 160
   :align: right
 
 .. code-block:: python
 
     # 100 pixels wide, and the default height.
-    ember.Button(width=100)
+    ember.Button(w=100)
 
     # 50 pixels high, and the default width.
-    ember.Button(height=50)
+    ember.Button(h=50)
 
     # 200 pixels wide and 50 pixels high.
     ember.Button(size=(200, 50))
@@ -250,100 +264,151 @@ Here is some example usage:
     # 90 pixels wide and 90 pixels high.
     ember.Button(size=90)
 
+.. note::
+
+    .. image:: _static/element_guide/material.png
+          :width: 160
+          :align: right
+
+    If you want to be able to see the size of a VStack or HStack more clearly while experimenting with sizes, you can specify the :code:`material` parameter as shown below. This will fill the container background with a solid color. We'll look at materials more later.
+
+    .. code-block:: python
+
+        ember.VStack(
+            ember.Text("Hello world"),
+            material=ember.material.Color("blue"),
+            size=100
+        )
+
+FIT and FILL
+..................
+
 There are other ways to describe size, too.
 
-- You can pass :code:`ember.FILL` as a size value, and the element will **expand** to fill the maximum space available.
+- You can pass :code:`ember.FILL` as a size value, and the element will **expand** to the maximum size available.
 
-- You can pass :code:`ember.FIT` as a size value, and the element will **shrink** to fit the size of any child elements it may have.
+- You can pass :code:`ember.FIT` as a size value, and the element will **shrink** to the minimum size available.
 
-.. image:: _static/element_guide/image8.png
+.. image:: _static/element_guide/size2.png
   :width: 160
   :align: right
 
 .. code-block:: python
 
-    # The button expands to fill the available space on the x axis.
-    ember.Button("Hello", width=ember.FILL)
+    # The button expands to fill the available space on the x-axis.
+    ember.Button("Hello", w=ember.FILL)
 
     # The button shrinks on the x-axis to the width of its Text element.
-    ember.Button("Hello", width=ember.FIT)
+    ember.Button("Hello", w=ember.FIT)
 
-Both :code:`ember.FILL` and :code:`ember.FIT` support the :code:`+-*/` operators. This allows you to use them in more interesting ways, as shown below:
+Both :code:`ember.FILL` and :code:`ember.FIT` support the :code:`+-*/` operators, as described below.
 
-.. image:: _static/element_guide/image9.png
+.. image:: _static/element_guide/size3.png
   :width: 160
   :align: right
 
 .. code-block:: python
 
     # The button's width is the maximum available space, minus 50 pixels.
-    ember.Button("Hello", width=ember.FILL - 50)
+    ember.Button("Hello", w=ember.FILL - 50)
 
     # The button's width is half of the maximum available space.
-    ember.Button("Hello", width=ember.FILL / 2)
+    ember.Button("Hello", w=ember.FILL / 2)
 
     # The button's width is the width of the text 'Hello', plus 50 pixels.
-    ember.Button("Hello", width=ember.FIT + 50)
+    ember.Button("Hello", w=ember.FIT + 50)
 
-If you want to be able to see the size of a container more clearly, you can specify the :code:`material` parameter as shown below. We'll look at materials more later.
+Content sizes
+..................
 
-.. image:: _static/element_guide/image13.png
-  :width: 160
-  :align: right
+Some containers offer :code:`content_size`, :code:`content_w` and :code:`content_h` parameters. You can specify sizes for these parameters just like you would for the :code:`size`, :code:`w` and :code:`h` parameters. When you do this, the size will be applied to every child of the container.
+
+In this example, every Button in the VStack will have a width of 50px.
 
 .. code-block:: python
 
     ember.VStack(
-        ember.Text("Hello world"),
-        material=ember.material.Color("blue"),
-        size=100
+        ember.Button(),
+        ember.Button(),
+        ember.Button(),
+        content_w=50
     )
 
 .. _element-positioning:
 Element Positioning
 ------------------------
 
-For the containers we've looked at so far, the child elements' positions on the screen are handled by the container - we don't need to explicitly state the XY coordinates of the child elements. This is useful because it means that your UI can adapt to the size of the Pygame window.
+Position Parameters
+.........................
 
-The exception is the :py:class:`Layout<ember.ui.Layout>` container, which *does* allow you to specify absolute values if needed. You can do this by specifying the :code:`position` parameter when you construct the element:
+In addition to changing the size of an element, we can change its position relative to its parent element. All elements have :code:`pos`,
+:code:`x` and :code:`y` parameters, which work in a similar way to :code:`size`, :code:`w` and :code:`h`.
 
-.. image:: _static/element_guide/image10.png
+Let's look at an example. By default, the VStack container will align its child elements to the center of the VStack. We can change this behaviour by specifying an :code:`x` position for one of the VStack's child elements. Specifying an integer for this parameter will position the element that number of pixels from the left edge of the VStack.
+
+.. image:: _static/element_guide/pos1.png
   :width: 160
   :align: right
 
 .. code-block:: python
 
     view = ember.View(
-        ember.Layout(
-            ember.Button(position=(70, 70)),
-            ember.Button(position=(30, 250))
+        ember.VStack(
+            ember.Button(),
+            ember.Button(x=20),
+            w=ember.FILL
         )
     )
 
-Alternatively, you can pass an **anchor** to the position parameter. Using an anchor will adapt the position of the element if the size of the Layout changes. For example:
+Layouts
+............
 
-.. image:: _static/element_guide/image11.png
+A VStack container only lets you adjust the :code:`x` position of an element, because the vertical positioning of the elements is dictated by the container itself. Similarly, the elements within a HStack container only respect the :code:`y` parameter.
+
+The :py:class:`Layout<ember.ui.Layout>` container repects *both* the :code:`x` and :code:`y` positions of its child elements, which allows for more explicit positioning.
+
+.. image:: _static/element_guide/layout.png
   :width: 160
   :align: right
 
 .. code-block:: python
 
-    # Locked to the top-left
-    ember.Button(position=(ember.TOP, ember.LEFT))
+    ember.Layout(
+        ember.Button(x=30, y=30),
+        ember.Button(pos=(70, 150))
+    )
 
-    # Locked to the right with a y position of 200
-    ember.Button(position=(ember.RIGHT, 200))
+Anchors
+.............
+
+As an alternative to passing integers as position arguments, you can use **anchors** instead. Consider this example:
+
+.. image:: _static/element_guide/pos2.png
+  :width: 160
+  :align: right
+
+.. code-block:: python
+
+    ember.Layout(
+        # Anchored to the top-left of the container
+        ember.Button(x=(ember.TOP, ember.LEFT))
+
+        # Locked to the right with a y position of 200
+        ember.Button(pos=(ember.RIGHT, 200))
+    )
 
 These anchors support the :code:`+-` operators, meaning that you can add padding like this:
 
-.. image:: _static/element_guide/image12.png
+.. image:: _static/element_guide/pos3.png
   :width: 160
   :align: right
 
 .. code-block:: python
 
     # 30 pixels from the bottom-right on both the x and y axes
-    ember.Button(position=(ember.RIGHT-30, ember.BOTTOM-30))
+    ember.Layout(
+        ember.Button(pos=(ember.RIGHT-30, ember.BOTTOM-30))
+    )
 
 Here are the anchors that you can use:
 
@@ -358,9 +423,9 @@ Additionally, there are a number of predefined **anchor tuples** for your conven
 .. code-block:: python
 
     # Instead of writing:
-    ember.Button(position=(ember.TOP, ember.LEFT))
+    ember.Button(pos=(ember.TOP, ember.LEFT))
     # You can write:
-    ember.Button(position=ember.TOPLEFT)
+    ember.Button(pos=ember.TOPLEFT)
 
 - :code:`TOPLEFT`
 - :code:`TOPRIGHT`
@@ -371,13 +436,34 @@ Additionally, there are a number of predefined **anchor tuples** for your conven
 - :code:`MIDTOP`
 - :code:`MIDBOTTOM`
 
+Content positions
+....................
+
+Similarly to how the size of elements in a container can be specified with the :code:`content_size`, :code:`content_w` and :code:`content_h` parameters, you can specify the position of elements in a container using the :code:`content_pos`, :code:`content_x` and :code:`content_y` parameters.
+
+In this example, every Button in the VStack will be anchored to the right edge of the VStack.
+
+.. image:: _static/element_guide/pos4.png
+  :width: 160
+  :align: right
+
+.. code-block:: python
+
+    ember.VStack(
+        ember.Button(w=200),
+        ember.Button(w=100),
+        ember.Button(w=300),
+        content_x=ember.RIGHT,
+        w=ember.FILL
+    )
+
 .. _element-list:
 Elements List
 ------------------------
 
 Congratulations! You've learnt the basics of Ember. Now would be a good time to experiment with what you've learned so far, if you haven't already!
 
-Below, you can find brief descriptions of some other elements in Ember. Each element has parameters, attributes and methods that you can use to customise them. To see a full list of these, click on the Element name.
+Below, you can find brief descriptions of some other elements in Ember. Each element has parameters, attributes and methods that you can use to customise their appearance and behaviour. To see a full list of these, click on the Element name.
 
 :py:class:`Text<ember.ui.Text>`
 .....................................
@@ -395,13 +481,13 @@ next line.
         ember.Text(
             "velit excepteur anim anim et aute laborum sit ut consectetur",
             color="cyan",
-            width=ember.FILL,
+            w=ember.FILL,
             align="left"
         ),
         ember.Text(
             "sunt aliqua voluptate consequat ad eu tempor incididunt sit culpa",
             color="yellow",
-            width=ember.FILL,
+            w=ember.FILL,
             align="right"
         )
     )
@@ -428,12 +514,12 @@ Used to arrange elements vertically or horizontally.
 .. code-block:: python
 
     ember.VStack(
-        ember.Button(width=ember.FILL),
+        ember.Button(w=ember.FILL),
         ember.HStack(
-            ember.Button(width=ember.FILL),
-            ember.Button(width=ember.FILL)
+            ember.Button(w=ember.FILL),
+            ember.Button(w=ember.FILL)
         ),
-        width=ember.FILL - 50,
+        w=ember.FILL - 50,
         spacing=50,
     )
 
@@ -450,8 +536,8 @@ A container that allows explicit positioning of elements. See the section on :re
 
     view = ember.View(
         ember.Layout(
-            ember.Button(position=(70, 70)),
-            ember.Button(position=(30, 250))
+            ember.Button(pos=(70, 70)),
+            ember.Button(pos=(30, 250))
         )
     )
 
@@ -487,7 +573,7 @@ A blank element used to control spacing between elements in containers.
     ember.VStack(
         ember.Button("1"),
         ember.Button("2"),
-        ember.Spacer(height=50),
+        ember.Spacer(h=50),
         ember.Button("3")
     )
 
@@ -507,7 +593,7 @@ Can hold one element, which is displayed on the surface of button.
             ember.Text("Hello"),
             ember.Text("World")
         ),
-        height=ember.FIT + 30
+        h=ember.FIT + 30
     )
 
 If you pass a string instead of an element, a Text element is made for you. If you pass more than one element to the Button, they get wrapped with a HStack.

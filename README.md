@@ -20,4 +20,4 @@ This library is distributed under [GNU LGPL version 2.1](https://www.gnu.org/cop
 
 This basically means you can use Ember in any project you want, but if you make any changes or additions to Ember itself, those must be released with a compatible license. Closed source and commercial games are fine.
 
-This library is dependent on [Pygame](https://github.com/pygame/pygame) / [Pygame CE](https://github.com/pygame-community/pygame-ce), which both also use the [GNU LGPL version 2.1](https://www.gnu.org/copyleft/lesser.html) license at the time of writing.
+This library is dependent on [Pygame CE](https://github.com/pygame-community/pygame-ce), which also uses the [GNU LGPL version 2.1](https://www.gnu.org/copyleft/lesser.html) license at the time of writing.

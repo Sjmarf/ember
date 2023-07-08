@@ -7,7 +7,7 @@ from .base.element import Element
 from .base.interactive import Interactive
 from ..utility.timekeeper import BasicTimekeeper
 
-from ..size import SizeType, SequenceSizeType
+from ..size import SizeType, OptionalSequenceSizeType
 from ..position import PositionType, CENTER, SequencePositionType
 from ..state.state_controller import StateController
 
@@ -30,12 +30,11 @@ class Toggle(Element, Interactive):
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
         y: Optional[PositionType] = None,
-        size: Optional[SequenceSizeType] = None,
-        width: Optional[SizeType] = None,
-        height: Optional[SizeType] = None,
+        size: OptionalSequenceSizeType = None,
+        w: Optional[SizeType] = None,
+        h: Optional[SizeType] = None,
         style: Optional["ToggleStyle"] = None,
     ):
-        self.set_style(style)
 
         self._is_active: bool = active
 
@@ -58,8 +57,9 @@ class Toggle(Element, Interactive):
             x,
             y,
             size,
-            width,
-            height,
+            w,
+            h,
+            style,
             can_focus=True,
         )
 
@@ -132,26 +132,22 @@ class Toggle(Element, Interactive):
 
         return False
 
-    def _set_style(self, style: Optional["ToggleStyle"]) -> None:
-        self.set_style(style)
+    @property
+    def is_active(self) -> bool:
+        return self._is_active
 
-    def set_style(self, style: Optional["ToggleStyle"]) -> None:
-        """
-        Sets the ToggleStyle of the Toggle.
-        """
-        self._style: "ToggleStyle" = self._get_style(style)
+    @is_active.setter
+    def is_active(self, value: bool) -> None:
+        self.set_active(value)
 
-    def _set_active(self, state: bool) -> None:
-        self.set_active(state)
-
-    def set_active(self, state: bool, play_sound: bool = False) -> None:
+    def set_active(self, value: bool, play_sound: bool = False) -> None:
         """
         Whether the Toggle is switched on or off.
         """
-        self._is_active = state
+        self._is_active = value
         self._timer.play(
             stop=(
-                self._w.value - round(self.rect.h * self._style.handle_width_ratio)
+                self._active_w.value - round(self.rect.h * self._style.handle_width_ratio)
                 if self._is_active
                 else 0
             ),
@@ -171,15 +167,3 @@ class Toggle(Element, Interactive):
             )
             if sound is not None:
                 sound.play()
-
-    is_active: bool = property(
-        fget=lambda self: self._is_active,
-        fset=_set_active,
-        doc="Whether the Toggle is on or off.",
-    )
-
-    style: "ToggleStyle" = property(
-        fget=lambda self: self._style,
-        fset=_set_style,
-        doc="The ToggleStyle of the Toggle. Synonymous with the set_style() method.",
-    )

@@ -1,0 +1,25 @@
+{
+  "ember_version": "0.0.1",
+  "characters": "abcdefghijklmnopqrstuvwxyz0123456789: ABCDEFGHIJKLMNOPQRSTUVWXYZ/_-.?)(,<>%;][\\=`'éôàèêù!œë+•|*",
+  "files": [
+    {
+      "path": "regular.png",
+      "variant": [],
+      "layers": [1]
+    },
+    {
+      "path": "underlined.png",
+      "variant": ["UNDERLINE"],
+      "layers": [1, 2]
+    },
+    {
+      "path": "outlined.png",
+      "variant": ["OUTLINE"],
+      "layers": [2, 1]
+    }
+  ],
+  "cursor_offset": [0, 0],
+  "character_padding": [3, 3],
+  "variants": [[], ["underline"], ["outline"]],
+  "line_spacing": 2
+}

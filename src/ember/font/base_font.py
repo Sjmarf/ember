@@ -3,76 +3,45 @@ import math
 
 import pygame
 import array
-from typing import Literal, Optional
+from typing import Literal, Optional, Sequence
 
 from .. import common as _c
 from ..common import ColorType
 
 from ..position import Position
 
-
-class Line:
-    def __init__(
-        self,
-        content: str = "",
-        start_x: int = 0,
-        start_y: int = 0,
-        width: int = 0,
-        start_index: int = 0,
-        line_index: int = 0,
-    ):
-        self.content = content
-        self.start_index = start_index
-        self.end_index = self.start_index + len(self.content) - 1
-        self.start_x = start_x
-        self.start_y = start_y
-        self.width = width
-        self.line_index = line_index
-
-    def __repr__(self) -> str:
-        content = self.content if len(self.content) <= 15 else f"{self.content[:16]}"
-        return f"<Line('{content}', start_index={self.start_index})>"
-
-    def __len__(self) -> int:
-        return len(self.content)
+from .line import Line
+from .variant import TextVariant, BOLD, ITALIC, UNDERLINE, OUTLINE
 
 
 class BaseFont(abc.ABC):
-    @abc.abstractmethod
-    def __init__(self):
-        # Replaced by subclasses
-        self.line_height = 0
-
-    def _render_line(
+    def __init__(
         self,
-        surf: pygame.Surface,
-        text: str,
-        max_width: int,
-        y: int,
-        height: int,
-        color: Optional[ColorType],
-        align: Position,
-    ) -> (pygame.Surface, int, int):
-        old_surf = surf.copy()
-        surf = pygame.Surface((max(1, max_width), y + height), pygame.SRCALPHA)
-        surf.blit(old_surf, (0, 0))
-
-        new_text = text
-        text_surf = self._render_text(new_text, color)
-        x = round(align.get(None, max_width, text_surf.get_width()))
-
-        surf.blit(text_surf, (x, y))
-        return surf, x, text_surf.get_width()
+        line_height: int,
+        line_spacing: int,
+        cursor: pygame.Surface,
+        cursor_offset: Sequence[int],
+    ):
+        # Attributes are replaced by subclasses
+        self.line_height: int = line_height
+        self.line_spacing: int = line_spacing
+        self.cursor: pygame.Surface = cursor
+        self.cursor_offset: Sequence[int] = cursor_offset
 
     @abc.abstractmethod
-    def get_width_of_line(self, text: str) -> int:
+    def get_width_of_line(self, text: str, variant: Sequence[TextVariant]) -> int:
         pass
 
-    def get_width_of(self, text: str, max_height: float = math.inf) -> int:
+    def get_width_of(
+        self, text: str, variant: TextVariant, max_width: float = 0, max_height: float = math.inf
+    ) -> int:
         if max_height == math.inf:
-            return self.get_width_of_line(text)
+            return self.get_width_of_line(text, variant)
         if max_height == 0:
             return 0
+
+        if (w := self.get_width_of_line(text, variant)) < max_width:
+            return w
 
         width = 10
         while True:
@@ -86,16 +55,11 @@ class BaseFont(abc.ABC):
 
         lines = [i for i in self.split_into_lines(text, max_width)]
         return len(lines) * (self.line_height + self.line_spacing) - self.line_spacing
+    
+    def get_layers(self, variant: Sequence[TextVariant]) -> list[int]:
+        return [1]
 
-    @abc.abstractmethod
-    def _render_text(
-        self,
-        text: str,
-        color: ColorType,
-    ) -> pygame.Surface:
-        pass
-
-    def split_into_lines(self, text, max_width):
+    def split_into_lines(self, text, max_width, variant: Sequence[TextVariant]):
         last_n = 0
         letter_n = -1
 
@@ -104,7 +68,7 @@ class BaseFont(abc.ABC):
             if letter_n < 0:
                 raise _c.Error("internal font error")
 
-            line_width = self.get_width_of_line(text[last_n : letter_n + 1])
+            line_width = self.get_width_of_line(text[last_n : letter_n + 1], variant)
 
             if line_width > max_width or text[letter_n] == "\n":
                 letter = text[letter_n]
@@ -138,46 +102,12 @@ class BaseFont(abc.ABC):
             if letter_n >= len(text) - 1:
                 yield last_n, text[last_n:]
 
+    @abc.abstractmethod
     def render(
         self,
         text: str,
-        color: ColorType,
+        variant: Sequence[TextVariant],
         max_width: Optional[int],
         align: Position,
-    ) -> (pygame.Surface, [Line]):
-        if max_width is None:
-            surf = self._render_text(text, color)
-            return surf, (Line(content=text),)
-
-        max_width: int
-        max_width -= abs(align.value)
-
-        height = self.line_height
-
-        surf = pygame.Surface(
-            (1 if max_width is None else max(1, max_width), height), pygame.SRCALPHA
-        )
-
-        if not text:
-            return surf, [
-                Line(content="", start_x=int(align.get(None, surf.get_width(), 0)))
-            ]
-
-        lines = []
-        y = 0
-
-        for index, line in self.split_into_lines(text, max_width):
-            surf, start_x, end_x = self._render_line(
-                surf, line, max_width, y, height, color, align
-            )
-            y += height + self.line_spacing
-            lines.append(
-                Line(
-                    content=line,
-                    start_x=start_x,
-                    width=end_x,
-                    start_index=index,
-                    line_index=len(lines),
-                )
-            )
-        return surf, lines
+    ) -> tuple[list[pygame.Surface], [Line]]:
+        pass

@@ -11,7 +11,7 @@ from ..transition.transition import Transition
 
 from ..state.state import State
 from ..state.background_state import BackgroundState
-from ..size import SizeType, SequenceSizeType, FIT
+from ..size import SizeType, SequenceSizeType, FIT, OptionalSequenceSizeType, Size
 from ..position import Position, CENTER, SequencePositionType
 from ..ui.base.container import Container
 
@@ -31,12 +31,13 @@ class ContainerStyle(Style):
         width: SizeType = None,
         height: SizeType = None,
         sizes: Optional[dict[_ELEMENT, SequenceSizeType]] = None,
+        content_pos: SequencePositionType = CENTER,
+        content_size: OptionalSequenceSizeType = None,
         default_state: Optional[BackgroundState] = None,
         default_material: Optional[MaterialType] = None,
         spacing: Optional[int] = None,
         min_spacing: int = 20,
         focus_on_entry: FocusType = FOCUS_CLOSEST,
-        content_pos: SequencePositionType = CENTER,
         material_transition: Optional[Transition] = None,
         state_func: Callable[["Container"], "BackgroundState"] = default_state_func,
     ):
@@ -46,7 +47,25 @@ class ContainerStyle(Style):
         The size of the Element if no size is specified in the Element constructor.
         """
 
-        self.default_state: BackgroundState = BackgroundState._load(default_state, default_material)
+        if not isinstance(content_pos, Sequence):
+            content_pos = (content_pos, content_pos)
+
+        self.content_pos: Sequence[Position] = content_pos
+        """
+        The alignment of elements within the container.
+        """
+
+        if not isinstance(content_size, Sequence):
+            content_size = (content_size, content_size)
+
+        self.content_size: Sequence[Optional[Size]] = content_size
+        """
+        The size of elements within the container.
+        """
+
+        self.default_state: BackgroundState = BackgroundState._load(
+            default_state, default_material
+        )
         """
         The default State.
         """
@@ -66,14 +85,6 @@ class ContainerStyle(Style):
         """
         Whether the ember.CLOSEST or ember.FIRST element of the container should be focused 
         when the container is entered. 
-        """
-        
-        if not isinstance(content_pos, Sequence):
-            content_pos = (content_pos, content_pos)
-            
-        self.content_pos: Sequence[Position] = content_pos
-        """
-        The alignment of elements within the container.
         """
 
         self.material_transition: Optional[Transition] = material_transition

@@ -14,7 +14,7 @@
 
      "Button": {
        "size": [300, 80],
-       "default_material": ["RoundedRect", [30,30,30], 20],
+       "default_material": ["RoundedRect", [60,60,60], 20],
        "hover_material": ["RoundedRect", [40,40,40], 20],
        "click_material": ["RoundedRect", [70,70,70], 20],
        "disabled_material": ["RoundedRect", [15,15,15], 20],

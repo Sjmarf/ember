@@ -7,7 +7,7 @@ from .base.surfacable import Surfacable
 if TYPE_CHECKING:
     pass
 
-from ..size import FIT, SizeType, SequenceSizeType, SizeMode
+from ..size import FIT, SizeType, OptionalSequenceSizeType, SizeMode
 from ..position import PositionType, CENTER, SequencePositionType
 
 
@@ -19,16 +19,16 @@ class Surface(Surfacable):
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
         y: Optional[PositionType] = None,
-        size: Optional[SequenceSizeType] = None,
-        width: Optional[SizeType] = None,
-        height: Optional[SizeType] = None,
+        size: OptionalSequenceSizeType = None,
+        w: Optional[SizeType] = None,
+        h: Optional[SizeType] = None,
     ):
         self._surface: Optional[pygame.Surface] = None
 
         self._min_w: float = 0
         self._min_h: float = 0
 
-        super().__init__(rect, pos, x, y, size, width, height, default_size=(FIT, FIT), can_focus=False)
+        super().__init__(rect, pos, x, y, size, w, h, style, default_size=(FIT, FIT), can_focus=False)
         self.set_surface(surface)
 
     def __repr__(self) -> str:
@@ -83,8 +83,13 @@ class Surface(Surfacable):
                 )
             else:
                 self._min_h = 20
-
-    def _set_surface(self, surface: Union[pygame.Surface, str, None]) -> None:
+    
+    @property
+    def surface(self) -> Optional[pygame.Surface]:
+       return self._surface
+   
+    @surface.setter
+    def surface(self, surface: Union[pygame.Surface, str, None]) -> None:
         self.set_surface(surface)
 
     def set_surface(
@@ -102,9 +107,3 @@ class Surface(Surfacable):
             self._surface = None
 
         self._update_rect_chain_up()
-
-    surface = property(
-        fget=lambda self: self._surface,
-        fset=_set_surface,
-        doc="The pygame.Surface object.",
-    )

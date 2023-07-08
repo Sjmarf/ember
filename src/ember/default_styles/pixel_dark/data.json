@@ -4,8 +4,11 @@
 
   "elements": {
 
-    "Text": { "font": [ "PixelFont", "pixel" ] },
+    "Text": {
+    "font": [ "PixelFont", "pixel" ], "color": "white" },
 
+    "Icon": {"font": ["IconFont", "pixel"]},
+    
     "View": {},
 
     "Container": {
@@ -20,18 +23,18 @@
     "Button": {
       "default_state": [
         "ButtonState",
-        { "element_offset": [ 0, -1 ] }
+        { "element_offset": [ 0, 0 ] }
       ],
       "click_state": [
         "ButtonState",
-        { "element_offset": [ 0, 0 ] }
+        { "element_offset": [ 0, 1 ] }
       ],
-      "size": [ 100, 24 ]
+      "size": [ 100, 26 ]
     },
 
     "button2": {
       "type": "Button",
-      "size": [ 100, 24 ]
+      "size": [ 100, 29 ]
     },
 
     "Toggle": {

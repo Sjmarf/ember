@@ -8,7 +8,7 @@ from ..state.background_state import BackgroundState
 from ..state.scroll_state import ScrollbarState
 
 from ..transition.transition import Transition
-from ..size import SizeType, SequenceSizeType
+from ..size import SizeType, SequenceSizeType, OptionalSequenceSizeType
 from ..position import SequencePositionType, Position, CENTER
 from ..ui.base.scroll import Scroll
 
@@ -37,6 +37,8 @@ class ScrollStyle(Style):
         width: SizeType = None,
         height: SizeType = None,
         sizes: Optional[dict[_ELEMENT, SequenceSizeType]] = None,
+        content_pos: SequencePositionType = CENTER,
+        content_size: OptionalSequenceSizeType = None,
         default_state: Optional[BackgroundState] = None,
         default_scrollbar_state: Optional[ScrollbarState] = None,
         hover_scrollbar_state: Optional[ScrollbarState] = None,
@@ -49,12 +51,13 @@ class ScrollStyle(Style):
         padding: int = 10,
         scroll_speed: int = 5,
         over_scroll: tuple[int, int] = (0, 0),
-        content_pos: SequencePositionType = CENTER,
         material_transition: Optional[Transition] = None,
         base_material_transition: Optional[Transition] = None,
         handle_material_transition: Optional[Transition] = None,
         state_func: Callable[["Scroll"], "BackgroundState"] = default_state_func,
-        scrollbar_state_func: Callable[["Scroll"], "State"] = default_scrollbar_state_func,
+        scrollbar_state_func: Callable[
+            ["Scroll"], "State"
+        ] = default_scrollbar_state_func,
     ):
         self.sizes = sizes
         self.size: tuple[SizeType, SizeType] = self.load_size(size, width, height)
@@ -62,7 +65,25 @@ class ScrollStyle(Style):
         The size of the Element if no size is specified in the Element constructor.
         """
 
-        self.default_state: BackgroundState = BackgroundState._load(default_state, default_material)
+        if not isinstance(content_pos, Sequence):
+            content_pos = (content_pos, content_pos)
+
+        self.content_pos: Sequence[Position] = content_pos
+        """
+        The alignment of elements within the container.
+        """
+
+        if not isinstance(content_size, Sequence):
+            content_size = (content_size, content_size)
+
+        self.content_size: Sequence[Optional[Size]] = content_size
+        """
+        The size of elements within the container.
+        """
+
+        self.default_state: BackgroundState = BackgroundState._load(
+            default_state, default_material
+        )
         """
         The default background State.
         """
@@ -101,22 +122,12 @@ class ScrollStyle(Style):
         The distance in pixels that the user can scroll past the child element. tuple[top, bottom].
         """
 
-        if not isinstance(content_pos, Sequence):
-            content_pos = (content_pos, content_pos)
-            
-        self.content_pos: SequencePositionType = content_pos
-        """
-        The alignment of elements within the container.
-        """
-
         self.material_transition: Optional[Transition] = material_transition
         """
         The Transition to use when changing background States.
         """
 
-        self.base_material_transition: Optional[
-            Transition
-        ] = base_material_transition
+        self.base_material_transition: Optional[Transition] = base_material_transition
         """
         The Transition to use when changing scrollbar base States.
         """
@@ -133,7 +144,9 @@ class ScrollStyle(Style):
         The function that determines which background state is active. Can be replaced for more control over the Scroll's states.
         """
 
-        self.scrollbar_state_func: Callable[["Scroll"], "BackgroundState"] = scrollbar_state_func
+        self.scrollbar_state_func: Callable[
+            ["Scroll"], "BackgroundState"
+        ] = scrollbar_state_func
         """
         The function that determines which scrollbar state is active. Can be replaced for more control over the scrollbar's states.
         """

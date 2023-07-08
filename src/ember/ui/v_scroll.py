@@ -10,8 +10,6 @@ from .. import log
 from .. import common as _c
 from .base.element import Element
 from ..material.material import Material
-from ..size import SizeType, SequenceSizeType
-from ..position import PositionType, CENTER, SequencePositionType
 from ..state.state import State
 
 from .base.scroll import Scroll
@@ -60,7 +58,7 @@ class VScroll(Scroll):
             return
 
         self._scrollbar_calc()
-        element_h = self._element.get_abs_height(self.rect.h)
+        element_h = self._element.get_abs_h(self.rect.h)
         max_scroll = element_h - self.rect.h + self.over_scroll[1]
 
         # Move the scrollbar if it's grabbed
@@ -91,48 +89,42 @@ class VScroll(Scroll):
                 padding = self._style.padding if self.can_scroll else 0
 
                 if self.can_scroll:
-                    y = self.rect.y - self.scroll.val
-                    h = self.rect.h
+                    element_y = self.rect.y - self.scroll.val
+                    element_h = self.rect.h
                 else:
-                    element_y = (
+                    element_y_obj = (
                         self._element._y
                         if self._element._y is not None
-                        else self.content_pos[1]
+                        else self.content_y
                     )
-                    h = self.rect.h - abs(element_y.value)
+                    element_h = self.rect.h - abs(element_y_obj.value)
 
-                    y = self.rect.y + element_y.get(
-                        self._element, self.rect.h, self._element.get_abs_height(h)
+                    element_y = self.rect.y + element_y_obj.get(
+                        self.rect.h, self._element.get_abs_h(element_h)
                     )
 
-                element_x = (
-                    self._element._x if self._element._x is not None else self.content_pos[0]
+                element_x_obj = (
+                    self._element._x if self._element._x is not None else self.content_x
                 )
-                x = self.rect.x + element_x.get(
-                    self._element,
+                element_x = self.rect.x + element_x_obj.get(
                     self.rect.w - padding,
-                    self._element.get_abs_width(
-                        self.rect.w - abs(element_x.value) - padding
+                    self._element.get_abs_w(
+                        self.rect.w - abs(element_x_obj.value) - padding
                     ),
                 )
+
+                self._element.set_active_w(self.content_w)
+                self._element.set_active_h(self.content_h)
 
                 self._element._update_rect_chain_down(
                     self._subsurf,
-                    x,
-                    y,
-                    self._element.get_abs_width(
-                        self.rect.w - padding - abs(element_x.value)
+                    element_x,
+                    element_y,
+                    self._element.get_abs_w(
+                        self.rect.w - padding - abs(element_x_obj.value)
                     ),
-                    self._element.get_abs_height(h),
+                    self._element.get_abs_h(element_h),
                 )
-
-    # def _check_element(self, max_size: tuple[float, float]) -> None:
-    #     if hasattr(self._element, "_check_for_surface_update"):
-    #         padding = self._style.padding if self.can_scroll else 0
-    #         w = self._element.get_abs_width(self.get_abs_width(max_size[0]) - padding)
-    #         log.size.info(self, f"Checking element surface update with width {w}...")
-    #         with log.size.indent:
-    #             self._element._check_for_surface_update(w)
 
     def _event2(self, event: pygame.event.Event) -> bool:
         if self.scrollbar_hovered:
@@ -158,7 +150,7 @@ class VScroll(Scroll):
     def _scrollbar_calc(self) -> None:
         if not self._element:
             return
-        element_h = self._element.get_abs_height(self.rect.h)
+        element_h = self._element.get_abs_h(self.rect.h)
         max_scroll = element_h - self.rect.h + self.over_scroll[1]
 
         old_can_scroll = self.can_scroll
@@ -201,13 +193,18 @@ class VScroll(Scroll):
         self, position: int, size: int = 0, offset: int = 0, duration: float = 0.1
     ) -> None:
         if not self.can_scroll:
-            log.size.info(
-                self,
-                f"Attempted scroll to show position, but cannot scroll. "
-                f"Set scroll val to {self.over_scroll[0] * -1}.",
-            )
-            self.scroll.val = self.over_scroll[0] * -1
-            self._update_element_rect()
+            if self.scroll.val != (val := self.over_scroll[0] * -1):
+                self.scroll.val = val
+                
+                log.size.line_break()
+                log.size.info(
+                    self,
+                    f"Attempted scroll to show position, but cannot scroll. "
+                    f"Set scroll val to {val}. Starting chain down...",
+                )
+                
+                with log.size.indent:
+                    self._update_element_rect()
             return
         if position - offset <= self.rect.y:
             position -= offset
@@ -225,7 +222,7 @@ class VScroll(Scroll):
         destination = pygame.math.clamp(
             destination,
             -self.over_scroll[0],
-            self._element.get_abs_height(self.rect.h)
+            self._element.get_abs_h(self.rect.h)
             - self.rect.h
             + self.over_scroll[1],
         )

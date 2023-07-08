@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 from .view_layer import ViewLayer
 from ..state.state import StateType
+from ..size import FILL
 
 KEY_NAMES = {
     pygame.K_RIGHT: _c.FocusDirection.RIGHT,
@@ -145,12 +146,14 @@ class View:
 
         for layer in self._layers:
             if update_positions:
-                layer_w = layer.get_abs_width(rect[2])
-                layer_h = layer.get_abs_height(rect[3])
+                layer.set_active_w()
+                layer.set_active_h()
 
-                layer_x = rect[0] + layer._x.get(layer, rect[2], layer_w)
+                layer_w = layer.get_abs_w(rect[2])
+                layer_h = layer.get_abs_h(rect[3])
 
-                layer_y = rect[1] + layer._y.get(layer, rect[3], layer_h)
+                layer_x = rect[0] + layer._x.get(rect[2], layer_w)
+                layer_y = rect[1] + layer._y.get(rect[3], layer_h)
 
                 if layer.clamp:
                     layer_x = pygame.math.clamp(
@@ -161,13 +164,14 @@ class View:
                     )
 
                 if self._prev_rect != rect:
-                    log.size.info(
-                        self, "View rect changed size, starting chain down..."
-                    )
-                    layer._chain_down_from = layer._element
+                    if layer._chain_down_from is None:
+                        log.size.info(
+                            self, "View rect changed size, starting chain down..."
+                        )
+                        layer._chain_down_from = layer._element
                 layer._update_rect_chain_down(surface, layer_x, layer_y, layer_w, layer_h)
             if render:
-                layer._render_a(surface, alpha)
+                layer._render_a(surface, (0,0), alpha)
 
         self._prev_rect = tuple(rect)
 

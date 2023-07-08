@@ -1,5 +1,5 @@
 import pygame
-from typing import Union, Optional, Sequence, Callable, TYPE_CHECKING
+from typing import Union, Optional, Sequence, Callable, TYPE_CHECKING, Generator
 
 from .. import common as _c
 from ..event import BUTTONCLICKED
@@ -8,21 +8,28 @@ from ..ui.h_stack import HStack
 from ..ui.text import Text
 from .base.interactive import Interactive
 from .base.element import Element, ElementStrType
+from .base.single_element_container import SingleElementContainer
 from ..ui.load_element import load_element
 
-from ..size import SizeType, SequenceSizeType, SizeMode
-from ..position import PositionType, CENTER, SequencePositionType
+from ..size import SizeType, OptionalSequenceSizeType
+from ..position import (
+    PositionType,
+    SequencePositionType,
+    OptionalSequencePositionType,
+)
 
 if TYPE_CHECKING:
     from ..style.button_style import ButtonStyle
-    from ..ui.view import ViewLayer
+    from ..material.material import Material
+    from ..state.button_state import ButtonState
+    from ..transition.transition import Transition
 
 from ..state.state_controller import StateController
 
 from .. import log
 
 
-class Button(Element, Interactive):
+class Button(SingleElementContainer, Interactive):
     """
     A Button is an interactive Element. Buttons can hold exactly one child Element, which is rendered on the button.
     When the button is clicked, it will post the :code:`ember.BUTTONCLICKED` event.
@@ -30,21 +37,30 @@ class Button(Element, Interactive):
 
     def __init__(
         self,
-        *element: Union[Sequence[ElementStrType], ElementStrType],
+        *element: Union[Sequence[ElementStrType], ElementStrType, Generator[ElementStrType, None, None]],
         can_hold: bool = False,
         hold_delay: float = 0.2,
         hold_start_delay: float = 0.5,
         disabled: bool = False,
+        material: Union["ButtonState", "Material", None] = None,
         on_click: Optional[Callable[["Button"], None]] = None,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
         y: Optional[PositionType] = None,
-        size: Optional[SequenceSizeType] = None,
-        width: Optional[SizeType] = None,
-        height: Optional[SizeType] = None,
+        size: OptionalSequenceSizeType = None,
+        w: Optional[SizeType] = None,
+        h: Optional[SizeType] = None,
+        content_pos: OptionalSequencePositionType = None,
+        content_x: Optional[PositionType] = None,
+        content_y: Optional[PositionType] = None,
+        content_size: OptionalSequenceSizeType = None,
+        content_w: Optional[SizeType] = None,
+        content_h: Optional[SizeType] = None,
         style: Optional["ButtonStyle"] = None,
     ):
+        self.layer = None
+
         self.can_hold: bool = can_hold
         """
         If :code:`True`, the button will repeatedly post the :code:`BUTTONCLICKED` event every x 
@@ -82,29 +98,47 @@ class Button(Element, Interactive):
         The :py:class:`ember.state.StateController` object responsible for managing the Button's states.
         """
 
-        self._style: "ButtonStyle"
-        self._min_w: float = 0
-        self._min_h: float = 0
         self._hold_timer: float = hold_start_delay
         self._is_held: bool = False
-
+        
         self._element: Optional[Element] = None
 
-        self.set_style(style)
-
-        Element.__init__(self, rect, pos, x, y, size, width, height)
+        SingleElementContainer.__init__(
+            self,
+            material,
+            rect,
+            pos,
+            x,
+            y,
+            size,
+            w,
+            h,
+            content_pos,
+            content_x,
+            content_y,
+            content_size,
+            content_w,
+            content_h,
+            style
+        )
         Interactive.__init__(self, disabled)
-        self.set_element(*element)
+        self.set_element(*element, _update=False)
+
+        log.size.line_break()
+        log.size.info(self, "Button created, starting chain up...")
+        with log.size.indent:
+            self._update_rect_chain_up()
 
     def __repr__(self) -> str:
         return f"<Button({self._element})>"
 
-    def _render(
-        self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
+    def _render_background(
+        self,
+        surface: pygame.Surface,
+        offset: tuple[int, int],
+        alpha: int = 255,
     ) -> None:
-        # Decide which image to draw
         rect = self._int_rect.move(*offset)
-
         self.state_controller.set_state(
             self.style.state_func(self), transitions=(self._style.material_transition,)
         )
@@ -122,6 +156,12 @@ class Button(Element, Interactive):
             alpha,
         )
 
+    def _render_elements(
+        self,
+        surface: pygame.Surface,
+        offset: tuple[int, int],
+        alpha: int = 255,
+    ) -> None:
         if self._element:
             offset2 = self.state_controller.current_state.get_element_offset(
                 self.state_controller
@@ -152,50 +192,6 @@ class Button(Element, Interactive):
 
         if self._element:
             self._element._update_a()
-
-    def _update_rect_chain_down(
-        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
-    ) -> None:
-        super()._update_rect_chain_down(surface, x, y, w, h)
-
-        with log.size.indent:
-            if self._element:
-                self._element._update_rect_chain_down(
-                    surface,
-                    x + w // 2 - self._element.get_abs_width(w) // 2,
-                    y + h // 2 - self._element.get_abs_height(h) // 2,
-                    self._element.get_abs_width(w),
-                    self._element.get_abs_height(h),
-                )
-
-    @Element._chain_up_decorator
-    def _update_rect_chain_up(self) -> None:
-        if self._w.mode == SizeMode.FIT:
-            if self._element:
-                if self._element._w.mode == SizeMode.FILL:
-                    raise ValueError(
-                        "Cannot have elements of FILL width inside of a FIT width Button."
-                    )
-                self._min_w = self._element.get_abs_width()
-            else:
-                self._min_w = self._style.size[0]
-
-        if self._h.mode == SizeMode.FIT:
-            if self._element:
-                if self._element._h.mode == SizeMode.FILL:
-                    raise ValueError(
-                        "Cannot have elements of FILL height inside of a FIT height Button."
-                    )
-                self._min_h = self._element.get_abs_height()
-            else:
-                self._min_h = self._style.size[1]
-
-    def _set_layer_chain(self, layer: "ViewLayer") -> None:
-        log.layer.info(self, f"Set layer to {layer}")
-        self.layer = layer
-        if self._element:
-            with log.layer.indent:
-                self._element._set_layer_chain(layer)
 
     def _event(self, event: pygame.event.Event) -> bool:
         if (
@@ -287,32 +283,45 @@ class Button(Element, Interactive):
         event = pygame.event.Event(BUTTONCLICKED, element=self, text=text)
         pygame.event.post(event)
 
-    def _set_style(self, style: Optional["ButtonStyle"]) -> None:
-        self.set_style(style)
+    @property
+    def element(self) -> Optional["Element"]:
+        return self._element
 
-    def set_style(self, style: Optional["ButtonStyle"]) -> None:
-        """
-        Sets the ButtonStyle of the Button.
-        """
-        self._style: "ButtonStyle" = self._get_style(style)
-
-    def _set_element(
-        self, *element: Union[Sequence[ElementStrType], ElementStrType]
+    @element.setter
+    def element(
+        self, *element: Union[None, ElementStrType, Sequence[ElementStrType]]
     ) -> None:
         self.set_element(element)
 
     def set_element(
-        self, *element: Union[Sequence[ElementStrType], ElementStrType]
+        self,
+        *element: Union[None, ElementStrType, Sequence[ElementStrType], Generator[ElementStrType, None, None]],
+        transition: Optional["Transition"] = None,
+        _update: bool = True,
     ) -> None:
         """
         Replace the child element of the Button.
         """
-        if not element or element == (None,):
-            self._element = None
+
+        if element:
+            if not isinstance(element[0], str) and isinstance(element[0], (Sequence, Generator)):
+                element = list(element[0])
+                if not element:
+                    element = (None,)
 
         else:
+            element = (None,)
+
+        if element[0] is not self._element:
+            if transition:
+                self._transition = transition._new_element_controller()
+                self._transition.old = self.copy()
+                self._transition.new = self
+
+            self._element: Optional[Element]
+
             if len(element) > 1:
-                self._element: Optional[Element] = HStack(
+                self._element = HStack(
                     *[
                         load_element(i, text_style=self._style.text_style)
                         for i in element
@@ -320,33 +329,18 @@ class Button(Element, Interactive):
                 )
 
             elif isinstance(element[0], (Element, str)):
-                self._element: Optional[Element] = load_element(
+                self._element = load_element(
                     element[0], text_style=self._style.text_style
                 )
-            else:
-                self._element: Optional[Element] = HStack(
-                    *[
-                        load_element(i, text_style=self._style.text_style)
-                        for i in element[0]
-                    ]
-                )
 
-            self._element._set_parent(self)
-            log.layer.line_break()
-            log.layer.info(self, "Element added to Button - starting chain...")
-            with log.layer.indent:
-                self._element._set_layer_chain(self.layer)
+            if element is not None:
+                self._element._set_parent(self)
+                log.layer.line_break()
+                log.layer.info(self, "Element added to Button - starting chain...")
+                with log.layer.indent:
+                    self._element._set_layer_chain(self.layer)
 
-        self._update_rect_chain_up()
-
-    element: Optional[Element] = property(
-        fget=lambda self: self._element,
-        fset=_set_element,
-        doc="The child element of the Button. Synonymous with the set_element() method.",
-    )
-
-    style: "ButtonStyle" = property(
-        fget=lambda self: self._style,
-        fset=_set_style,
-        doc="The ButtonStyle of the Button. Synonymous with the set_style() method.",
-    )
+            if _update:
+                log.size.info(self, "Element set, starting chain up...")
+                with log.size.indent:
+                    self._update_rect_chain_up()
