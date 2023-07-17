@@ -30,7 +30,7 @@ from ..state.state_controller import StateController
 class ViewLayer(SingleElementContainer):
     def __init__(
         self,
-        element: "Element",
+        element: Optional["Element"],
         view: Optional["View"] = None,
         focused: Optional["Element"] = None,
         material: StateType = None,
@@ -148,11 +148,12 @@ class ViewLayer(SingleElementContainer):
         When True, _update_rect_chain_down will be started on the next tick
         """
 
-        log.layer.line_break()
-        log.layer.info(self, "ViewLayer created - starting chain...")
-        with log.layer.indent:
-            element._set_layer_chain(self)
-        element._set_parent(self)
+        if element is not None:
+            log.layer.line_break()
+            log.layer.info(self, "ViewLayer created - starting chain...")
+            with log.layer.indent:
+                element._set_layer_chain(self)
+            element._set_parent(self)
 
         self._prev_rect: tuple[float, float, float, float] = (0, 0, 0, 0)
         self._waiting_for_transition_finish = False
@@ -191,7 +192,8 @@ class ViewLayer(SingleElementContainer):
             self._element._render_a(surface, (0, 0), alpha)
 
     def _update(self) -> None:
-        self._element._update_a()
+        if self._element is not None:
+            self._element._update_a()
 
     def _update_rect_chain_down(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
@@ -227,7 +229,7 @@ class ViewLayer(SingleElementContainer):
                 raise _c.Error("Maximimum chain-down count exceeded.")
 
     def _event(self, event: pygame.event.Event) -> bool:
-        if self._element._event(event):
+        if self._element is not None and self._element._event(event):
             return True
 
         if event.type == pygame.MOUSEBUTTONDOWN and self.view._layers[0] is not self:

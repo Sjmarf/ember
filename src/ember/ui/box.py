@@ -76,8 +76,6 @@ class Box(SingleElementContainer):
         background states.
         """
 
-        self._update_rect_chain_up()
-
     def __repr__(self) -> str:
         return "<Box>"
 

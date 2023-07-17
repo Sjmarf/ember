@@ -10,7 +10,7 @@ from ember import log
 from ember.ui.base.element import Element
 from ember.ui.view import ViewLayer
 
-from ...size import FIT, FILL, OptionalSequenceSizeType, SizeMode, SizeType
+from ...size import FILL, OptionalSequenceSizeType, SizeType, FillSize, FitSize
 from ember.position import (
     PositionType,
     SequencePositionType,
@@ -18,6 +18,7 @@ from ember.position import (
 )
 from ember.transition.transition import Transition
 
+from .has_content_size import ContentHMixin, ContentWMixin
 
 from ember.state.background_state import BackgroundState
 from ember.material.material import Material
@@ -32,7 +33,9 @@ if TYPE_CHECKING:
 class MultiElementContainer(Container):
     def __init__(
         self,
-        elements: tuple[Union[Element, Sequence[Element], Generator[Element, None, None]]],
+        elements: tuple[
+            Union[Element, Sequence[Element], Generator[Element, None, None]]
+        ],
         material: Union[BackgroundState, Material, None],
         focus_on_entry: Union[InheritType, FocusType],
         rect: Union[pygame.rect.RectType, Sequence, None],
@@ -51,32 +54,6 @@ class MultiElementContainer(Container):
         Base class for Containers that hold more than one element. Should not be instantiated directly.
         """
 
-        #default_size = self._style.size
-        #if self._style.sizes is not None:
-            #for cls in inspect.getmro(type(self)):
-                #if cls in self._style.sizes:
-                    #default_size = self._style.sizes[cls]
-                    #break
-
-        #if not isinstance(default_size, Sequence):
-            #default_size = default_size, default_size
-
-        #if default_size[0] == FIT:
-            #default_size = (
-                #FILL
-                #if any(i._active_w.mode == SizeMode.FILL for i in self._elements)
-                #else FIT,
-                #default_size[1],
-            #)
-
-        #if default_size[1] == FIT:
-            #default_size = (
-                #default_size[0],
-                #FILL
-                #if any(i._active_h.mode == SizeMode.FILL for i in self._elements)
-                #else FIT,
-            #)
-
         super().__init__(
             material,
             rect,
@@ -89,7 +66,7 @@ class MultiElementContainer(Container):
             content_pos=content_pos,
             content_x=content_x,
             content_y=content_y,
-            style=style
+            style=style,
         )
 
         self.set_elements(*elements, _update=False)
@@ -121,6 +98,31 @@ class MultiElementContainer(Container):
     def __contains__(self, item: Element) -> bool:
         return item in self._elements
 
+    def _build_chain(self) -> None:
+        if self._has_built:
+            return
+        self._has_built = True
+        for element in self._elements:
+            element._build_chain()
+
+            if isinstance(self._active_w, FitSize):
+                if isinstance(self, ContentWMixin):
+                    element.set_active_w(self.content_w)
+                if isinstance(element._active_w, FillSize):
+                    log.size.info(self, "Element has FILL width and we have FIT width, updating own width...")
+                    self.set_w(FILL, _update=False)
+
+            if isinstance(self._active_h, FitSize):
+                if isinstance(self, ContentHMixin):
+                    element.set_active_h(self.content_h)
+                if isinstance(element._active_h, FillSize):
+                    log.size.info(self, "Element has FILL width and we have FIT width, updating own width...")
+                    self.set_h(FILL, _update=False)
+
+        log.size.info(self, "Element built, starting chain up without proprogation.")
+        with log.size.indent:
+            self._update_rect_chain_up(_update=False)
+
     @abc.abstractmethod
     def _render_elements(
         self,
@@ -140,11 +142,13 @@ class MultiElementContainer(Container):
             raise ValueError(
                 f"{type(self).__name__} element must be of type Element, not {type(element).__name__}."
             )
+        
         element._set_parent(self)
         log.layer.line_break()
         log.layer.info(self, "Element added to container - starting chain...")
         with log.layer.indent:
             element._set_layer_chain(self.layer)
+        element._build_chain()
         return element
 
     def _update_elements(
@@ -170,7 +174,6 @@ class MultiElementContainer(Container):
         """
         Replace the elements in the stack with new elements.
         """
-
         if elements:
             if isinstance(elements[0], Generator):
                 elements = elements[0]
@@ -191,25 +194,30 @@ class MultiElementContainer(Container):
         if _update:
             self._update_elements(transition=transition, old_container=old_container)
 
-    def append(self, element: Element, transition: Optional[Transition] = None) -> None:
+    def _attribute_element(self, element: "Element") -> None:
+        self.append(element, _update=False)
+
+    def append(self, element: Element, transition: Optional[Transition] = None, _update: bool = True) -> None:
         """
         Append an element to the end of the stack.
         """
         old_container = self.copy() if transition else None
         self._elements.append(self._load_element(element))
-        self._update_elements(transition=transition, old_container=old_container)
+        if _update:
+            self._update_elements(transition=transition, old_container=old_container)
 
     def insert(
-        self, index: int, element: Element, transition: Optional[Transition] = None
+        self, index: int, element: Element, transition: Optional[Transition] = None, _update: bool = True
     ) -> None:
         """
         Insert an element before at an index.
         """
         old_container = self.copy() if transition else None
         self._elements.insert(index, self._load_element(element))
-        self._update_elements(transition=transition, old_container=old_container)
+        if _update:
+            self._update_elements(transition=transition, old_container=old_container)
 
-    def pop(self, index: int = -1, transition: Optional[Transition] = None) -> Element:
+    def pop(self, index: int = -1, transition: Optional[Transition] = None, _update: bool = True) -> Element:
         """
         Remove and return an element at an index (default last).
         """
@@ -219,10 +227,11 @@ class MultiElementContainer(Container):
         if self.layer is not None:
             if self.layer.element_focused is element:
                 self.layer._focus_element(None)
-        self._update_elements(transition=transition, old_container=old_container)
+        if _update:
+            self._update_elements(transition=transition, old_container=old_container)
         return element
 
-    def remove(self, element: Element, transition: Optional[Transition] = None) -> None:
+    def remove(self, element: Element, transition: Optional[Transition] = None, _update: bool = True) -> None:
         """
         Remove an element from the stack.
         """
@@ -232,7 +241,8 @@ class MultiElementContainer(Container):
         if self.layer is not None:
             if self.layer.element_focused is element:
                 self.layer._focus_element(None)
-        self._update_elements(transition=transition, old_container=old_container)
+        if _update:
+            self._update_elements(transition=transition, old_container=old_container)
 
     def copy(self) -> "Element":
         new = copy.copy(self)

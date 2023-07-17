@@ -36,7 +36,7 @@ Here's some sample code, with Ember-related lines highlighted:
 
 .. code-block:: python
    :linenos:
-   :emphasize-lines: 2,7,8,9,20
+   :emphasize-lines: 2,9,10,11,21
 
     import pygame
     import ember
@@ -44,23 +44,24 @@ Here's some sample code, with Ember-related lines highlighted:
     pygame.init()
     clock = pygame.time.Clock()
 
+    screen = pygame.display.set_mode((400, 400))
+
     ember.init()
     ember.style.load("dark")
     ember.set_clock(clock)
 
-    screen = pygame.display.set_mode((400, 400))
-
-    while True:
+    running = True
+    while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
+                running = False
 
         screen.fill("black")
         ember.update()
 
         clock.tick(60)
         pygame.display.flip()
+    pygame.quit()
 
 This code produces a black screen. Next, we'll look at adding some UI elements to the screen.
 
@@ -70,21 +71,26 @@ Creating a UI
 
 The term 'element' refers to a UI object such as a button or text field. There is a different class for each type of element in Ember. All element classes can be found under the :code:`ember.ui` module or straight from :code:`ember`.
 
-First, we'll look at the :py:class:`ember.ui.Text` element. Given a string, it will render that string as text on the screen. To display an element on the screen, it must be contained within a :py:class:`ember.ui.View` object like this:
+First, we’ll look at the :py:class:`ember.ui.Text` element. Given a string, it will render that string as text on the screen.
 
 .. code-block:: python
 
-    view = ember.View(
-        ember.Text("Hello world")
-    )
+    text = ember.Text("Hello world")
 
-The View object is responsible for rendering the element that you pass to the View. In order for the View to do this, you must call :py:meth:`View.update<ember.ui.View.update>` each tick, and :py:meth:`View.event<ember.ui.View.event>` for each event in the Pygame event stack.
+Next, we'll need to create a :py:class:`ember.ui.View` object. A View can hold an element inside of it, and becomes responsible for managing the rendering of that element. Let's create a View to hold our Text element.
+
+.. code-block:: python
+
+    text = ember.Text("Hello world")
+    view = ember.View(text)
+
+In order for the View to render it's child element on the screen, you must call :py:meth:`View.update<ember.ui.View.update>` each tick, and :py:meth:`View.event<ember.ui.View.event>` for each event in the Pygame event stack.
 
 I've added a View to the previous example script. The changes I've made are highlighted.
 
 .. code-block:: python
    :linenos:
-   :emphasize-lines: 13,14,15,19,26
+   :emphasize-lines: 13,14,15,20,26
 
     import pygame
     import ember
@@ -92,22 +98,22 @@ I've added a View to the previous example script. The changes I've made are high
     pygame.init()
     clock = pygame.time.Clock()
 
+    screen = pygame.display.set_mode((400, 400))
+
     ember.init()
     ember.style.load("dark")
     ember.set_clock(clock)
-
-    screen = pygame.display.set_mode((400, 400))
 
     view = ember.View(
         ember.Text("Hello world")
     )
 
+    running = True
     while True:
         for event in pygame.event.get():
             view.event(event)
             if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
+                running = False
 
         screen.fill("black")
         ember.update()
@@ -115,6 +121,7 @@ I've added a View to the previous example script. The changes I've made are high
 
         clock.tick(60)
         pygame.display.flip()
+    pygame.quit()
 
 This code produces the following output:
 
@@ -176,7 +183,7 @@ Remember, containers such as :code:`VStack` and :code:`HStack` are Elements just
         )
     )
 
-There is no limit to how many times you can nest Containers like this.
+There is no limit to how many times you can nest Containers in this way.
 
 .. _element-buttons:
 Buttons
@@ -230,7 +237,140 @@ Example usage:
         if event.type == ember.BUTTONCLICKED:
             print(f"Button with text {event.text} was clicked!")
 
+More syntax
+-----------------------------------
+
+Let's return to the VStack example code we looked at earlier.
+
+.. code-block:: python
+
+    view = ember.View(
+        ember.VStack(
+            ember.Text("Hello"),
+            ember.Text("World")
+        )
+    )
+
+In this example, we attribute two Text elements to the VStack container by passing them directly to the VStack constructor.
+If we want to keep references to our elements, we can save them to variables and pass those variables to the VStack instead.
+
+.. code-block:: python
+
+    text1 = ember.Text("Hello")
+    text2 = ember.Text("World")
+
+    view = ember.View(
+        ember.VStack(text1, text2)
+    )
+
+Keeping references to our Text elements allows us to modify them later in our program. For example, you can call the :py:meth:`Text.set_text<ember.ui.Text.set_text>` method anywhere in your code to modify the element's text string, or the :py:meth:`Text.set_color<ember.ui.Text.set_color>` method to modify its color.
+
+.. code-block:: python
+
+    text1.set_text("Goodbye")
+    text1.set_color("red")
+
+There are several ways that we can modify the contents of our VStack. The :py:meth:`set_elements<ember.ui.base.MultiElementContainer.set_elements>` method can be used to replace all of the elements in the stack at once. Additionally, Containers such as VStack support list-like methods such as :py:meth:`append<ember.ui.base.MultiElementContainer.append>`, :py:meth:`pop<ember.ui.base.MultiElementContainer.pop>`, :py:meth:`remove<ember.ui.base.MultiElementContainer.remove>` and :py:meth:`index<ember.ui.base.MultiElementContainer.index>`.
+
+Below is an example of how the :py:meth:`append<ember.ui.base.MultiElementContainer.append>` method can be used to add elements to a VStack:
+
+.. code-block:: python
+
+    stack = ember.VStack()
+    stack.append(ember.Text("Hello"))
+    stack.append(ember.Text("World"))
+
+    view = ember.View(stack)
+
+Another way of attributing elements to a container is through the use of the :code:`with` keyword. Any elements instantiated within
+the context of a container will be appended to that container when the :code:`with` statement finishes, if they aren't yet contained within another element by then. For example, the code we've just looked at can be rewritten like so:
+
+.. code-block:: python
+
+    with ember.VStack() as stack:
+        ember.Text("Hello")
+        ember.Text("World")
+
+    view = ember.View(stack)
+
+Container contexts can be nested, and it works with View too.
+
+.. code-block:: python
+
+    with ember.View() as view:
+        with ember.VStack():
+            ember.Text("1")
+            with ember.HStack():
+                ember.Text("2")
+                ember.Text("3")
+
+.. _element-challenge:
+
+Challenge
+------------------------
+
+Now is a good time to experiment with what you've learnt so far. Below is a simple challenge that you may wish to follow.
+
+You'll be creating a simple clicker game. Your objectives are:
+
+- Display a Button with the text 'click me'.
+- Above the button, display a Text element with the value :code:`0`. This will be our counter.
+- When the button is clicked, the value displayed on the Text element should be incremented by 1.
+
+You are of course free to look at any of the example code above whilst designing your solution. Here's what the finished
+product should look like:
+
+.. image:: _static/element_guide/challenge_solution.png
+  :width: 50%
+
+.. dropdown:: Reveal Solution
+
+    .. code-block:: python
+
+        import pygame
+        import ember
+
+        pygame.init()
+        clock = pygame.time.Clock()
+
+        screen = pygame.display.set_mode((400, 400))
+
+        ember.init()
+        ember.style.load("dark")
+        ember.set_clock(clock)
+
+        counter = 0
+        text = ember.Text("0")
+        button = ember.Button("Click me!")
+
+        view = ember.View(
+            ember.VStack(
+                text,
+                button
+            )
+        )
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                view.event(event)
+                if event.type == pygame.QUIT:
+                    running = False
+
+                elif event.type == ember.BUTTONCLICKED:
+                    counter += 1
+                    text.set_text(str(counter))
+
+            screen.fill("black")
+            ember.update()
+            view.update(screen)
+
+            clock.tick(60)
+            pygame.display.flip()
+        pygame.quit()
+
 .. _element-sizing:
+
 Element Sizing
 ------------------------
 
@@ -327,12 +467,10 @@ In this example, every Button in the VStack will have a width of 50px.
 
 .. code-block:: python
 
-    ember.VStack(
-        ember.Button(),
-        ember.Button(),
-        ember.Button(),
-        content_w=50
-    )
+    with ember.VStack(content_w=50):
+        ember.Button("A")
+        ember.Button("B")
+        ember.Button("C")
 
 .. _element-positioning:
 Element Positioning

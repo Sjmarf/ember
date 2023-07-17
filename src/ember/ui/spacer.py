@@ -2,7 +2,7 @@ import pygame
 from typing import Union, Optional, Sequence
 
 from .base.element import Element
-from ..size import Size, FILL, SizeType, OptionalSequenceSizeType
+from ..size import Size, AbsoluteSize, SizeType, OptionalSequenceSizeType
 from ..position import PositionType, SequencePositionType
 
 
@@ -18,7 +18,7 @@ class Spacer(Element):
         h: Optional[SizeType] = None,
     ):
 
-        super().__init__(rect, pos, x, y, size, w, h, default_size=(Size(0), Size(0)), can_focus=False)
+        super().__init__(rect, pos, x, y, size, w, h, default_size=(AbsoluteSize(0), AbsoluteSize(0)), can_focus=False)
 
     def __repr__(self) -> str:
         return "<Spacer>"

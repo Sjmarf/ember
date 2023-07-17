@@ -7,7 +7,7 @@ from .base.surfacable import Surfacable
 if TYPE_CHECKING:
     pass
 
-from ..size import FIT, SizeType, OptionalSequenceSizeType, SizeMode
+from ..size import FIT, SizeType, OptionalSequenceSizeType, FitSize
 from ..position import PositionType, CENTER, SequencePositionType
 
 
@@ -28,7 +28,7 @@ class Surface(Surfacable):
         self._min_w: float = 0
         self._min_h: float = 0
 
-        super().__init__(rect, pos, x, y, size, w, h, style, default_size=(FIT, FIT), can_focus=False)
+        super().__init__(rect, pos, x, y, size, w, h, None, default_size=(FIT, FIT), can_focus=False)
         self.set_surface(surface)
 
     def __repr__(self) -> str:
@@ -66,7 +66,7 @@ class Surface(Surfacable):
 
     @Element._chain_up_decorator
     def _update_rect_chain_up(self) -> None:
-        if self._w.mode == SizeMode.FIT:
+        if isinstance(self._w, FitSize):
             if self._surface is not None:
                 self._min_w = (
                     self._surface.get_width() * self._w.percentage
@@ -75,7 +75,7 @@ class Surface(Surfacable):
             else:
                 self._min_w = 20
 
-        if self._h.mode == SizeMode.FIT:
+        if isinstance(self._h, FitSize):
             if self._surface is not None:
                 self._min_h = (
                     self._surface.get_height() * self._h.percentage

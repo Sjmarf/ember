@@ -9,7 +9,8 @@ from .text import Text
 from .v_scroll import VScroll
 from .h_scroll import HScroll
 from .base.scroll import Scroll
-from .base.interactive import Interactive
+from .base.styled import StyleMixin
+from .base.interactive import InteractiveMixin
 
 from ..state.state_controller import StateController
 
@@ -57,7 +58,7 @@ class HighlightState(Enum):
     HIGHLIGHTED = 3
 
 
-class TextField(Element, Interactive):
+class TextField(InteractiveMixin, StyleMixin, Element):
     """
     A TextField is an interactive Element.
 
@@ -126,7 +127,19 @@ class TextField(Element, Interactive):
 
         self._highlight_state: HighlightState = HighlightState.NONE
 
-        Element.__init__(self, rect, pos, x, y, size, w, h, style)
+        super().__init__(
+            # Element
+            rect=rect,
+            pos=pos,
+            x=x,
+            y=y,
+            size=size,
+            w=w,
+            h=h,
+            style=style,
+            # InteractiveMixin
+            disabled=disabled,
+        )
 
         self._repeated_key_timer: float = self._style.key_repeat_start_delay
 
@@ -189,8 +202,6 @@ class TextField(Element, Interactive):
             raise ValueError(
                 f"Text length ({len(self._text)}) is greater than max_length {self.max_length}."
             )
-
-        Interactive.__init__(self, disabled)
 
         log.size.line_break()
         log.size.info(self, "TextField created, starting chain up...")
@@ -265,9 +276,9 @@ class TextField(Element, Interactive):
                         )
 
                         y = (
-                                start_line.line_index * self._line_height
-                                + self._text_element._style.font.cursor_offset[1]
-                                + scroll_offset[1]
+                            start_line.line_index * self._line_height
+                            + self._text_element._style.font.cursor_offset[1]
+                            + scroll_offset[1]
                         )
 
                         if start_cursor.line_index == end_cursor.line_index:
@@ -287,9 +298,7 @@ class TextField(Element, Interactive):
                                 + scroll_offset[0]
                                 + self._text_element._style.font.cursor_offset[0],
                                 y,
-                                start_line.width
-                                - start_cursor.x
-                                + start_line.start_x,
+                                start_line.width - start_cursor.x + start_line.start_x,
                             )
 
                             # Middle lines
@@ -303,7 +312,7 @@ class TextField(Element, Interactive):
                                     + scroll_offset[0]
                                     + self._text_element._style.font.cursor_offset[0],
                                     y,
-                                    line.width
+                                    line.width,
                                 )
 
                             # Bottom line
@@ -313,7 +322,7 @@ class TextField(Element, Interactive):
                                 + scroll_offset[0]
                                 + self._text_element._style.font.cursor_offset[0],
                                 y,
-                                end_cursor.x - end_line.start_x
+                                end_cursor.x - end_line.start_x,
                             )
 
         self._scroll._render_a(surface, offset, alpha=alpha)
@@ -407,13 +416,13 @@ class TextField(Element, Interactive):
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
         super()._update_rect_chain_down(surface, x, y, w, h)
-
+    
         element_w = self._scroll.get_abs_w(w)
         element_h = self._scroll.get_abs_h(h)
 
         element_x = x + w / 2 - element_w / 2
         element_y = y + h / 2 - element_h / 2
-
+        
         if not self.is_visible:
             self._scroll.is_visible = False
         elif (
@@ -422,6 +431,7 @@ class TextField(Element, Interactive):
             or element_y + element_h < surface.get_abs_offset()[1]
             or element_y > surface.get_abs_offset()[1] + surface.get_height()
         ):
+            print(element_x, element_y, element_w, element_h)
             self._scroll.is_visible = False
         else:
             self._scroll.is_visible = True
@@ -478,10 +488,6 @@ class TextField(Element, Interactive):
                     # the user is trying to highlight
                     if self._text:
                         if self._highlight_state == HighlightState.HIGHLIGHTING:
-                            print(
-                                self._main_cursor.letter_index,
-                                self._highlight_cursor.letter_index,
-                            )
                             if (
                                 self._main_cursor.letter_index
                                 != self._highlight_cursor.letter_index
@@ -495,7 +501,6 @@ class TextField(Element, Interactive):
                             else:
                                 self._highlight_state = HighlightState.NONE
                         self._cursor_timer = 0
-                    print(self._highlight_state)
                     return True
                 else:
                     # If the user clicks inside the TextField, it becomes active

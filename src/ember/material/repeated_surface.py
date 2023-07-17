@@ -57,8 +57,6 @@ class RepeatedSurface(MaterialWithSizeCache):
         offset_x = self._content_x.get(size[0], 0) % surf_size[0] - surf_size[0]
         offset_y = self._content_y.get(size[1], 0) % surf_size[1] - surf_size[1]
 
-        print(size, (offset_x, offset_y), surf_size)
-
         for y in range(math.ceil(size[1] / surf_size[1]) + 1):
             for x in range(math.ceil(size[0] / surf_size[0]) + 1):
                 new_surface.blit(

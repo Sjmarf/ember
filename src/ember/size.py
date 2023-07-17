@@ -1,116 +1,132 @@
-from typing import Union, Sequence, Literal, Optional, TYPE_CHECKING
-from enum import Enum
-
-if TYPE_CHECKING:
-    from ember.ui.base.element import Element
+from typing import Union, Sequence, Optional
+from abc import ABC, abstractmethod
 
 
-class SizeMode(Enum):
-    ABSOLUTE = 0
-    FIT = 1
-    FILL = 2
+def load_size(value: Union["Size", float]) -> "Size":
+    if isinstance(value, (float, int)):
+        return AbsoluteSize(value)
+    return value
 
 
-class Size:
+class Size(ABC):
+    @abstractmethod
+    def get(self, min_value: float = 0, max_value: Optional[float] = None) -> float:
+        pass
+
+
+class AbsoluteSize(Size):
+    """
+    Represents an exact number of pixels. The size returned by the
+    get() method is always equal to the 'value' attribute of the object.
+    """
+
+    def __init__(self, value: int) -> None:
+        self.value: int = value
+
+    def __repr__(self) -> str:
+        return f"<AbsoluteSize({self.value}px)>"
+
+    def __add__(self, other: int) -> "AbsoluteSize":
+        return AbsoluteSize(self.value + other)
+
+    def __sub__(self, other: int) -> "AbsoluteSize":
+        return AbsoluteSize(self.value - other)
+
+    def __mul__(self, other: float) -> "AbsoluteSize":
+        return AbsoluteSize(int(self.value * other))
+
+    def __truediv__(self, other: float) -> "AbsoluteSize":
+        return AbsoluteSize(int(self.value / other))
+
+    def get(self, min_value: float = 0, max_value: Optional[float] = None) -> float:
+        return (self.value)
+
+
+class FillSize(Size):
+    """
+    Represents a size relative to the maximum number of pixels available.
+    """
+
     def __init__(
         self,
         value: int,
         percent: float = 1,
-        mode: Union[SizeMode, "Size"] = SizeMode.ABSOLUTE,
     ):
         self.value: int = value
         self.percentage: float = percent
 
-        if isinstance(mode, Size):
-            mode = mode.mode
-        else:
-            mode = mode
+    def __repr__(self) -> str:
+        return f"<FillSize({self.percentage*100}% + {self.value})>"
 
-        # Modes:
-        self.mode: SizeMode = mode
+    def __add__(self, other: int) -> "FillSize":
+        return FillSize(self.value + other, self.percentage)
 
-    @classmethod
-    def _load(cls, size: Union["Size", int, float, None]) -> Optional["Size"]:
-        return cls(size) if isinstance(size, (int, float)) else size
+    def __sub__(self, other: int) -> "FillSize":
+        return FillSize(self.value - other, self.percentage)
 
-    def get(
+    def __mul__(self, other: float) -> "FillSize":
+        return FillSize(self.value, self.percentage * other)
+
+    def __truediv__(self, other: float) -> "FillSize":
+        return FillSize(self.value, self.percentage / other)
+
+    def get(self, min_value: float = 0, max_value: Optional[float] = None) -> float:
+        return (max_value * self.percentage + self.value)
+
+
+class FitSize(Size):
+    """
+    Represents a size relative to the minimum number of pixels available.
+    """
+
+    def __init__(
         self,
-        min_value: float = 0,
-        max_value: Optional[float] = None
-    ) -> float:
-        if self.mode == SizeMode.FILL:
-            return max_value * self.percentage + self.value
-        elif self.mode == SizeMode.FIT:
-            return (
-                min_value
-            ) + self.value
-        else:
-            return self.value
+        value: int,
+        percent: float = 1,
+    ):
+        self.value: int = value
+        self.percentage: float = percent
 
     def __repr__(self) -> str:
-        if self.mode == SizeMode.ABSOLUTE:
-            return f"<Size({self.value}px)>"
-        else:
-            message = "<Size("
-            if self.percentage != 1:
-                message += "" f"{self.percentage * 100}% of "
+        return f"<FitSize({self.percentage*100}% + {self.value})>"
 
-            message += "FIT" if self.mode == SizeMode.FIT else "FILL"
+    def __add__(self, other: int) -> "FitSize":
+        return FitSize(self.value + other, self.percentage)
 
-            if self.value != 0:
-                message += f" {self.value}px"
+    def __sub__(self, other: int) -> "FitSize":
+        return FitSize(self.value - other, self.percentage)
 
-            return f"{message})>"
+    def __mul__(self, other: float) -> "FitSize":
+        return FitSize(self.value, self.percentage * other)
 
-    def __add__(self, other: Union[int, float, "Size"]):
-        if isinstance(other, (int, float)):
-            return Size(self.value + other, self.percentage, mode=self.mode)
+    def __truediv__(self, other: float) -> "FitSize":
+        return FitSize(self.value, self.percentage / other)
 
-        elif isinstance(other, Size):
-            if self.mode == SizeMode.ABSOLUTE:
-                mode = other.mode
-            else:
-                mode = self.mode
-
-            return Size(self.value + other.value, self.percentage, mode=mode)
-
-        else:
-            return NotImplemented
-
-    def __sub__(self, other: Union[int, float, "Size"]):
-        if isinstance(other, (int, float)):
-            return Size(self.value - other, self.percentage, mode=self.mode)
-
-        elif isinstance(other, Size):
-            if self.mode == SizeMode.ABSOLUTE:
-                mode = other.mode
-            else:
-                mode = self.mode
-
-            return Size(self.value + other.value, self.percentage, mode=mode)
-
-        else:
-            return NotImplemented
-
-    def __mul__(self, other: Union[int, float]):
-        if isinstance(other, (int, float)):
-            if self.mode == SizeMode.ABSOLUTE:
-                return Size(self.value * other, self.percentage, mode=self.mode)
-            return Size(self.value, self.percentage * other, mode=self.mode)
-        else:
-            return NotImplemented
-
-    def __truediv__(self, other: Union[int, float]):
-        if isinstance(other, (int, float)):
-            if self.mode == SizeMode.ABSOLUTE:
-                return Size(self.value / other, self.percentage, mode=self.mode)
-            return Size(self.value, self.percentage / other, mode=self.mode)
-        else:
-            return NotImplemented
+    def get(self, min_value: float = 0, max_value: Optional[float] = None) -> float:
+        return (min_value * self.percentage + self.value)
 
 
-FIT = Size(0, mode=SizeMode.FIT)
-FILL = Size(0, mode=SizeMode.FILL)
+class InterpolatedSize(Size):
+    """
+    Used by animations to interpolate between two other Size objects.
+    """
+
+    def __init__(self, old_size: "Size", new_size: "Size") -> None:
+        self.old_size: "Size" = old_size
+        self.new_size: "Size" = new_size
+        self.progress: float = 0
+        
+    def __repr__(self) -> str:
+        return f"<InterpolatedSize({self.old_size} -> {self.new_size}: {self.progress*100: .0f}%)>"    
+
+    def get(self, min_value: float = 0, max_value: Optional[float] = None) -> float:
+        old_val = self.old_size.get(min_value, max_value)
+        new_val = self.new_size.get(min_value, max_value)
+        return round(old_val + (new_val - old_val) * self.progress)
+
+
+FIT = FitSize(0)
+FILL = FillSize(0)
 
 SizeType = Union[Size, int]
 SequenceSizeType = Union[SizeType, Sequence[SizeType]]

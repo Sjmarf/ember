@@ -10,9 +10,9 @@ Ember is a UI library for [Pygame CE](https://github.com/pygame-community/pygame
 
 Requires:
 
-- Python 3.9 or later.
+- Python 3.11 or later.
 
-- [Pygame CE](https://github.com/pygame-community/pygame-ce) >= 2.2.0.
+- [Pygame CE](https://github.com/pygame-community/pygame-ce) v 2.2.0 or later. Upstream Pygame is not supported.
 
 # License 
 

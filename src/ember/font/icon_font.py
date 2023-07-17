@@ -27,7 +27,6 @@ class IconFont:
             msg = f"No icon named '{name}' was found."
             
             close_matches = difflib.get_close_matches(name, self.icon_names, n=3)
-            print(close_matches)
             if close_matches:
                 msg += " Did you mean: '" + "', '".join(close_matches) + "'?"
             

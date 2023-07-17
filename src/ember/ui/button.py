@@ -6,7 +6,7 @@ from ..event import BUTTONCLICKED
 
 from ..ui.h_stack import HStack
 from ..ui.text import Text
-from .base.interactive import Interactive
+from .base.interactive import InteractiveMixin
 from .base.element import Element, ElementStrType
 from .base.single_element_container import SingleElementContainer
 from ..ui.load_element import load_element
@@ -29,7 +29,7 @@ from ..state.state_controller import StateController
 from .. import log
 
 
-class Button(SingleElementContainer, Interactive):
+class Button(InteractiveMixin, SingleElementContainer):
     """
     A Button is an interactive Element. Buttons can hold exactly one child Element, which is rendered on the button.
     When the button is clicked, it will post the :code:`ember.BUTTONCLICKED` event.
@@ -37,7 +37,11 @@ class Button(SingleElementContainer, Interactive):
 
     def __init__(
         self,
-        *element: Union[Sequence[ElementStrType], ElementStrType, Generator[ElementStrType, None, None]],
+        *element: Union[
+            Sequence[ElementStrType],
+            ElementStrType,
+            Generator[ElementStrType, None, None],
+        ],
         can_hold: bool = False,
         hold_delay: float = 0.2,
         hold_start_delay: float = 0.5,
@@ -100,34 +104,30 @@ class Button(SingleElementContainer, Interactive):
 
         self._hold_timer: float = hold_start_delay
         self._is_held: bool = False
-        
+
         self._element: Optional[Element] = None
 
-        SingleElementContainer.__init__(
-            self,
-            material,
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            w,
-            h,
-            content_pos,
-            content_x,
-            content_y,
-            content_size,
-            content_w,
-            content_h,
-            style
+        super().__init__(
+            # SingleElementContainer
+            material=material,
+            rect=rect,
+            pos=pos,
+            x=x,
+            y=y,
+            size=size,
+            w=w,
+            h=h,
+            content_pos=content_pos,
+            content_x=content_x,
+            content_y=content_y,
+            content_size=content_size,
+            content_w=content_w,
+            content_h=content_h,
+            style=style,
+            # InteractiveMixin
+            disabled=disabled,
         )
-        Interactive.__init__(self, disabled)
         self.set_element(*element, _update=False)
-
-        log.size.line_break()
-        log.size.info(self, "Button created, starting chain up...")
-        with log.size.indent:
-            self._update_rect_chain_up()
 
     def __repr__(self) -> str:
         return f"<Button({self._element})>"
@@ -292,10 +292,23 @@ class Button(SingleElementContainer, Interactive):
         self, *element: Union[None, ElementStrType, Sequence[ElementStrType]]
     ) -> None:
         self.set_element(element)
+        
+    def _attribute_element(self, element: "Element") -> None:
+        if self._element is None:
+            self.set_element(element, _update=False)
+        elif isinstance(self._element, HStack):
+            self._element.append(element, _update=False)
+        else:
+            self.set_element([self._element, element], _update=False)    
 
     def set_element(
         self,
-        *element: Union[None, ElementStrType, Sequence[ElementStrType], Generator[ElementStrType, None, None]],
+        *element: Union[
+            None,
+            ElementStrType,
+            Sequence[ElementStrType],
+            Generator[ElementStrType, None, None],
+        ],
         transition: Optional["Transition"] = None,
         _update: bool = True,
     ) -> None:
@@ -304,7 +317,9 @@ class Button(SingleElementContainer, Interactive):
         """
 
         if element:
-            if not isinstance(element[0], str) and isinstance(element[0], (Sequence, Generator)):
+            if not isinstance(element[0], str) and isinstance(
+                element[0], (Sequence, Generator)
+            ):
                 element = list(element[0])
                 if not element:
                     element = (None,)
@@ -312,17 +327,17 @@ class Button(SingleElementContainer, Interactive):
         else:
             element = (None,)
 
-        if element[0] is not self._element:
+        if element[0] is not self._element or len(element) > 1:
             if transition:
                 self._transition = transition._new_element_controller()
                 self._transition.old = self.copy()
                 self._transition.new = self
 
             self._element: Optional[Element]
-
+            
             if len(element) > 1:
                 self._element = HStack(
-                    *[
+                    [
                         load_element(i, text_style=self._style.text_style)
                         for i in element
                     ]

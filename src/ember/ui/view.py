@@ -2,7 +2,7 @@ import pygame
 from .. import event as ember_event
 from .. import common as _c
 from .. import log
-from ..common import InheritType, INHERIT, RectType
+from ..common import InheritType, INHERIT, RectType, ESCAPING
 from typing import Optional, TYPE_CHECKING, Any, Sequence, Union, overload
 
 if TYPE_CHECKING:
@@ -12,7 +12,9 @@ if TYPE_CHECKING:
 
 from .view_layer import ViewLayer
 from ..state.state import StateType
-from ..size import FILL
+from .base.context_manager import ContextManagerMixin
+
+from ..position import CENTER
 
 KEY_NAMES = {
     pygame.K_RIGHT: _c.FocusDirection.RIGHT,
@@ -37,7 +39,7 @@ DPAD_NAMES = {
 }
 
 
-class View:
+class View(ContextManagerMixin):
     @overload
     def __init__(
         self,
@@ -83,7 +85,7 @@ class View:
 
         self._layers: list[ViewLayer] = []
 
-        if isinstance(layers[0], (Sequence, ViewLayer)):
+        if layers and isinstance(layers[0], (Sequence, ViewLayer)):
             if isinstance(layers[0], Sequence):
                 layers = layers[0]
             for layer in layers:
@@ -92,24 +94,30 @@ class View:
         else:
             if layers:
                 element = layers[0]
-            self._layers.append(
-                ViewLayer(
-                    element,
-                    focused=focused,
-                    material=material,
-                    listen_for_exit=listen_for_exit,
-                    transition=transition,
-                    transition_in=transition_in,
-                    transition_out=transition_out,
-                    view=self,
-                    style=style,
-                    exit_on_click_off=False,
+            if element is not None:
+                self._layers.append(
+                    ViewLayer(
+                        element,
+                        focused=focused,
+                        material=material,
+                        listen_for_exit=listen_for_exit,
+                        transition=transition,
+                        transition_in=transition_in,
+                        transition_out=transition_out,
+                        view=self,
+                        style=style,
+                        exit_on_click_off=False,
+                    )
                 )
-            )
+
+        for layer in self._layers:
+            layer._build_chain()
 
         self._joystick_cooldown = 0
         self._prev_rect: tuple[float, float, float, float] = (0, 0, 0, 0)
         self._joy_axis_motion: Sequence[int] = [0, 0]
+
+        super().__init__()
 
         _c.views.add(self)
 
@@ -152,8 +160,10 @@ class View:
                 layer_w = layer.get_abs_w(rect[2])
                 layer_h = layer.get_abs_h(rect[3])
 
-                layer_x = rect[0] + layer._x.get(rect[2], layer_w)
-                layer_y = rect[1] + layer._y.get(rect[3], layer_h)
+                layer_x_obj = layer._x if layer._x is not None else CENTER
+                layer_x = rect[0] + layer_x_obj.get(rect[2], layer_w)
+                layer_y_obj = layer._y if layer._y is not None else CENTER
+                layer_y = rect[1] + layer_y_obj.get(rect[3], layer_h)
 
                 if layer.clamp:
                     layer_x = pygame.math.clamp(
@@ -169,9 +179,11 @@ class View:
                             self, "View rect changed size, starting chain down..."
                         )
                         layer._chain_down_from = layer._element
-                layer._update_rect_chain_down(surface, layer_x, layer_y, layer_w, layer_h)
+                layer._update_rect_chain_down(
+                    surface, layer_x, layer_y, layer_w, layer_h
+                )
             if render:
-                layer._render_a(surface, (0,0), alpha)
+                layer._render_a(surface, (0, 0), alpha)
 
         self._prev_rect = tuple(rect)
 
@@ -272,8 +284,11 @@ class View:
                 elif event.button in DPAD_NAMES:
                     layer.shift_focus(DPAD_NAMES[event.button])
 
+    def _attribute_element(self, element: "Element") -> None:
+        self.append(element)
+
     @overload
-    def add_layer(
+    def append(
         self,
         element: "Element",
         focused: Optional["Element"] = None,
@@ -287,13 +302,13 @@ class View:
         ...
 
     @overload
-    def add_layer(
+    def append(
         self,
         layer: "ViewLayer",
     ) -> None:
         ...
 
-    def add_layer(
+    def append(
         self,
         layer: Union[ViewLayer, "Element", None] = None,
         focused: Optional["Element"] = None,
@@ -305,6 +320,7 @@ class View:
         element: Optional["Element"] = None,
         style: Optional["ViewStyle"] = None,
     ) -> None:
+
         if not isinstance(layer, ViewLayer) or element is not None:
             if element is None:
                 if layer is None:
@@ -312,6 +328,11 @@ class View:
                         "You must provide either a ViewLayer or an Element, not None."
                     )
                 element = layer
+
+            if style is None:
+                if self._layers:
+                    style = self._layers[0]._style
+
             layer = ViewLayer(
                 element,
                 focused=focused,
@@ -321,19 +342,23 @@ class View:
                 transition_in=transition_in,
                 transition_out=transition_out,
                 view=self,
-                style=style if style is not None else self._layers[0]._style,
+                style=style,
             )
         else:
             layer.view = self
-
+        
+        layer._build_chain()
         self._layers.append(layer)
         log.nav.info(self, f"Added layer {layer}.")
 
-    def remove_top_layer(self, transition: Optional["Transition"] = None) -> None:
+    def pop(
+        self, index: int = -1, transition: Optional["Transition"] = None
+    ) -> ViewLayer:
         """
-        Remove the top layer of the View.
+        Remove and return a layer at an index (default last).
         """
-        self._layers[-1].start_transition_out(transition=transition)
+        self._layers[index].start_transition_out(transition=transition)
+        return self._layers[index]
 
     def update_elements(self) -> None:
         log.size.info(self, "Starting chain down next tick for all layers...")
@@ -367,6 +392,21 @@ class View:
     def _update_rect_chain_up(self) -> None:
         pass
 
+    def start_manual_update(self) -> None:
+        """
+        Starts the update chain on the next tick. You shouldn't need to call this manually, it exists incase the
+        library misses something.
+        """
+        for layer in self._layers:
+            layer.start_manual_update()
+
+    @property
+    def layers(self) -> list[ViewLayer]:
+        """
+        A list of the View's ViewLayers.
+        """
+        return self._layers
+
     def _set_style(self, style: Optional["ViewStyle"]) -> None:
         self._layers[0].set_style(style)
 
@@ -380,8 +420,4 @@ class View:
         fget=lambda self: self._style,
         fset=_set_style,
         doc="The ViewStyle of the bottommost ViewLayer. Synonymous with the set_style() method.",
-    )
-
-    layers: list[ViewLayer] = property(
-        fget=lambda self: self._layers, doc="A list of the View's ViewLayers."
     )

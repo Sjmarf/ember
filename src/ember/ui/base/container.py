@@ -3,6 +3,7 @@ import abc
 from typing import Optional, Sequence, Union, TYPE_CHECKING
 
 from ember.ui.base.element import Element
+from .styled import StyleMixin
 from ember.size import SizeType, SequenceSizeType, OptionalSequenceSizeType
 from ember.position import (
     PositionType,
@@ -11,7 +12,8 @@ from ember.position import (
     OptionalSequencePositionType,
 )
 
-from .has_content_pos import HasContentPos
+from .has_content_pos import ContentPosMixin
+from .context_manager import ContextManagerMixin
 from ember.state.state import load_background
 from ...state.state_controller import StateController
 from ember.state.background_state import BackgroundState
@@ -23,7 +25,7 @@ if TYPE_CHECKING:
     from ...style.container_style import ContainerStyle
 
 
-class Container(Element, HasContentPos, abc.ABC):
+class Container(ContextManagerMixin, ContentPosMixin, StyleMixin, Element, abc.ABC):
     def __init__(
         self,
         material: Union[BackgroundState, Material, None],
@@ -46,11 +48,22 @@ class Container(Element, HasContentPos, abc.ABC):
 
         self._style: ContainerStyle
 
-        Element.__init__(
-            self, rect, pos, x, y, size, w, h, style, default_size
+        super().__init__(
+            # Element
+            rect=rect,
+            pos=pos,
+            x=x,
+            y=y,
+            size=size,
+            w=w,
+            h=h,
+            style=style,
+            default_size=default_size,
+            # ContentPosMixin
+            content_pos=content_pos,
+            content_x=content_x,
+            content_y=content_y
         )
-
-        HasContentPos.__init__(self, content_pos, content_x, content_y)
 
         self.state_controller: StateController = StateController(self)
         self._state: Optional[BackgroundState] = load_background(self, material)
@@ -68,6 +81,7 @@ class Container(Element, HasContentPos, abc.ABC):
         alpha: int = 255,
     ) -> None:
         rect = self._int_rect.move(*offset)
+
         self.state_controller.set_state(
             self._style.state_func(self), transitions=(self._style.material_transition,)
         )

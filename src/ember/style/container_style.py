@@ -30,7 +30,6 @@ class ContainerStyle(Style):
         size: SequenceSizeType = (FIT, FIT),
         width: SizeType = None,
         height: SizeType = None,
-        sizes: Optional[dict[_ELEMENT, SequenceSizeType]] = None,
         content_pos: SequencePositionType = CENTER,
         content_size: OptionalSequenceSizeType = None,
         default_state: Optional[BackgroundState] = None,
@@ -41,7 +40,6 @@ class ContainerStyle(Style):
         material_transition: Optional[Transition] = None,
         state_func: Callable[["Container"], "BackgroundState"] = default_state_func,
     ):
-        self.sizes = sizes
         self.size: tuple[SizeType, SizeType] = self.load_size(size, width, height)
         """
         The size of the Element if no size is specified in the Element constructor.

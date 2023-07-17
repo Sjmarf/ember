@@ -1,27 +1,27 @@
-import pygame
-import ember
-import os
-import sys
-import abc
-
-os.chdir(__file__.replace("example2.py", ""))
-
-try:
-    path = os.getcwd().replace(f"examples", "src")
-    sys.path.append(path)
-    print("PATH1", str(path))
-    import ember  # noqa
-except ModuleNotFoundError:
-    path = os.path.join(os.getcwd(), "src")
-    sys.path.append(str(path))
-    print("PATH2", str(path))
-    import ember  # noqa
+import inspect
+class A:
+    def __init__(self):
+        print(f"A")
 
 
-pygame.init()
-clock = pygame.time.Clock()
-ember.init(clock)
-ember.style.load("dark")
+class B(A):
+    def __init__(self):
+        print("B")
+        super().__init__()
 
-screen = pygame.display.set_mode((400, 400))
 
+class C(A):
+    def __init__(self):
+        print("C")
+        super().__init__()
+
+
+class D(B, C):
+    def __init__(self):
+        print("D")
+        super().__init__()
+
+
+D()
+
+print(inspect.getmro(D))

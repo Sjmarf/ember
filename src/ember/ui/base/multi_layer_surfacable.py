@@ -34,7 +34,6 @@ class MultiLayerSurfacable(Surfacable):
         w: Optional[SizeType] = None,
         h: Optional[SizeType] = None,
         default_size: Optional[SequenceSizeType] = None,
-        style: Optional["Style"] = None,
         can_focus: bool = True,
     ):
         self._color: Optional[ColorType] = color
@@ -47,7 +46,7 @@ class MultiLayerSurfacable(Surfacable):
         self._layers: list[int] = []
         self._static_surface: Optional[pygame.Surface] = None
 
-        super().__init__(rect, pos, x, y, size, w, h, default_size, style, can_focus)
+        super().__init__(rect=rect, pos=pos, x=x, y=y, size=size, w=w, h=h, default_size=default_size, can_focus=can_focus)
 
     def _render_surfaces(
         self, surface: pygame.Surface, pos: tuple[int, int], alpha: int

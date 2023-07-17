@@ -6,10 +6,11 @@ from .. import common as _c
 from ..common import ColorType
 from .. import log
 from .base.element import Element
+from .base.styled import StyleMixin
 from .base.multi_layer_surfacable import MultiLayerSurfacable
 
-from ..size import FIT, SizeType, SequenceSizeType, SizeMode, OptionalSequenceSizeType
-from ..position import PositionType, CENTER, SequencePositionType
+from ..size import SizeType, OptionalSequenceSizeType
+from ..position import PositionType, SequencePositionType
 from .text import Text
 
 if TYPE_CHECKING:
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 from ..transition.transition import Transition
 
 
-class Icon(MultiLayerSurfacable):
+class Icon(StyleMixin, MultiLayerSurfacable):
     """
     An element that displays an icon (arrow, pause, save, etc). 
     """
@@ -41,8 +42,7 @@ class Icon(MultiLayerSurfacable):
         
         self._name: Optional[str] = None
 
-        MultiLayerSurfacable.__init__(
-           self,
+        super().__init__(
            color,
            material,
            rect,
@@ -55,12 +55,8 @@ class Icon(MultiLayerSurfacable):
            style,
            can_focus=False,
        )
-        
-        log.size.line_break()
-        log.size.info(self, "Icon created, starting chain up...")
-        
-        with log.size.indent:        
-            self.set_icon(name)
+             
+        self.set_icon(name, _update=False)
 
     def __repr__(self) -> str:
         return f"<Icon({self._name})>"
@@ -126,6 +122,7 @@ class Icon(MultiLayerSurfacable):
         name: Union[str, pygame.Surface],
         color: Optional[ColorType] = None,
         transition: Optional[Transition] = None,
+        _update: bool = True
     ) -> None:
         """
         Set the icon image. The 'name' parameter can be a name of an icon included in the :py:class`IconFont<ember.font.IconFont`
@@ -165,8 +162,9 @@ class Icon(MultiLayerSurfacable):
         
         self._color = color if color is not None else self._color
         
-        log.size.line_break()
-        log.size.info(self, "Icon changed, starting chain up...")
-        
-        with log.size.indent:        
-            self._update_rect_chain_up()
+        if _update:
+            log.size.line_break()
+            log.size.info(self, "Icon changed, starting chain up...")
+            
+            with log.size.indent:        
+                self._update_rect_chain_up()

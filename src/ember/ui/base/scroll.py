@@ -17,21 +17,17 @@ from ember.ui.base.element import Element
 from .single_element_container import SingleElementContainer
 from ember.material.material import Material
 from ember.size import (
-    FIT,
     SizeType,
     SequenceSizeType,
-    SizeMode,
     OptionalSequenceSizeType,
+    FitSize,
+    FillSize,
 )
 from ember.position import (
     PositionType,
-    CENTER,
     SequencePositionType,
-    Position,
     OptionalSequencePositionType,
 )
-
-from ember.state.state import load_background
 
 from ember.state.state_controller import StateController
 
@@ -47,7 +43,7 @@ class Scroll(SingleElementContainer, abc.ABC):
 
     def __init__(
         self,
-        element: Optional[Element],
+        element: Optional[Element] = None,
         material: Union["BackgroundState", Material, None] = None,
         over_scroll: Union[InheritType, Sequence[int]] = INHERIT,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
@@ -65,7 +61,6 @@ class Scroll(SingleElementContainer, abc.ABC):
         content_h: Optional[SizeType] = None,
         style: Optional["ScrollStyle"] = None,
     ):
-
         self.state_controller: StateController = StateController(self)
         """
         The :py:class:`ember.state.StateController` responsible for managing the Scroll's 
@@ -92,7 +87,7 @@ class Scroll(SingleElementContainer, abc.ABC):
         """
         Is :code:`True` when the user is moving the scrollbar handle. Read-only.
         """
-        
+
         super().__init__(
             material,
             rect,
@@ -109,7 +104,7 @@ class Scroll(SingleElementContainer, abc.ABC):
             content_w,
             content_h,
             style,
-        )        
+        )
 
         self.over_scroll: tuple[int, int] = (
             self._style.over_scroll if over_scroll is INHERIT else over_scroll
@@ -134,10 +129,11 @@ class Scroll(SingleElementContainer, abc.ABC):
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
         rect = self._int_rect.move(*offset)
+        if self.is_visible:
 
-        self._element._render_a(self._subsurf, offset, alpha=alpha)
-
-        self._render_scrollbar(surface, rect, alpha)
+            self._element._render_a(self._subsurf, offset, alpha=alpha)
+    
+            self._render_scrollbar(surface, rect, alpha)
 
     @abc.abstractmethod
     def _render_scrollbar(
@@ -179,9 +175,9 @@ class Scroll(SingleElementContainer, abc.ABC):
 
     @Element._chain_up_decorator
     def _update_rect_chain_up(self) -> None:
-        if self._h.mode == SizeMode.FIT:
+        if isinstance(self._h, FitSize):
             if self._element:
-                if self._element._h.mode == SizeMode.FILL:
+                if isinstance(self._element._h, FillSize):
                     raise ValueError(
                         "Cannot have elements of FILL height inside of a FIT height Scroll."
                     )
@@ -189,9 +185,9 @@ class Scroll(SingleElementContainer, abc.ABC):
             else:
                 self._min_h = 20
 
-        if self._w.mode == SizeMode.FIT:
+        if isinstance(self._w, FitSize):
             if self._element:
-                if self._element._w.mode == SizeMode.FILL:
+                if isinstance(self._element._w, FillSize):
                     raise ValueError(
                         "Cannot have elements of FILL width inside of a FIT width Scroll."
                     )

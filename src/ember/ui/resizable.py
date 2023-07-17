@@ -32,7 +32,7 @@ class Resizable(Box):
 
     def __init__(
         self,
-        element: Optional[Element],
+        element: Optional[Element] = None,
         material: Union["State", Material, None] = None,
         handles: Union[Sequence[BasicPosition], BasicPosition, None] = None,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,

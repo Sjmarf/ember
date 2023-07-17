@@ -1,18 +1,26 @@
 from typing import Optional, Sequence
-from ...position import OptionalSequencePositionType, PositionType, Position, DualPosition
+from ...position import (
+    OptionalSequencePositionType,
+    PositionType,
+    Position,
+    DualPosition,
+)
 
 from .element import Element
 
 
-class HasContentX:
+class ContentXMixin(Element):
     def __init__(
         self,
-        content_x: Optional[PositionType] = None
+        *args,
+        content_x: Optional[PositionType] = None,
+        **kwargs,
     ):
         """
         Used to supply the relevant properties and methods to an element that has a 'content_x' parameter.
-        Should not be instatiated directly.
         """
+        self._content_x: Optional[Position] = None
+        super().__init__(*args, **kwargs)
         self.set_content_x(content_x, _update=False)
 
     @property
@@ -34,15 +42,13 @@ class HasContentX:
             self._update_rect_chain_up()
 
 
-class HasContentY:
-    def __init__(
-        self,
-        content_y: Optional[PositionType] = None,
-    ):
+class ContentYMixin(Element):
+    def __init__(self, *args, content_y: Optional[PositionType] = None, **kwargs):
         """
         Used to supply the relevant properties and methods to an element that has a 'content_y' parameter.
-        Should not be instatiated directly.
         """
+        self._content_y: Optional[Position] = None
+        super().__init__(*args, **kwargs)
         self.set_content_y(content_y, _update=False)
 
     @property
@@ -64,12 +70,14 @@ class HasContentY:
             self._update_rect_chain_up()
 
 
-class HasContentPos(HasContentX, HasContentY):
+class ContentPosMixin(ContentXMixin, ContentYMixin):
     def __init__(
         self,
+        *args,
         content_pos: OptionalSequencePositionType = None,
         content_x: Optional[PositionType] = None,
         content_y: Optional[PositionType] = None,
+        **kwargs,
     ):
         if isinstance(content_pos, DualPosition):
             content_pos = content_pos.x, content_pos.y
@@ -79,18 +87,24 @@ class HasContentPos(HasContentX, HasContentY):
         content_x = content_x if content_x is not None else content_pos[0]
         content_y = content_y if content_y is not None else content_pos[1]
 
-        HasContentX.__init__(self, content_x)
-        HasContentY.__init__(self, content_y)
+        super().__init__(
+            *args,
+            content_x=content_x,
+            content_y=content_y,
+            **kwargs
+        )
 
     @property
-    def content_pos(self) -> tuple[Optional[Position],Optional[Position]]:
+    def content_pos(self) -> tuple[Optional[Position], Optional[Position]]:
         return self._content_x, self._content_y
 
     @content_pos.setter
     def content_pos(self, value: OptionalSequencePositionType) -> None:
         self.set_content_pos(value)
 
-    def set_content_pos(self, value: OptionalSequencePositionType, _update=True) -> None:
+    def set_content_pos(
+        self, value: OptionalSequencePositionType, _update=True
+    ) -> None:
         if not isinstance(value, Sequence):
             value = value, value
 

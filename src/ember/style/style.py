@@ -1,8 +1,8 @@
 import abc
-from typing import Optional, TYPE_CHECKING, Type, Sequence
+from typing import TYPE_CHECKING, Type, Sequence
 from copy import copy
 
-from ..size import SizeType, SequenceSizeType, Size
+from ..size import SizeType, SequenceSizeType, AbsoluteSize
 from .. import common as _c
 
 if TYPE_CHECKING:
@@ -20,7 +20,7 @@ class Style(abc.ABC):
     @staticmethod
     def load_size(
         size: SequenceSizeType, width: SizeType, height: SizeType, raise_error=True
-    ) -> (Size, Size):
+    ) -> tuple[AbsoluteSize, AbsoluteSize]:
         w, h = None, None
 
         if size is not None:
@@ -41,8 +41,8 @@ class Style(abc.ABC):
                 raise ValueError("No height was specified.")
 
         return (
-            Size(w) if isinstance(w, (int, float)) else w,
-            Size(h) if isinstance(h, (int, float)) else h,
+            AbsoluteSize(w) if isinstance(w, (int, float)) else w,
+            AbsoluteSize(h) if isinstance(h, (int, float)) else h,
         )
 
     def copy(self) -> "Style":

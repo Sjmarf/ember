@@ -90,14 +90,14 @@ class BaseFont(abc.ABC):
 
                     this_line = text[last_n : letter_n + 1]
 
-                if this_line.endswith(" "):
+                if this_line[-1] in {" ", "\n"}:
                     this_line = this_line[:-1]
 
                 yield last_n, this_line
                 last_n = letter_n + 1
 
-                if letter == "\n" and letter_n == len(text) - 1:
-                    yield last_n, ""
+                #if letter == "\n" and letter_n == len(text) - 1:
+                    #yield last_n, ""
 
             if letter_n >= len(text) - 1:
                 yield last_n, text[last_n:]

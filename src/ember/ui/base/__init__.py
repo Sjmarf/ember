@@ -3,6 +3,7 @@ from .container import Container
 from .single_element_container import SingleElementContainer
 from .multi_element_container import MultiElementContainer
 from .surfacable import Surfacable
-from .interactive import Interactive
+from .interactive import InteractiveMixin
+from .styled import StyleMixin
 from .scroll import Scroll
 from .stack import Stack

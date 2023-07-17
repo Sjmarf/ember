@@ -6,20 +6,21 @@ if TYPE_CHECKING:
     pass
 
 
-class Interactive:
+class InteractiveMixin(Element):
     """
-    This class is a secondary superclass of elements that are interactive.
+    This class is a mixin, and should not be instantiated directly.
     It provides functionality for disabling the element.
     """
 
-    def __init__(self: "InteractiveElement", disabled: bool) -> None:
+    def __init__(self, *args, disabled: bool = False, **kwargs) -> None:
         self._disabled: bool = disabled
+        super().__init__(*args, **kwargs)
     
-    def _set_disabled(self: "InteractiveElement", value: bool) -> None:
+    def _set_disabled(self, value: bool) -> None:
         # Is overriden by subclasses of Interactive to provide extra functionality
         pass
 
-    def set_disabled(self: "InteractiveElement", value: bool) -> None:
+    def set_disabled(self, value: bool) -> None:
         """
         Disabled Elements cannot be interacted with. This method is synonymous with
         the :py:property:`ember.ui.base.Interactive.disabled` property setter.
@@ -45,5 +46,3 @@ class Interactive:
     def disabled(self, value: bool) -> None:
         self.set_disabled(value)
 
-
-InteractiveElement = Union[Element, Interactive]

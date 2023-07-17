@@ -6,6 +6,7 @@ from typing import Optional, Sequence, Union, TYPE_CHECKING
 from ember import common as _c
 from ember import log
 from ember.ui.base.element import Element
+from .has_content_size import ContentSizeMixin
 from ember.size import SizeType, SequenceSizeType, OptionalSequenceSizeType, Size
 from ember.position import (
     PositionType,
@@ -15,7 +16,7 @@ from ember.position import (
 from ember.transition.transition import Transition
 from ember.state.background_state import BackgroundState
 from ember.material.material import Material
-from ...size import FIT, FILL, SizeMode
+from ...size import FILL, FillSize, FitSize
 
 from .container import Container
 
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from ...style.style import Style
 
 
-class SingleElementContainer(Container):
+class SingleElementContainer(ContentSizeMixin, Container):
     def __init__(
         self,
         material: Union[BackgroundState, Material, None],
@@ -46,59 +47,25 @@ class SingleElementContainer(Container):
         """
         Base class for Containers that hold one or zero elements. Should not be instantiated directly.
         """
-        #default_size = self._style.size
-        #if hasattr(self._style, "sizes") and self._style.sizes is not None:
-            #for cls in inspect.getmro(type(self)):
-                #if cls in self._style.sizes:
-                    #default_size = self._style.sizes[cls]
-                    #break
-
-        #if self._element is not None:
-            #if not isinstance(default_size, Sequence):
-                #default_size = default_size, default_size
-
-            #if default_size[0] == FIT:
-                #default_size = (
-                    #FILL if self._element._active_w.mode == SizeMode.FILL else FIT,
-                    #default_size[1],
-                #)
-
-            #if default_size[1] == FIT:
-                #default_size = (
-                    #default_size[0],
-                    #FILL if self._element._active_h.mode == SizeMode.FILL else FIT,
-                #)
 
         super().__init__(
-            material,
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            w,
-            h,
+            # Container
+            material=material,
+            rect=rect,
+            pos=pos,
+            x=x,
+            y=y,
+            size=size,
+            w=w,
+            h=h,
             content_pos=content_pos,
             content_x=content_x,
             content_y=content_y,
-            style=style
-        )
-
-        if not isinstance(content_size, Sequence):
-            content_size = content_size, content_size
-
-        content_w = content_w if content_w is not None else content_size[0]
-        content_h = content_h if content_h is not None else content_size[1]
-
-        self.content_w: Optional[Size] = (
-            self._style.content_size[0]
-            if content_w is None
-            else Size._load(content_w)
-        )
-        self.content_h: Optional[Size] = (
-            self._style.content_size[1]
-            if content_h is None
-            else Size._load(content_h)
+            style=style,
+            # ContentSizeMixin
+            content_size=content_size,
+            content_w=content_w,
+            content_h=content_h
         )
 
     def __getitem__(self, item: int) -> Element:
@@ -112,6 +79,30 @@ class SingleElementContainer(Container):
             return NotImplemented
 
         self.set_element(value)
+
+    def _build_chain(self) -> None:
+        if self._has_built:
+            return        
+        self._has_built = True
+
+        if self._element:
+            self._element._build_chain()
+
+            if isinstance(self._active_w, FitSize):
+                self._element.set_active_w(self.content_w)
+                if isinstance(self._element._active_w, FillSize):
+                    log.size.info(self, "Element has FILL width and we have FIT width, updating own width...")
+                    self.set_w(FILL, _update=False)
+
+            if isinstance(self._active_h, FitSize):
+                self._element.set_active_h(self.content_h)
+                if isinstance(self._element._active_h, FillSize):
+                    log.size.info(self, "Element has FILL width and we have FIT width, updating own width...")
+                    self.set_h(FILL, _update=False)
+
+        log.size.info(self, "Element built, starting chain up without proprogation.")
+        with log.size.indent:
+            self._update_rect_chain_up(_update=False)
 
     def _render_elements(
         self,
@@ -138,11 +129,11 @@ class SingleElementContainer(Container):
                 self._element._y if self._element._y is not None else self.content_y
             )
 
-            element_w = (self._element.get_abs_w(w))
-            element_h = (self._element.get_abs_h(h))
+            element_w = self._element.get_abs_w(w)
+            element_h = self._element.get_abs_h(h)
 
-            element_x = (x + element_x_obj.get(w, element_w))
-            element_y = (y + element_y_obj.get(h, element_h))
+            element_x = x + element_x_obj.get(w, element_w)
+            element_y = y + element_y_obj.get(h, element_h)
 
             if not self.is_visible:
                 self._element.is_visible = False
@@ -155,7 +146,7 @@ class SingleElementContainer(Container):
                 self._element.is_visible = False
             else:
                 self._element.is_visible = True
-            
+
             with log.size.indent:
                 self._element._update_rect_chain_down(
                     surface, element_x, element_y, element_w, element_h
@@ -180,12 +171,15 @@ class SingleElementContainer(Container):
             with log.layer.indent:
                 self._element._set_layer_chain(layer)
 
+    def _attribute_element(self, element: "Element") -> None:
+        self.set_element(element, _update=False)
+
     @property
     def element(self) -> Optional["Element"]:
         return self._element
 
     @element.setter
-    def _set_element(self, element: Optional[Element]) -> None:
+    def element(self, element: Optional[Element]) -> None:
         self.set_element(element)
 
     def set_element(
@@ -212,6 +206,8 @@ class SingleElementContainer(Container):
                 log.layer.info(self, "Element added to Container - starting chain...")
                 with log.layer.indent:
                     self._element._set_layer_chain(self.layer)
+                element._build_chain()
+                
             else:
                 self._can_focus = False
 

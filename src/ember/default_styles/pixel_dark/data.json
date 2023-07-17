@@ -12,7 +12,6 @@
     "View": {},
 
     "Container": {
-      "sizes": {"Layout": "FILL"},
       "min_spacing": 6
     },
 

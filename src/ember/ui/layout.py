@@ -8,15 +8,15 @@ from .base.multi_element_container import MultiElementContainer
 from .. import log
 from .view import ViewLayer
 from .base.element import Element
+
 from ..state.state_controller import StateController
 from ..state.state import State, load_background
 from ..position import (
     PositionType,
-    CENTER,
     SequencePositionType,
     OptionalSequencePositionType,
 )
-from ..size import FILL, SizeType, SizeMode, OptionalSequenceSizeType
+from ..size import SizeType, OptionalSequenceSizeType
 
 if TYPE_CHECKING:
     from ..style.container_style import ContainerStyle

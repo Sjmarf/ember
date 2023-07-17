@@ -48,7 +48,7 @@ class VScroll(Scroll):
                     rect.right - self._style.scrollbar_size,
                     rect.y + round(self._scrollbar_pos),
                 ),
-                (round(self._style.scrollbar_size), round(self._scrollbar_size + 1)),
+                (round(self._style.scrollbar_size), round(self._scrollbar_size)),
                 alpha,
                 material_index=1,
             )

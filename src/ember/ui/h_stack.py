@@ -6,7 +6,7 @@ from typing import Union, Optional, Sequence, TYPE_CHECKING, Generator
 
 from .base.stack import Stack
 from .. import log
-from ..size import SizeType, OptionalSequenceSizeType, SizeMode, Size
+from ..size import SizeType, OptionalSequenceSizeType, FillSize, FitSize
 from ..position import (
     PositionType,
     SequencePositionType,
@@ -42,6 +42,8 @@ class HStack(Stack):
         content_pos: OptionalSequencePositionType = None,
         content_x: Optional[PositionType] = None,
         content_y: Optional[PositionType] = None,
+        content_size: OptionalSequenceSizeType = None,
+        content_w: Optional[SizeType] = None,
         content_h: Optional[SizeType] = None,
         style: Optional["ContainerStyle"] = None,
     ):
@@ -51,31 +53,26 @@ class HStack(Stack):
         self._elements = []
 
         super().__init__(
-            elements,
-            material,
-            spacing,
-            min_spacing,
-            focus_on_entry,
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            w,
-            h,
-            content_pos,
-            content_x,
-            content_y,
-            style,
+            elements=elements,
+            material=material,
+            spacing=spacing,
+            min_spacing=min_spacing,
+            focus_on_entry=focus_on_entry,
+            rect=rect,
+            pos=pos,
+            x=x,
+            y=y,
+            size=size,
+            w=w,
+            h=h,
+            content_pos=content_pos,
+            content_x=content_x,
+            content_y=content_y,
+            content_size=content_size,
+            content_w=content_w,
+            content_h=content_h,
+            style=style,
         )
-
-        self.content_h: Optional[Size] = (
-            self._style.content_size[1] if content_h is None else Size._load(content_h)
-        )
-
-        log.size.info(self, "HStack created, starting chain up...")
-        with log.size.indent:
-            self._update_rect_chain_up()
 
     def __repr__(self) -> str:
         return f"<HStack({len(self._elements)} elements)>"
@@ -91,9 +88,11 @@ class HStack(Stack):
 
         # This is the additional padding caused by a width value such as ember.FIT + 20
         horizontal_padding = (
-            self._active_w.value if self._active_w.mode == SizeMode.FIT else 0
+            self._active_w.value if isinstance(self._active_w, FitSize) else 0
         )
-        spacing = self._get_element_spacing(horizontal_padding)
+        spacing = self._get_element_spacing(
+            horizontal_padding, isinstance(self._active_w, FitSize)
+        )
 
         # The width that is available to divide among FILL elements
         remaining_width = (
@@ -107,7 +106,7 @@ class HStack(Stack):
         if self._fill_element_count == 0 and (
             self.spacing is not None or len(self._elements) == 1
         ):
-            if self._active_w.mode == SizeMode.FIT:
+            if isinstance(self._active_w, FitSize):
                 element_x = remaining_width / 2 + horizontal_padding / 2
             else:
                 element_x = self.content_x.get(
@@ -123,14 +122,23 @@ class HStack(Stack):
             remainder = remaining_width % self._fill_element_count
             left_rem = math.ceil(remainder / 2) if w % 2 == 1 else remainder // 2
             right_rem = remainder - left_rem
+            # right_rem = math.ceil(remainder / 2) if w % 2 == 1 else remainder // 2
+            # left_rem = remainder - right_rem
             fill_n = -1
+
+            if abs(self._int_rect.x - x) not in {0, 1}:
+                if left_rem > right_rem:
+                    element_x -= 0.5
+
+                if right_rem > left_rem:
+                    element_x += 0.5
 
         self._first_visible_element = None
 
         # Iterate over child elements
         with log.size.indent:
             for n, element in enumerate(self._elements):
-                element.set_active_h(self.content_h)
+                element.set_active_h(self._content_h)
                 # We've already set the active width in update_rect_chain_up; we don't need to do it again
 
                 # Find the y position of the child element
@@ -140,7 +148,7 @@ class HStack(Stack):
                     element.get_abs_h(h - abs(element_y_obj.value)),
                 )
 
-                if element._active_w.mode == SizeMode.FILL:
+                if isinstance(element._active_w, FillSize):
                     fill_n += 1
                     element_w = (
                         remaining_width
@@ -174,9 +182,10 @@ class HStack(Stack):
                 # Start the chain for the child element
                 element._update_rect_chain_down(
                     surface,
-                    int(self._int_rect.x + element_x),
+                    x + element_x,
+                    #int(self._int_rect.x + element_x),
                     element_y,
-                    int(element_w),
+                    element_w,
                     element.get_abs_h(h - abs(element_y_obj.value)),
                 )
 
@@ -191,8 +200,8 @@ class HStack(Stack):
             self._total_size_of_nonfill_elements = 0
 
             for i in self._elements:
-                i.set_active_w()
-                if i._active_w.mode == SizeMode.FILL:
+                i.set_active_w(self._content_w)
+                if isinstance(i._active_w, FillSize):
                     self._total_size_of_fill_elements += i._active_w.percentage
                     self._fill_element_count += 1
                 else:

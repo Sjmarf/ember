@@ -51,7 +51,7 @@ class HScroll(Scroll):
                     - surface.get_abs_offset()[1]
                     - self._style.scrollbar_size,
                 ),
-                (self._scrollbar_size + 1, self._style.scrollbar_size),
+                (self._scrollbar_size, self._style.scrollbar_size),
                 alpha,
                 material_index=1,
             )

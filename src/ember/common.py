@@ -11,8 +11,9 @@ is_ce: bool = getattr(pygame, "IS_CE", False)
 event_ids = _event.__dict__.values()
 
 if TYPE_CHECKING:
+    from .ui.base.element import Element
     from .ui.default_style_dict import DefaultStyleDict
-    from .material.material import Material
+    from .ui.base.context_manager import ContextManagerMixin
 
 
 class InheritType:
@@ -39,7 +40,7 @@ BLUR_PYGAME = BlurMode()
 
 
 class FocusDirection(Enum):
-    SELECT = 0 # Used when focusing an element when no element is yet focused.
+    SELECT = 0  # Used when focusing an element when no element is yet focused.
     IN = 1  # Pressing enter.
     IN_FIRST = 2  # The same as IN, but always enters the first element of a container.
     OUT = 3  # Pressing escape.
@@ -88,3 +89,15 @@ audio_enabled: bool = False
 audio_muted: bool = False
 
 DEFAULT_STYLE: Literal["stone", "plastic", "white", "dark"] = "dark"
+
+
+class Escaping:
+    def __enter__(self):
+        element_context_stack.append(None)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        element_context_stack.pop()
+
+
+ESCAPING = Escaping()

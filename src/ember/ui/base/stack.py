@@ -19,12 +19,13 @@ from ember.state.background_state import BackgroundState
 from ember.material.material import Material
 
 from ember.ui.base.multi_element_container import MultiElementContainer
+from .has_content_size import ContentSizeMixin
 
 if TYPE_CHECKING:
     from ember.style.container_style import ContainerStyle
 
 
-class Stack(MultiElementContainer):
+class Stack(ContentSizeMixin, MultiElementContainer):
     """
     A Stack is a collection of Elements. There are two subclasses of Stack - :py:class:`ember.ui.VStack`
     and :py:class:`ember.ui.HStack`. This base class should not be instantiated directly.
@@ -49,6 +50,9 @@ class Stack(MultiElementContainer):
         content_pos: OptionalSequencePositionType = None,
         content_x: Optional[PositionType] = None,
         content_y: Optional[PositionType] = None,
+        content_size: OptionalSequenceSizeType = None,
+        content_w: Optional[SizeType] = None,
+        content_h: Optional[SizeType] = None,
         style: Optional["ContainerStyle"] = None,
     ):
         """
@@ -58,20 +62,25 @@ class Stack(MultiElementContainer):
         self._first_visible_element: Optional[Element] = None
 
         super().__init__(
-            elements,
-            material,
-            focus_on_entry,
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            w,
-            h,
-            content_pos,
-            content_x,
-            content_y,
-            style,
+            # MultiElementContainer
+            elements=elements,
+            material=material,
+            focus_on_entry=focus_on_entry,
+            rect=rect,
+            pos=pos,
+            x=x,
+            y=y,
+            size=size,
+            w=w,
+            h=h,
+            content_pos=content_pos,
+            content_x=content_x,
+            content_y=content_y,
+            style=style,
+            # ContentSizeMixin
+            content_size=content_size,
+            content_w=content_w,
+            content_h=content_h
         )
 
         self.spacing: Optional[int] = (
@@ -129,12 +138,12 @@ class Stack(MultiElementContainer):
     ) -> Optional[Element]:
         pass
 
-    def _get_element_spacing(self, padding: int) -> int:
+    def _get_element_spacing(self, padding: int, is_fit: bool) -> int:
         """Get the spacing between the elements in the Stack"""
         if self.spacing is not None:
             return self.spacing
 
-        elif self._fill_element_count:
+        elif self._fill_element_count > 0 or is_fit:
             return self.min_spacing
 
         else:

@@ -3,12 +3,11 @@
 
  "elements": {
 
-     "Text": {"font": ["Font", "arial", 40]},
+     "Text": {"font": ["Font", "arial", 40], "color": "white"},
 
      "View": {},
 
      "Container": {
-       "sizes": {"Layout": "FILL"},
        "min_spacing": 20
      },
 

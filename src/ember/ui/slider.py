@@ -3,7 +3,8 @@ from typing import Union, Optional, TYPE_CHECKING, Sequence
 
 from .. import common as _c
 from .base.element import Element
-from .base.interactive import Interactive
+from .base.styled import StyleMixin
+from .base.interactive import InteractiveMixin
 from ..utility.timekeeper import BasicTimekeeper
 from ..position import PositionType, SequencePositionType
 from ..size import SizeType, OptionalSequenceSizeType
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     from ..style.slider_style import SliderStyle
 
 
-class Slider(Element, Interactive):
+class Slider(InteractiveMixin, StyleMixin, Element):
     """
     A Slider is an interactive Element. Given a lower and upper bound, it lets the user scroll between those two values.
     """
@@ -36,20 +37,19 @@ class Slider(Element, Interactive):
         style: Union["SliderStyle", None] = None,
     ):
 
-        Element.__init__(
-            self,
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            w,
-            h,
-            style,
+        super().__init__(
+            # Element
+            rect=rect,
+            pos=pos,
+            x=x,
+            y=y,
+            size=size,
+            w=w,
+            h=h,
+            style=style,
+            # Interactive
             can_focus=True,
         )
-
-        Interactive.__init__(self, disabled)
 
         self.min_value: float = min_value
         """

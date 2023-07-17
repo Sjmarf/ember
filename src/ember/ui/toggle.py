@@ -4,7 +4,8 @@ from typing import Optional, TYPE_CHECKING, Sequence, Union
 from .. import common as _c
 from ..event import TOGGLECLICKED
 from .base.element import Element
-from .base.interactive import Interactive
+from .base.styled import StyleMixin
+from .base.interactive import InteractiveMixin
 from ..utility.timekeeper import BasicTimekeeper
 
 from ..size import SizeType, OptionalSequenceSizeType
@@ -15,7 +16,7 @@ if TYPE_CHECKING:
     from ..style.toggle_style import ToggleStyle
 
 
-class Toggle(Element, Interactive):
+class Toggle(InteractiveMixin, StyleMixin, Element):
     """
     A Toggle is an interactive Element. It is a switch that can either be on or off.
 
@@ -35,7 +36,6 @@ class Toggle(Element, Interactive):
         h: Optional[SizeType] = None,
         style: Optional["ToggleStyle"] = None,
     ):
-
         self._is_active: bool = active
 
         self.is_hovered: bool = False
@@ -50,26 +50,22 @@ class Toggle(Element, Interactive):
 
         self._disabled: bool = False
 
-        Element.__init__(
-            self,
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            w,
-            h,
-            style,
+        super().__init__(
+            # Element
+            rect=rect,
+            pos=pos,
+            x=x,
+            y=y,
+            size=size,
+            w=w,
+            h=h,
+            style=style,
             can_focus=True,
+            # Interactive
+            disabled=disabled,
         )
-
-        Interactive.__init__(self, disabled)
-
         self._timer = BasicTimekeeper(
-            self._w.value
-            - round(self._h.value * self._style.handle_width_ratio)
-            if self._is_active
-            else 0
+            int(self._is_active)
         )
 
     def __repr__(self) -> str:
@@ -80,8 +76,6 @@ class Toggle(Element, Interactive):
     ) -> None:
         rect = self._int_rect.move(*offset)
 
-        # Draw the base image
-
         self.state_controller.set_state(
             self._style.state_func(self),
             transitions=[
@@ -89,6 +83,8 @@ class Toggle(Element, Interactive):
                 self._style.handle_material_transition,
             ],
         )
+
+        # Base image
 
         self.state_controller.render(
             surface,
@@ -98,18 +94,21 @@ class Toggle(Element, Interactive):
             ),
             rect.size,
             alpha,
-            material_index=0
+            material_index=0,
         )
+
+        # Handle image
 
         self.state_controller.render(
             surface,
             (
-                rect.x - surface.get_abs_offset()[0] + self._timer.val,
+                rect.x - surface.get_abs_offset()[0] + self._timer.val * (self._int_rect.w
+                - round(self._int_rect.h * self._style.handle_width_ratio)),
                 rect.y - surface.get_abs_offset()[1],
             ),
             (round(self.rect.h * self._style.handle_width_ratio), rect.h),
             alpha,
-            material_index=1
+            material_index=1,
         )
 
     def _update(self) -> None:
@@ -146,11 +145,7 @@ class Toggle(Element, Interactive):
         """
         self._is_active = value
         self._timer.play(
-            stop=(
-                self._active_w.value - round(self.rect.h * self._style.handle_width_ratio)
-                if self._is_active
-                else 0
-            ),
+            stop=int(self._is_active),
             duration=0.1,
         )
 

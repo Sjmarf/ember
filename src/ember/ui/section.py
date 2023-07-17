@@ -22,7 +22,7 @@ class Section(Box):
 
     def __init__(
             self,
-            element: Optional["Element"],
+            element: Optional["Element"] = None,
             material: Union["BackgroundState", "Material", None] = None,
             rect: Union[pygame.rect.RectType, Sequence, None] = None,
             pos: Optional["SequencePositionType"] = None,
