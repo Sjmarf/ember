@@ -66,3 +66,6 @@ class Color(MaterialWithSizeCache):
         self.clear_cache()
 
     color: ColorType = property(fget=lambda self: self._color, fset=_set_color)
+
+
+DEFAULT_BLACK_MATERIAL = Color("black")

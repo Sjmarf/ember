@@ -1,14 +1,7 @@
-import importlib.resources
-from typing import Optional as _Optional
-
 from . import common as _c
-from .ui.default_style_dict import DefaultStyleDict as _DefaultStyleDict
-
-_c.default_styles = _DefaultStyleDict()
-default_styles = _c.default_styles
 
 from .common import (
-    INHERIT,
+    DEFAULT,
     Error,
     ColorType,
     joysticks,
@@ -19,7 +12,7 @@ from .common import (
     BLUR_PIL,
     BLUR_PYGAME,
     FocusDirection,
-    ESCAPING
+    package,
 )
 
 from . import event
@@ -28,62 +21,62 @@ from .event import *
 from . import ui
 from .ui import *
 
-from . import style
-from .style import (
-    Style,
-    ViewStyle,
-    ContainerStyle,
-    SectionStyle,
-    ButtonStyle,
-    TextFieldStyle,
-    ToggleStyle,
-    SliderStyle,
-    TextStyle,
-    IconStyle,
-    ScrollStyle,
-)
+from . import base
+from .base import *
+
+from . import trait
+from .trait import new_trait
 
 from . import font
-from .font import Font, PixelFont, IconFont, TextVariant, BOLD, ITALIC, UNDERLINE, STRIKETHROUGH, OUTLINE
-
-from . import state
-from .state import State, ButtonState, TextFieldState
+from .font import (
+    Font,
+    PixelFont,
+    IconFont,
+    TextVariant,
+    BOLD,
+    ITALIC,
+    UNDERLINE,
+    STRIKETHROUGH,
+    OUTLINE,
+)
 
 from . import material
 from . import animation
-from . import transition
-from . import timer
+
 from . import log
 
-from . import size
-from .size import FIT, FILL, Size
+from . import style
 
+from . import size
+from .size import FIT, FILL, Size, ClampedSize, RATIO
+
+from .on_event import on_event
+
+from . import size
+from .size import FIT, FILL
 from . import position
 from .position import (
-    Position,
     LEFT,
     RIGHT,
     TOP,
     BOTTOM,
+    CENTER,
     TOPLEFT,
     TOPRIGHT,
     BOTTOMLEFT,
     BOTTOMRIGHT,
-    CENTER,
+    MIDTOP,
     MIDLEFT,
     MIDRIGHT,
-    MIDTOP,
     MIDBOTTOM,
 )
+from . import spacing
+from .spacing import DEFAULT_SPACING
 
 from .utility.stretch_surface import stretch_surface
 from .utility.spritesheet import SpriteSheet
 
-import pygame as _pygame
 import logging
-
-# logging.basicConfig(level=logging.DEBUG)
-
 
 def mute_audio(muted: bool) -> None:
     if not (_c.audio_enabled or muted):
@@ -105,19 +98,6 @@ def update_views() -> None:
 
 def update() -> None:
     _c.delta_time = 1 / max(1.0, _c.clock.get_fps())
-
-
-def init(
-    clock: _Optional[_pygame.time.Clock] = None, audio: _Optional[bool] = None
-) -> None:
-    if audio:
-        pygame.mixer.init()
-    pygame.scrap.init()
-    _c.audio_enabled = audio
-    _c.audio_muted = False
-    _c.clock = clock if clock is not None else _c.clock
-
-    _c.package = importlib.resources.files("ember")
 
 
 def set_clock(clock: pygame.time.Clock) -> None:

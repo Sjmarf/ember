@@ -1,49 +1,49 @@
 import pygame
-import math
-from typing import Union, Optional, Literal, TYPE_CHECKING, Sequence
+from typing import Union, Optional, TYPE_CHECKING, Sequence
 from .. import log
-from .. import common as _c
-from ..common import ColorType, InheritType, INHERIT
-from .base.element import Element
-from .base.multi_layer_surfacable import MultiLayerSurfacable
-from .base.has_content_pos import ContentPosMixin
-from .base.styled import StyleMixin
+from ..common import ColorType
+from ..base.multi_layer_surfacable import MultiLayerSurfacable
+from ember.base.content_pos import ContentPos
 
-from ..transition.transition import Transition
-
+from ..font.base_font import BaseFont
 from ..font.line import Line
 from ..font.variant import TextVariant
 
-from ..size import (
-    SizeType,
-    Size,
-    OptionalSequenceSizeType,
-    FitSize,
-    load_size
-)
-from ..position import (
+from ..size import SizeType, OptionalSequenceSizeType, FitSize
+from ember.position import (
     PositionType,
     SequencePositionType,
     OptionalSequencePositionType,
+    CENTER,
 )
 
 if TYPE_CHECKING:
-    from ..style.text_style import TextStyle
     from ..material.material import Material
-    from .view_layer import ViewLayer
+
+from ember.trait import new_trait
 
 
-class Text(ContentPosMixin, StyleMixin, MultiLayerSurfacable):
+class Text(ContentPos, MultiLayerSurfacable):
     """
     An Element that displays some text.
     """
+
+    variant, variant_ = new_trait(
+        (), on_update=lambda self: self._update_surface()
+    )
+
+    font, font_ = new_trait(None)
 
     def __init__(
         self,
         text: str = "",
         color: Optional[ColorType] = None,
         material: Optional["Material"] = None,
+        primary_material: Optional["Material"] = None,
+        secondary_material: Optional["Material"] = None,
+        tertiary_material: Optional["Material"] = None,
         variant: Union[TextVariant, Sequence[TextVariant], None] = None,
+        font: Optional[BaseFont] = None,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
@@ -54,16 +54,16 @@ class Text(ContentPosMixin, StyleMixin, MultiLayerSurfacable):
         content_pos: OptionalSequencePositionType = None,
         content_x: Optional[PositionType] = None,
         content_y: Optional[PositionType] = None,
-        style: Optional["TextStyle"] = None,
     ):
-        self._style: TextStyle
-
-        self.set_style(style)
-
         self._text: str = text
-        self._variant: Sequence[TextVariant] = (
-            variant if isinstance(variant, Sequence) else (variant,)
-        )
+
+        if isinstance(variant, Sequence):
+            variant = tuple(variant)
+        elif variant is not None:
+            variant = (variant,)
+
+        self.variant = variant
+        self.font = font
 
         self._redraw_next_tick: bool = True
 
@@ -71,6 +71,9 @@ class Text(ContentPosMixin, StyleMixin, MultiLayerSurfacable):
             # MultiLayerSurfacable
             color=color,
             material=material,
+            primary_material=primary_material,
+            secondary_material=secondary_material,
+            tertiary_material=tertiary_material,
             rect=rect,
             pos=pos,
             x=x,
@@ -79,7 +82,7 @@ class Text(ContentPosMixin, StyleMixin, MultiLayerSurfacable):
             w=w,
             h=h,
             can_focus=False,
-            # ContentPosMixin
+            # ContentPos
             content_pos=content_pos,
             content_x=content_x,
             content_y=content_y,
@@ -89,17 +92,19 @@ class Text(ContentPosMixin, StyleMixin, MultiLayerSurfacable):
 
     def __repr__(self) -> str:
         if len(self._text) > 15:
-            return f"<Text('{self._text[:16]}...', length={len(self._text)})>"
+            return f"<Text('{self._text[:16]}...', len={len(self._text)})>"
         return f"<Text('{self._text}')>"
 
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
-        rect = self._int_rect.move(*offset)
+        rect = self.rect.move(*offset)
+
         pos = (
-            rect.x - surface.get_abs_offset()[0],
+            rect.x - surface.get_abs_offset()[0] + (0.5 if self.rect.w % 2 == 1 else 0),
             rect.y
-            + self._content_y.get(self.rect.h, self._surface_height)
+            + self.content_y.get(rect.h, self._surface_height)
+            - (0.5 if self.rect.h % 2 == 0 else 0)
             - surface.get_abs_offset()[1],
         )
 
@@ -111,48 +116,48 @@ class Text(ContentPosMixin, StyleMixin, MultiLayerSurfacable):
         offset: tuple[int, int],
         my_surface: pygame.Surface,
     ) -> None:
-        rect = self._int_rect.move(*offset)
+        rect = self.rect.move(*offset)
         pos = (
             rect.x,
-            rect.y + self._content_y.get(self.rect.h, my_surface.get_height()),
+            rect.y + self.content_y.get(rect.h, my_surface.get_height()),
         )
 
         if self._text:
             surface.blit(
                 my_surface,
                 (
-                    pos[0] - surface.get_abs_offset()[0] + self._style.font.offset[0],
-                    pos[1] - surface.get_abs_offset()[1] + self._style.font.offset[1],
+                    pos[0] - surface.get_abs_offset()[0] + self._font.value.offset[0],
+                    pos[1] - surface.get_abs_offset()[1] + self._font.value.offset[1],
                 ),
             )
 
-    def _update_rect_chain_down(
+    def _update_rect(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        super()._update_rect_chain_down(surface, x, y, w, h)
         if (
             self._static_surface is None
             or self._int_rect.w != self._static_surface.get_width()
             or self._redraw_next_tick
         ):
+            log.size.info(
+                "Text received its first update, generating surfaces...", self
+            )
             log.mls.line_break()
-            log.mls.info(self, "Text recieved its first update, generating surfaces...")
-            with log.mls.indent:
+            with log.mls.indent(
+                "Text received its first update, generating surfaces...", self
+            ):
                 self._update_surface()
             self._redraw_next_tick = False
 
-    @Element._chain_up_decorator
-    def _update_rect_chain_up(self) -> None:
+    def _update_min_size(self) -> None:
         self._min_w = (
             self._surface_width
             if self._surface_width
-            else self._style.font.get_width_of_line(self._text, self._variant)
+            else self.font.get_width_of_line(self._text, self.variant)
         )
 
         self._min_h = (
-            self._surface_height
-            if self._surface_height
-            else self._style.font.line_height
+            self._surface_height if self._surface_height else self.font.line_height
         )
 
     def _update_surface(self, _update: bool = True) -> None:
@@ -160,16 +165,14 @@ class Text(ContentPosMixin, StyleMixin, MultiLayerSurfacable):
         Recreate the text surfaces and apply materials to them.
         """
         max_width = (
-            None
-            if self.rect.w == 0 or isinstance(self._active_w, FitSize)
-            else self.rect.w
+            None if self.rect.w == 0 or isinstance(self.w, FitSize) else self.rect.w
         )
 
-        surfaces, self.lines = self._style.font.render(
+        surfaces, self.lines = self.font.render(
             self._text,
-            variant=self._variant,
+            variant=self.variant,
             max_width=max_width,
-            align=self._content_x,
+            align=self.content_x,
         )
 
         if (self._surface_width, self._surface_height) != (
@@ -179,34 +182,30 @@ class Text(ContentPosMixin, StyleMixin, MultiLayerSurfacable):
         else:
             _update = False
 
-        self._layers = self._style.font.get_layers(self._variant)
+        self._layers = self.font.get_layers(self.variant)
 
         self._generate_surface(self._layers, surfaces)
 
         if self._static_surface:
             log.size.info(
-                self,
                 f"Static surface created of size ({self._surface_width}, {self._surface_height}).",
+                self,
             )
         else:
             log.size.info(
-                self,
                 f"Dynamic surface list populated with {len(self._surfaces)} surfaces of size ({self._surface_width}, {self._surface_height}).",
+                self,
             )
         if _update:
-            log.size.line_break()
-            log.size.info(self, "Text updated, starting chain up.")
-            with log.size.indent:
-                self._update_rect_chain_up()
+            self.update_min_size_next_tick()
 
-    def set_w(self, value: SizeType, _update=True) -> None:
-        self._w: Size = load_size(value)
-        log.size.line_break()
-        log.mls.line_break()
-        log.size.info(self, "Text width was changed, generating surfaces...")
-        log.mls.info(self, "Text width was changed, generating surfaces...")
-        with log.mls.indent, log.size.indent:
-            self._update_surface(_update=_update)
+    # def set_w(self, value: SizeType, _update=True) -> None:
+    #     log.size.line_break()
+    #     log.mls.line_break()
+    #     log.size.info(self, "Text width was changed, generating surfaces...")
+    #     log.mls.info(self, "Text width was changed, generating surfaces...")
+    #     with log.mls.indent, log.size.indent:
+    #         self._update_surface(_update=_update)
 
     @property
     def text(self) -> str:
@@ -220,34 +219,26 @@ class Text(ContentPosMixin, StyleMixin, MultiLayerSurfacable):
     def text(self, text: str) -> None:
         self.set_text(text)
 
-    def set_text(
-        self,
-        text: str,
-        color: Optional[ColorType] = None,
-        transition: Optional[Transition] = None,
-    ) -> None:
+    def set_text(self, text: str) -> None:
         """
-        Set the text string. A color can optionally be specified here too. If no color
-        is specified, the color will not change. This method is synonymous with the
+        Set the text string. This method is synonymous with the
         :py:property:`text<ember.ui.Text.text>` property setter.
         """
         if text != self._text:
-            if transition:
-                old_element = self.copy()
-                transition = transition._new_element_controller(
-                    old_element=old_element, new_element=self
-                )
-                self._transition = transition
-
             self._text = text
-            self._color = color if color is not None else self._color
 
             log.size.line_break()
             log.mls.line_break()
-            log.size.info(self, "Text was set, generating surfaces...")
-            log.mls.info(self, "Text was set, generating surfaces...")
-            with log.mls.indent, log.size.indent:
+            with log.mls.indent(
+                "Text was set, generating surfaces...", self
+            ), log.size.indent("Text was set, generating surfaces...", self):
                 self._update_surface()
+
+    def set_font(self, font: Optional[BaseFont]) -> None:
+        self._font.set_value(font)
+
+    def set_variant(self, variant: Sequence[TextVariant]) -> None:
+        self._variant.set_value(tuple(variant))
 
     def get_line(self, line_index: int) -> Optional[Line]:
         """
@@ -267,3 +258,7 @@ class Text(ContentPosMixin, StyleMixin, MultiLayerSurfacable):
             if letter_index < i.start_index:
                 return n - 1
         return n
+
+
+Text.content_x_.default_value = CENTER
+Text.content_y_.default_value = CENTER

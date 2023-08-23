@@ -2,6 +2,7 @@ import pygame
 from typing import Union, Optional
 
 from ..common import MaterialType
+from os import PathLike
 from ember.material.blank import Blank
 from ember.material.stretched_surface import StretchedSurface
 from ember.material.material import Material
@@ -9,7 +10,7 @@ from ember.material.material import Material
 def load_material(image: Optional[MaterialType], default: Union[Material, None]) -> Material:
     if isinstance(image, Material):
         return image
-    elif isinstance(image, (str, pygame.Surface)):
+    elif isinstance(image, (str, pygame.Surface, PathLike)):
         return StretchedSurface(image)
     else:
         return Blank() if default is None else default

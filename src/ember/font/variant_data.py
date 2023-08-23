@@ -1,22 +1,13 @@
 import time
 
 import pygame
-import os
-import itertools
-import math
 from os import PathLike
-import json
-from pathlib import Path, Path
+from pathlib import Path
 
-from typing import Sequence, Optional, Union
+from typing import Optional, Union
 
-from ..common import ColorType
-from .base_font import BaseFont
-from .variant import TextVariant, BOLD, ITALIC, STRIKETHROUGH, UNDERLINE, OUTLINE
 from .. import log
 
-from ..position import Position
-from .line import Line
 
 class VariantData:
     def __init__(
@@ -131,6 +122,6 @@ class VariantData:
             self.character_sizes["\n"] = self.character_sizes[" "]
             self.character_sizes["\r"] = self.character_sizes[" "]
 
-        log.font.info(self, f"Loaded variant '{self.path.name}' in {time.time() - start_time:2f}s.")
+        log.font.info(f"Loaded variant '{self.path.name}' in {time.time() - start_time:2f}s.")
 
 

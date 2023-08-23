@@ -1,103 +1,36 @@
 import pygame
-from typing import Union, Optional, Literal, TYPE_CHECKING, Sequence
+from typing import Optional, TYPE_CHECKING, TypeVar
 
-from .base.single_element_container import SingleElementContainer
+from ember.base.single_element_container import SingleElementContainer
 from .base.element import Element
-from .view import ViewLayer
-from ..material.material import Material
-from ..state.state_controller import StateController
-
-from ..size import (
-    SizeType,
-    OptionalSequenceSizeType,
-)
-from ..position import PositionType, SequencePositionType, OptionalSequencePositionType
 
 if TYPE_CHECKING:
-    from ..style.container_style import ContainerStyle
-    from ..state.background_state import BackgroundState
+    pass
 
 from .. import common as _c
+from ..common import ElementType
 from .. import log
 
 
-class Box(SingleElementContainer):
+T = TypeVar("T", bound=ElementType, covariant=True)
+
+class Box(SingleElementContainer[T]):
     """
     A Box is a container that can optionally hold one Element.
     """
 
-    def __init__(
-        self,
-        element: Optional[Element] = None,
-        material: Union["BackgroundState", Material, None] = None,
-        rect: Union[pygame.rect.RectType, Sequence, None] = None,
-        pos: Optional[SequencePositionType] = None,
-        x: Optional[PositionType] = None,
-        y: Optional[PositionType] = None,
-        size: OptionalSequenceSizeType = None,
-        w: Optional[SizeType] = None,
-        h: Optional[SizeType] = None,
-        content_pos: OptionalSequencePositionType = None,
-        content_x: Optional[PositionType] = None,
-        content_y: Optional[PositionType] = None,
-        content_size: OptionalSequenceSizeType = None,
-        content_w: Optional[SizeType] = None,
-        content_h: Optional[SizeType] = None,
-        style: Optional["ContainerStyle"] = None,
-    ):
-
-        self.layer = None
-
-        self._element: Optional[Element] = None
-
-        self.set_element(element, _update=False)
-
-        super().__init__(
-            material,
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            w,
-            h,
-            content_pos,
-            content_x,
-            content_y,
-            content_size,
-            content_w,
-            content_h,
-            style
-        )
-
-        self.state_controller: StateController = StateController(self)
-        """
-        The :py:class:`ember.state.StateController` object is responsible for managing the Box's 
-        background states.
-        """
-
     def __repr__(self) -> str:
         return "<Box>"
-
-    def _update(self) -> None:
-        if self._element and self._element.is_visible:
-            self._element._update_a()
-
-    def _set_layer_chain(self, layer: ViewLayer) -> None:
-        log.layer.info(self, f"Set layer to {layer}")
-        self.layer: Optional[ViewLayer] = layer
-        if self._element is not None:
-            self._element._set_layer_chain(layer)
 
     def _focus_chain(
         self, direction: _c.FocusDirection, previous: Optional["Element"] = None
     ) -> "Element":
         if self.layer.element_focused is self:
-            log.nav.info(self, f"-> parent {self.parent}.")
+            log.nav.info(f"-> parent {self.parent}.")
             return self.parent._focus_chain(direction, previous=self)
 
         if direction == _c.FocusDirection.OUT:
-            log.nav.info(self, f"-> parent {self.parent}.")
+            log.nav.info(f"-> parent {self.parent}.")
             return self.parent._focus_chain(direction, previous=self)
         elif (
             direction
@@ -113,10 +46,21 @@ class Box(SingleElementContainer):
             return self.parent._focus_chain(direction, previous=self)
 
         else:
-            log.nav.info(self, f"-> child {self._element}.")
+            log.nav.info(f"-> child {self._element}.")
             return self._element._focus_chain(direction, previous=self)
 
     def _event(self, event: pygame.event.Event) -> bool:
         if self._element is not None:
             return self._element._event(event)
         return False
+
+    def update_can_focus(self) -> None:
+        if self in self.layer.can_focus_update_queue:
+            self.layer.can_focus_update_queue.remove(self)
+        if self._can_focus != (v := self._element and self._element._can_focus):
+            self._can_focus = v
+            log.nav.info(f"Changed can_focus to {self._can_focus}.", self)
+            if self.parent is not None:
+                self.parent.update_can_focus()
+        else:
+            log.nav.info(f"can_focus remained {self._can_focus}, cutting chain...", self)

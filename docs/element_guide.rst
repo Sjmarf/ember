@@ -283,7 +283,7 @@ Below is an example of how the :py:meth:`append<ember.ui.base.MultiElementContai
     view = ember.View(stack)
 
 Another way of attributing elements to a container is through the use of the :code:`with` keyword. Any elements instantiated within
-the context of a container will be appended to that container when the :code:`with` statement finishes, if they aren't yet contained within another element by then. For example, the code we've just looked at can be rewritten like so:
+the context of a container will be appended to that container when the :code:`with` statement finishes, if they aren't yet contained within another element by that point. For example, the code we've just looked at can be rewritten like so:
 
 .. code-block:: python
 
@@ -303,6 +303,8 @@ Container contexts can be nested, and it works with View too.
             with ember.HStack():
                 ember.Text("2")
                 ember.Text("3")
+
+This alternative way of constructing menus is often much more convenient than nesting element constructors, because you can run additional code (such as keeping a reference to an element as a variable) whilst creating your menu.
 
 .. _element-challenge:
 
@@ -531,7 +533,7 @@ As an alternative to passing integers as position arguments, you can use **ancho
         # Anchored to the top-left of the container
         ember.Button(x=(ember.TOP, ember.LEFT))
 
-        # Locked to the right with a y position of 200
+        # Anchored to the right, with a y position of 200
         ember.Button(pos=(ember.RIGHT, 200))
     )
 

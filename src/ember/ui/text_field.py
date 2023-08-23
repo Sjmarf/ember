@@ -1,5 +1,5 @@
 import pygame
-from typing import Union, Optional, TYPE_CHECKING, Sequence, Literal
+from typing import Union, Optional, TYPE_CHECKING, Sequence
 from enum import Enum
 
 from .. import common as _c
@@ -9,19 +9,19 @@ from .text import Text
 from .v_scroll import VScroll
 from .h_scroll import HScroll
 from .base.scroll import Scroll
-from .base.styled import StyleMixin
-from .base.interactive import InteractiveMixin
+from ember.ui.base.mixin.style import Style
+from ember.ui.base.mixin.interactive import Interactive
 
-from ..state.state_controller import StateController
+
 
 from ..size import SizeType, FILL, FIT, OptionalSequenceSizeType
-from ..position import PositionType, CENTER, SequencePositionType
+from ember.position import PositionType, CENTER, SequencePositionType
 
 from .. import log
 
 if TYPE_CHECKING:
     from .view import ViewLayer
-    from ..style.text_field_style import TextFieldStyle
+    from ember.style.style import TextFieldStyle
 
 # Contains sus characters
 EXCLUDED_CHARS = ["", "\t", "\x00"]
@@ -58,7 +58,7 @@ class HighlightState(Enum):
     HIGHLIGHTED = 3
 
 
-class TextField(InteractiveMixin, StyleMixin, Element):
+class TextField(Interactive, Style, Element):
     """
     A TextField is an interactive Element.
 
@@ -137,7 +137,7 @@ class TextField(InteractiveMixin, StyleMixin, Element):
             w=w,
             h=h,
             style=style,
-            # InteractiveMixin
+            # Interactive
             disabled=disabled,
         )
 
@@ -207,7 +207,7 @@ class TextField(InteractiveMixin, StyleMixin, Element):
         log.size.info(self, "TextField created, starting chain up...")
 
         with log.size.indent:
-            self._update_rect_chain_up()
+            self.update_min_size()
 
     def __repr__(self) -> str:
         return f"<TextField({self._text_element})>"
@@ -325,7 +325,7 @@ class TextField(InteractiveMixin, StyleMixin, Element):
                                 end_cursor.x - end_line.start_x,
                             )
 
-        self._scroll._render_a(surface, offset, alpha=alpha)
+        self._scroll.render(surface, offset, alpha=alpha)
 
         # Draw cursor
         if self.is_active:
@@ -395,7 +395,7 @@ class TextField(InteractiveMixin, StyleMixin, Element):
                 self._repeated_key_timer = self._style.key_repeat_start_delay
 
         if self._highlight_state == HighlightState.HIGHLIGHTING:
-            if not self._scroll.scroll.playing:
+            if not self._scroll._scroll.playing:
                 if self._multiline:
                     self._scroll.scroll_to_show_position(
                         _c.mouse_pos[1], size=self._line_height
@@ -412,10 +412,10 @@ class TextField(InteractiveMixin, StyleMixin, Element):
         if self._prompt is not None:
             self._prompt._update()
 
-    def _update_rect_chain_down(
+    def _update_rect(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        super()._update_rect_chain_down(surface, x, y, w, h)
+        super()._update_rect(surface, x, y, w, h)
     
         element_w = self._scroll.get_abs_w(w)
         element_h = self._scroll.get_abs_h(h)
@@ -423,8 +423,8 @@ class TextField(InteractiveMixin, StyleMixin, Element):
         element_x = x + w / 2 - element_w / 2
         element_y = y + h / 2 - element_h / 2
         
-        if not self.is_visible:
-            self._scroll.is_visible = False
+        if not self.visible:
+            self._scroll.visible = False
         elif (
             element_x + element_w < surface.get_abs_offset()[0]
             or element_x > surface.get_abs_offset()[0] + surface.get_width()
@@ -432,12 +432,12 @@ class TextField(InteractiveMixin, StyleMixin, Element):
             or element_y > surface.get_abs_offset()[1] + surface.get_height()
         ):
             print(element_x, element_y, element_w, element_h)
-            self._scroll.is_visible = False
+            self._scroll.visible = False
         else:
-            self._scroll.is_visible = True
+            self._scroll.visible = True
 
         with log.size.indent:
-            self._scroll._update_rect_chain_down(
+            self._scroll._update_rect(
                 surface, element_x, element_y, element_w, element_h
             )
 
@@ -445,12 +445,12 @@ class TextField(InteractiveMixin, StyleMixin, Element):
         #     self._update_cursor_pos(reset_timer=False, mode=Cursor.MAIN)
         #     self._update_cursor_pos(reset_timer=False, mode=Cursor.HIGHLIGHT)
 
-    def _set_layer_chain(self, layer: "ViewLayer") -> None:
-        log.layer.info(self, f"Set layer to {layer}")
+    def update_ancestry(self, layer: "ViewLayer") -> None:
+        log.ancestry.info(self, f"Set layer to {layer}")
         self.layer = layer
-        self._scroll._set_layer_chain(layer)
+        self._scroll.update_ancestry(layer)
         if self._prompt:
-            self._prompt._set_layer_chain(layer)
+            self._prompt.update_ancestry(layer)
 
     def _focus_chain(
         self, direction: _c.FocusDirection, previous: Optional["Element"] = None
@@ -709,7 +709,7 @@ class TextField(InteractiveMixin, StyleMixin, Element):
         self._highlight_state = HighlightState.NONE
 
     def _scroll_to_cursor(self):
-        if not self._scroll.scroll.playing:
+        if not self._scroll._scroll.playing:
             self._scroll._scrollbar_calc()
             if self._multiline:
                 self._scroll.scroll_to_show_position(
@@ -905,10 +905,10 @@ class TextField(InteractiveMixin, StyleMixin, Element):
             )
 
         self._scroll._set_parent(self)
-        log.layer.line_break()
-        log.layer.info(self, "TextField multiline modified - starting chain...")
-        with log.layer.indent:
-            self._scroll._set_layer_chain(self.layer)
+        log.ancestry.line_break()
+        log.ancestry.info(self, "TextField multiline modified - starting chain...")
+        with log.ancestry.indent:
+            self._scroll.update_ancestry(self.layer)
 
         self._update_text(self._text, send_event=False)
         log.size.line_break()

@@ -1,35 +1,28 @@
 import math
 import pygame
 from .. import common as _c
-from ..common import INHERIT, InheritType, FocusType, FOCUS_CLOSEST
-from typing import Union, Optional, Sequence, TYPE_CHECKING, Generator
+from ..common import FOCUS_CLOSEST, SequenceElementType, FocusType
+from typing import Optional, Union, Sequence, TYPE_CHECKING
 
-from .base.stack import Stack
+from ember.base.directional_stack import DirectionalStack
 from .. import log
-from ..size import SizeType, OptionalSequenceSizeType, FitSize, FillSize
-from ..position import (
+from ..size import FitSize, FillSize
+from ..base.element import Element
+from ..base.content_size_direction import VerticalContentSize
+from ..base.content_pos_direction import PerpendicularContentX
+from ember.size import SizeType, OptionalSequenceSizeType
+from ember.position import (
     PositionType,
     SequencePositionType,
-    OptionalSequencePositionType,
 )
+from ..spacing import SpacingType
 
-from .base.element import Element
-
-if TYPE_CHECKING:
-    from ..style.container_style import ContainerStyle
-    from ..state.state import State
-    from .view import ViewLayer
-    from ..material.material import Material
-
-
-class VStack(Stack):
+class VStack(PerpendicularContentX, VerticalContentSize, DirectionalStack):
     def __init__(
         self,
-        *elements: Union[Element, Sequence[Element], Generator[Element, None, None]],
-        material: Union["State", "Material", None] = None,
-        spacing: Union[InheritType, int] = INHERIT,
-        min_spacing: Union[InheritType, int] = INHERIT,
-        focus_on_entry: Union[InheritType, FocusType] = INHERIT,
+        *elements: Optional[SequenceElementType],
+        spacing: Optional[SpacingType] = None,
+        focus_on_entry: Optional[FocusType] = None,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
@@ -37,24 +30,15 @@ class VStack(Stack):
         size: OptionalSequenceSizeType = None,
         w: Optional[SizeType] = None,
         h: Optional[SizeType] = None,
-        content_pos: OptionalSequencePositionType = None,
         content_x: Optional[PositionType] = None,
-        content_y: Optional[PositionType] = None,
         content_size: OptionalSequenceSizeType = None,
         content_w: Optional[SizeType] = None,
-        content_h: Optional[SizeType] = None,
-        style: Optional["ContainerStyle"] = None,
+        content_h: Optional[SizeType] = None
     ):
-        self.layer: Optional[ViewLayer] = None
-        self.parent: Optional[Element] = None
-
-        self._elements = []
-
         super().__init__(
-            elements=elements,
-            material=material,
+            # Stack
+            *elements,
             spacing=spacing,
-            min_spacing=min_spacing,
             focus_on_entry=focus_on_entry,
             rect=rect,
             pos=pos,
@@ -63,36 +47,42 @@ class VStack(Stack):
             size=size,
             w=w,
             h=h,
-            content_pos=content_pos,
-            content_x=content_x,
-            content_y=content_y,
             content_size=content_size,
             content_w=content_w,
             content_h=content_h,
-            style=style,
+            # ContentX
+            content_x=content_x,
         )
 
     def __repr__(self) -> str:
         return f"<VStack({len(self._elements)} elements)>"
 
-    def _update_rect_chain_down(
+    def _update_rect(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        # Update own rect
-        super()._update_rect_chain_down(surface, x, y, w, h)
-
         if not self._elements:
             return
 
+        self._fill_element_count = 0
+        self._total_size_of_fill_elements = 0
+        self._total_size_of_nonfill_elements = 0
+
+        for i in self.elements:
+            if isinstance(i.h, FillSize):
+                self._total_size_of_fill_elements += i.h.percent
+                self._fill_element_count += 1
+            else:
+                self._total_size_of_nonfill_elements += i.get_abs_h()
+
         # This is the additional padding caused by a height value such as ember.FIT + 20
         vertical_padding = (
-            self._active_h.value if isinstance(self._active_h, FitSize) else 0
+            self.h.value if isinstance(self.h, FitSize) else 0
         )
-
         spacing = self._get_element_spacing(
-            vertical_padding, isinstance(self._active_h, FitSize)
+            self.rect.h, vertical_padding, isinstance(self.h, FitSize)
         )
 
+        # The width that is available to divide among FILL elements
         remaining_height = (
             h
             - vertical_padding
@@ -101,16 +91,17 @@ class VStack(Stack):
         )
 
         # Find the y position of the first child element
-        if self._fill_element_count == 0 and (
-            self.spacing is not None or len(self._elements) == 1
-        ):
-            if isinstance(self._active_w, FitSize):
+        if self._fill_element_count == 0:
+            if isinstance(self.h, FitSize):
                 element_y = remaining_height / 2 + vertical_padding / 2
             else:
-                element_y = self.content_y.get(
-                    h,
-                    self._total_size_of_nonfill_elements
-                    + spacing * (len(self._elements) - 1),
+                element_y = (
+                    h / 2
+                    - (
+                        self._total_size_of_nonfill_elements
+                        + spacing * (len(self._elements) - 1)
+                    )
+                    / 2
                 )
         else:
             element_y = vertical_padding / 2
@@ -129,30 +120,25 @@ class VStack(Stack):
                 if bottom_rem > top_rem:
                     element_y += 0.5
 
-
         self._first_visible_element = None
 
         # Iterate over child elements
-        with log.size.indent:
+        with log.size.indent():
             for n, element in enumerate(self._elements):
-                element.set_active_w(self._content_w)
-                # We've already set the active height in update_rect_chain_up; we don't need to do it again
-
                 # Find the x position of the child element
-                element_x_obj = element._x if element._x is not None else self.content_x
-                element_x = x + element_x_obj.get(
+                element_x = x + element.x.get(
                     w,
-                    element.get_abs_w(w - abs(element_x_obj.value)),
+                    element.get_abs_w(w - abs(element.x.value)),
                 )
 
                 # Find the height of the child element
-                if isinstance(element._active_h, FillSize):
+                if isinstance(element.h, FillSize):
                     fill_n += 1
                     element_h = (
                         remaining_height
                         // self._total_size_of_fill_elements
-                        * element._active_h.percentage
-                        + element._active_h.value
+                        * element.h.percent
+                        + element.h.value
                     )
                     if (
                         fill_n < top_rem
@@ -163,48 +149,40 @@ class VStack(Stack):
                     element_h = element.get_abs_h()
 
                 # Determine whether the element is visible on screen or not
-                if not self.is_visible:
-                    element.is_visible = False
+                if not self.visible:
+                    element.visible = False
                 elif (
                     self._int_rect.y + element_y + element_h
                     <= surface.get_abs_offset()[1]
                     or self._int_rect.y + element_y
                     >= surface.get_abs_offset()[1] + surface.get_height()
                 ):
-                    element.is_visible = False
+                    element.visible = False
                 else:
-                    element.is_visible = True
+                    element.visible = True
                     if self._first_visible_element is None:
                         self._first_visible_element = n
 
                 # Start the chain for the child element
-                element._update_rect_chain_down(
+                element.update_rect(
                     surface,
                     element_x,
                     y + element_y,
-                    element.get_abs_w(w - abs(element_x_obj.value)),
-                    int(element_h),
+                    element.get_abs_w(w - abs(element.x.value)),
+                    element_h,
                 )
 
                 # Increment the y position for the next child element
                 element_y += spacing + element_h
 
-    @Element._chain_up_decorator
-    def _update_rect_chain_up(self) -> None:
+    def _update_min_size(self) -> None:
         if self._elements:
-            self._fill_element_count = 0
-            self._total_size_of_fill_elements = 0
-            self._total_size_of_nonfill_elements = 0
-
+            size = 0
             for i in self.elements:
-                i.set_active_h(self._content_h)
-                if isinstance(i._active_h, FillSize):
-                    self._total_size_of_fill_elements += i._active_h.percentage
-                    self._fill_element_count += 1
-                else:
-                    self._total_size_of_nonfill_elements += i.get_abs_h()
+                if not isinstance(i.h, FillSize):
+                    size += i.get_abs_h()
 
-            self._min_h = self._total_size_of_nonfill_elements + self.min_spacing * (
+            self._min_h = size + self.spacing.get_min() * (
                 len(self._elements) - 1
             )
             self._min_w = max(i.get_abs_w() for i in self._elements)
@@ -217,7 +195,7 @@ class VStack(Stack):
         looking_for = self.layer.element_focused if previous is None else previous
 
         if self.layer.element_focused is self:
-            log.nav.info(self, f"-> parent {self.parent}.")
+            log.nav.info(f"-> parent {self.parent}.")
             return self.parent._focus_chain(direction, previous=self)
 
         if direction in {
@@ -253,10 +231,10 @@ class VStack(Stack):
                 index += amount
                 element = self._elements[index]
                 if element._can_focus:
-                    log.nav.info(self, f"-> child {element}.")
+                    log.nav.info(f"-> child {element}.")
                     return element._focus_chain(_c.FocusDirection.IN)
 
-        log.nav.info(self, f"-> parent {self.parent}.")
+        log.nav.info(f"-> parent {self.parent}.")
         return self.parent._focus_chain(direction, previous=self)
 
     def _enter_in_first_element(
@@ -288,6 +266,6 @@ class VStack(Stack):
                     break
             else:
                 return None
-        log.nav.info(self, f"-> child {closest_element}.")
 
+        log.nav.info(f"-> child {closest_element}.")
         return closest_element._focus_chain(_c.FocusDirection.IN)

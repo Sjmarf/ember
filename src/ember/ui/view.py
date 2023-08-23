@@ -1,20 +1,16 @@
 import pygame
+import time
 from .. import event as ember_event
 from .. import common as _c
 from .. import log
-from ..common import InheritType, INHERIT, RectType, ESCAPING
-from typing import Optional, TYPE_CHECKING, Any, Sequence, Union, overload
+from ..common import DefaultType, DEFAULT, RectType
+from typing import Optional, TYPE_CHECKING, Sequence, Union, overload
 
 if TYPE_CHECKING:
-    from ..style.view_style import ViewStyle
-    from ..transition.transition import Transition
-    from ember.ui.base.element import Element
+    from ember.base.element import Element
 
 from .view_layer import ViewLayer
-from ..state.state import StateType
-from .base.context_manager import ContextManagerMixin
-
-from ..position import CENTER
+from ember.base.context_manager import ContextManager
 
 KEY_NAMES = {
     pygame.K_RIGHT: _c.FocusDirection.RIGHT,
@@ -39,7 +35,7 @@ DPAD_NAMES = {
 }
 
 
-class View(ContextManagerMixin):
+class View(ContextManager):
     @overload
     def __init__(
         self,
@@ -53,12 +49,7 @@ class View(ContextManagerMixin):
         element: "Element",
         focused: Optional["Element"] = None,
         keyboard_nav: bool = True,
-        material: StateType = None,
-        listen_for_exit: Union[InheritType, bool] = INHERIT,
-        transition: Union[InheritType, "Transition", None] = INHERIT,
-        transition_in: Union[InheritType, "Transition", None] = INHERIT,
-        transition_out: Union[InheritType, "Transition", None] = INHERIT,
-        style: Optional["ViewStyle"] = None,
+        listen_for_exit: Union[DefaultType, bool] = DEFAULT,
     ) -> None:
         ...
 
@@ -67,12 +58,7 @@ class View(ContextManagerMixin):
         *layers: Union["ViewLayer", Sequence["ViewLayer"], "Element"],
         focused: Optional["Element"] = None,
         keyboard_nav: bool = True,
-        material: StateType = None,
-        listen_for_exit: Union[InheritType, bool] = INHERIT,
-        transition: Union[InheritType, "Transition", None] = INHERIT,
-        transition_in: Union[InheritType, "Transition", None] = INHERIT,
-        transition_out: Union[InheritType, "Transition", None] = INHERIT,
-        style: Optional["ViewStyle"] = None,
+        listen_for_exit: Union[DefaultType, bool] = DEFAULT,
         element: Optional["Element"] = None,
     ) -> None:
         if not _c.clock:
@@ -99,19 +85,14 @@ class View(ContextManagerMixin):
                     ViewLayer(
                         element,
                         focused=focused,
-                        material=material,
                         listen_for_exit=listen_for_exit,
-                        transition=transition,
-                        transition_in=transition_in,
-                        transition_out=transition_out,
                         view=self,
-                        style=style,
                         exit_on_click_off=False,
                     )
                 )
 
         for layer in self._layers:
-            layer._build_chain()
+            layer.build()
 
         self._joystick_cooldown = 0
         self._prev_rect: tuple[float, float, float, float] = (0, 0, 0, 0)
@@ -138,13 +119,13 @@ class View(ContextManagerMixin):
         update_elements: bool = True,
         render: bool = True,
         alpha: int = 255,
-        display_zoom: Union[InheritType, int] = INHERIT,
+        display_zoom: Union[DefaultType, int] = DEFAULT,
     ) -> None:
         """
         Update the View. This should be called every tick.
         """
         mouse = pygame.mouse.get_pos()
-        if display_zoom is INHERIT:
+        if display_zoom is DEFAULT:
             display_zoom = _c.display_zoom
         _c.mouse_pos = mouse[0] // display_zoom, mouse[1] // display_zoom
 
@@ -154,16 +135,11 @@ class View(ContextManagerMixin):
 
         for layer in self._layers:
             if update_positions:
-                layer.set_active_w()
-                layer.set_active_h()
-
                 layer_w = layer.get_abs_w(rect[2])
                 layer_h = layer.get_abs_h(rect[3])
 
-                layer_x_obj = layer._x if layer._x is not None else CENTER
-                layer_x = rect[0] + layer_x_obj.get(rect[2], layer_w)
-                layer_y_obj = layer._y if layer._y is not None else CENTER
-                layer_y = rect[1] + layer_y_obj.get(rect[3], layer_h)
+                layer_x = rect[0] + layer._x.value.get(rect[2], layer_w)
+                layer_y = rect[1] + layer._y.value.get(rect[3], layer_h)
 
                 if layer.clamp:
                     layer_x = pygame.math.clamp(
@@ -174,22 +150,57 @@ class View(ContextManagerMixin):
                     )
 
                 if self._prev_rect != rect:
-                    if layer._chain_down_from is None:
-                        log.size.info(
-                            self, "View rect changed size, starting chain down..."
-                        )
-                        layer._chain_down_from = layer._element
-                layer._update_rect_chain_down(
-                    surface, layer_x, layer_y, layer_w, layer_h
-                )
+                    log.size.line_break()
+                    log.size.info(
+                        self, "ViewLayer rect changed size, queueing for update."
+                    )
+                    layer.rect.update(*rect[:])
+                    layer._int_rect.update(*rect[:])
+                    layer.update_rect_next_tick()
+
+                if layer.rect_update_queue or layer.min_size_update_queue:
+                    log.size.line_break()
+                    log.size.info(
+                        "--------------------- TICK START ---------------------"
+                    )
+                    i = 0
+                    start_time = time.time()
+                    if layer.can_focus_update_queue:
+                        layer.can_focus_update_queue.sort(key=lambda x: len(x.ancestry), reverse=True)
+                        while layer.can_focus_update_queue:
+                            element = layer.can_focus_update_queue.pop(0)
+                            log.nav.line_break()
+                            with log.nav.indent(f"Starting can_focus update for {element}..."):
+                                element.update_can_focus()
+
+                    while layer.rect_update_queue or layer.min_size_update_queue:
+                        if i > 0:
+                            log.size.line_break()
+                            log.size.info(
+                                "Queues aren't empty, going around again..."
+                            )
+                            if i > 300:
+                                raise _c.Error(
+                                    "The maximimum number of ViewLayer updates on a single tick (300) was exceeded."
+                                )
+                        layer._process_queues(surface)
+                        i += 1
+                    log.size.line_break()
+                    log.size.info(
+                        f"Tick finishing. Update took 1/{round(1/(time.time()-start_time))} of a second.",
+                    )
+                    log.size.info(
+                        "---------------------- TICK END ----------------------"
+                    )
+
             if render:
-                layer._render_a(surface, (0, 0), alpha)
+                layer.render(surface, (0, 0), alpha)
 
         self._prev_rect = tuple(rect)
 
         if update_elements:
             for layer in reversed(self._layers):
-                layer._update_a()
+                layer.update()
 
                 if layer.rect.collidepoint(_c.mouse_pos):
                     _c.mouse_pos = (-10, -10)
@@ -224,7 +235,7 @@ class View(ContextManagerMixin):
         if event.type == ember_event.VIEWEXITFINISHED:
             if event.layer in self._layers and len(self._layers) > 1:
                 self._layers.remove(event.layer)
-                log.nav.info(self, f"Removed layer {event.layer}.")
+                log.nav.info(f"Removed layer {event.layer}.", self)
 
         for n, layer in enumerate(reversed(self._layers)):
             if layer._event(event):
@@ -240,32 +251,32 @@ class View(ContextManagerMixin):
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     if layer.element_focused is None:
-                        log.nav.info(self, "Escape key pressed, exiting menu.")
+                        log.nav.info("Escape key pressed, exiting menu.", self)
                         return layer._exit_pressed()
                     else:
                         if layer.element_focused is None:
                             return False
-                        log.nav.info(self, "Escape key pressed, moving up one layer.")
-                        with log.nav.indent:
+                        with log.nav.indent("Escape key pressed, moving up one layer.", self):
                             layer._focus_element(
                                 layer.element_focused._focus_chain(
                                     _c.FocusDirection.OUT
                                 )
                             )
                         log.nav.info(
-                            self, f"Focus chain ended. Focused {layer.element_focused}."
+                            f"Focus chain ended. Focused {layer.element_focused}."
                         )
                         return True
 
                 if event.key in KEY_NAMES.keys():
-                    log.nav.info(self, "Nav key pressed.")
-                    if (
-                        event.key == pygame.K_TAB
-                        and pygame.key.get_mods() & pygame.KMOD_SHIFT
-                    ):
-                        layer.shift_focus(_c.FocusDirection.BACKWARD)
-                    else:
-                        layer.shift_focus(KEY_NAMES[event.key])
+                    log.nav.line_break()
+                    with log.nav.indent("Nav key pressed.", self):
+                        if (
+                            event.key == pygame.K_TAB
+                            and pygame.key.get_mods() & pygame.KMOD_SHIFT
+                        ):
+                            layer.shift_focus(_c.FocusDirection.BACKWARD)
+                        else:
+                            layer.shift_focus(KEY_NAMES[event.key])
 
             elif event.type == pygame.JOYAXISMOTION:
                 if event.axis == 0:
@@ -292,12 +303,7 @@ class View(ContextManagerMixin):
         self,
         element: "Element",
         focused: Optional["Element"] = None,
-        material: StateType = None,
-        listen_for_exit: Union[InheritType, bool] = INHERIT,
-        transition: Union[InheritType, "Transition", None] = INHERIT,
-        transition_in: Union[InheritType, "Transition", None] = INHERIT,
-        transition_out: Union[InheritType, "Transition", None] = INHERIT,
-        style: Optional["ViewStyle"] = None,
+        listen_for_exit: Union[DefaultType, bool] = DEFAULT,
     ) -> None:
         ...
 
@@ -312,15 +318,9 @@ class View(ContextManagerMixin):
         self,
         layer: Union[ViewLayer, "Element", None] = None,
         focused: Optional["Element"] = None,
-        material: StateType = None,
-        listen_for_exit: Union[InheritType, bool] = INHERIT,
-        transition: Union[InheritType, "Transition", None] = INHERIT,
-        transition_in: Union[InheritType, "Transition", None] = INHERIT,
-        transition_out: Union[InheritType, "Transition", None] = INHERIT,
+        listen_for_exit: Union[DefaultType, bool] = DEFAULT,
         element: Optional["Element"] = None,
-        style: Optional["ViewStyle"] = None,
     ) -> None:
-
         if not isinstance(layer, ViewLayer) or element is not None:
             if element is None:
                 if layer is None:
@@ -329,39 +329,30 @@ class View(ContextManagerMixin):
                     )
                 element = layer
 
-            if style is None:
-                if self._layers:
-                    style = self._layers[0]._style
-
             layer = ViewLayer(
                 element,
                 focused=focused,
-                material=material,
                 listen_for_exit=listen_for_exit,
-                transition=transition,
-                transition_in=transition_in,
-                transition_out=transition_out,
                 view=self,
-                style=style,
             )
         else:
             layer.view = self
-        
-        layer._build_chain()
+
         self._layers.append(layer)
-        log.nav.info(self, f"Added layer {layer}.")
+        layer.build()
+        log.nav.info(f"Added layer {layer}.", self)
 
     def pop(
-        self, index: int = -1, transition: Optional["Transition"] = None
+        self,
+        index: int = -1,
     ) -> ViewLayer:
         """
         Remove and return a layer at an index (default last).
         """
-        self._layers[index].start_transition_out(transition=transition)
         return self._layers[index]
 
     def update_elements(self) -> None:
-        log.size.info(self, "Starting chain down next tick for all layers...")
+        log.size.info("Starting chain down next tick for all layers...")
         for layer in self._layers:
             layer._chain_down_from = layer._element
 
@@ -370,27 +361,6 @@ class View(ContextManagerMixin):
     ) -> None:
         if self._layers:
             self._layers[-1].shift_focus(direction, element=element)
-
-    def start_transition_in(self, transition: Optional["Transition"] = None) -> None:
-        """
-        Start transitioning all ViewLayers in.
-        """
-        for layer in self._layers:
-            layer.start_transition_in(transition)
-
-    def start_transition_out(
-        self, transition: Optional["Transition"] = None, cause: Any = None, **kwargs
-    ) -> None:
-        """
-        Start transitioning the ViewLayer out. When the transition is finished, an ember.MENUEXIT event will be posted.
-        This event will have the 'cause' attribute, the value of which can be specified in the 'cause'
-        parameter of this method. You can also specify any other keyword argument(s) - they'll be added to the
-        event too.
-        """
-        self._layers[-1].start_transition_out(transition, cause, **kwargs)
-
-    def _update_rect_chain_up(self) -> None:
-        pass
 
     def start_manual_update(self) -> None:
         """
@@ -406,18 +376,3 @@ class View(ContextManagerMixin):
         A list of the View's ViewLayers.
         """
         return self._layers
-
-    def _set_style(self, style: Optional["ViewStyle"]) -> None:
-        self._layers[0].set_style(style)
-
-    def set_style(self, style: Optional["ViewStyle"]) -> None:
-        """
-        Sets the ViewStyle of the bottommost ViewLayer.
-        """
-        self._layers[0].set_style(style)
-
-    style: "ViewStyle" = property(
-        fget=lambda self: self._style,
-        fset=_set_style,
-        doc="The ViewStyle of the bottommost ViewLayer. Synonymous with the set_style() method.",
-    )

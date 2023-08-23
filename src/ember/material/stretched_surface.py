@@ -1,5 +1,6 @@
 import pygame
 from typing import Union, Sequence, Optional, Any, TYPE_CHECKING
+from os import PathLike, fspath
 
 from ..utility.stretch_surface import stretch_surface
 from .material import MaterialWithSizeCache
@@ -15,16 +16,20 @@ class StretchedSurface(MaterialWithSizeCache):
 
     def __init__(
         self,
-        surface: Union[str, pygame.Surface],
+        surface: Union[str, pygame.Surface, PathLike],
         edge: Sequence[int] = (5, 5, 5, 5),
         alpha: int = 255,
     ):
         super().__init__(alpha)
-        self.surface: pygame.Surface = (
-            pygame.image.load(surface).convert_alpha()
-            if isinstance(surface, str)
-            else surface
-        )
+        self.surface: pygame.Surface
+
+        if isinstance(surface, pygame.Surface):
+            self.surface = surface
+        else:
+            if isinstance(surface, PathLike):
+                surface = fspath(surface)
+            self.surface = pygame.image.load(surface).convert_alpha()
+
         """
         The surface to stretch.
         """

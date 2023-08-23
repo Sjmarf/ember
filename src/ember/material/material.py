@@ -102,7 +102,7 @@ class MaterialWithElementCache(Material):
         Returns True if the Surface needed to be re-rendered.
         """
         if self._needs_to_render(element, surface, pos, size):
-            log.material.info(self, element, f"Rendering...")
+            log.material.info("Rendering...", element, self)
             self._cache[element] = self._render_surface(element, surface, pos, size)
 
         new_surface = self.get(element)
@@ -142,9 +142,9 @@ class MaterialWithSizeCache(MaterialWithElementCache, abc.ABC):
     ) -> Optional[pygame.Surface]:
         if self._needs_to_render(element, surface, pos, size):
             if size in self._size_cache_v:
-                log.material.info(self, element, f"Reusing size {size}...")
+                log.material.info(f"Reusing size {size}...", element, self)
                 if self.get(self._size_cache_v[size]).get_size() != size:
-                    log.material.info(self, element, f"Rendering...")
+                    log.material.info("Rendering...", element, self)
                     self._cache[element] = self._render_surface(
                         element, surface, pos, size
                     )
@@ -160,7 +160,7 @@ class MaterialWithSizeCache(MaterialWithElementCache, abc.ABC):
                     self._cache[element] = self._cache[self._size_cache_v[size]]
 
             else:
-                log.material.info(self, element, f"Rendering...")
+                log.material.info("Rendering...", element, self)
                 self._cache[element] = self._render_surface(element, surface, pos, size)
                 if element in self._size_cache_k:
                     del self._size_cache_v[self._size_cache_k[element]]

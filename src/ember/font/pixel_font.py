@@ -1,12 +1,7 @@
-import time
-
 import pygame
-import os
-import itertools
-import math
 from os import PathLike
 import json
-from pathlib import Path, Path
+from pathlib import Path
 
 from typing import Sequence, Optional, Union
 
@@ -15,7 +10,7 @@ from .base_font import BaseFont
 from .variant import TextVariant, BOLD, ITALIC, STRIKETHROUGH, UNDERLINE, OUTLINE
 from .. import log
 
-from ..position import Position
+from ember.position.position import Position
 from .line import Line
 from .variant_data import VariantData
 
@@ -156,8 +151,7 @@ class PixelFont(BaseFont):
             variant_data = list(self.variants.values())[0]
 
         if not variant_data.has_loaded:
-            log.font.info(self, "Line width requested, loading variant...")
-            with log.font.indent:
+            with log.font.indent("Line width requested, loading variant...", self):
                 variant_data.load()
 
         for i in text:
@@ -206,6 +200,8 @@ class PixelFont(BaseFont):
             # resizing the Text element and keeping the content the same
             if int(text_width % 2) == 1:
                 x -= 0.5
+            # if int(text_width % 2) == 0:
+            #     x -= 0.5
 
             new_surf.blit(text_surf, (x, y))
             surfaces[n] = new_surf
@@ -218,8 +214,7 @@ class PixelFont(BaseFont):
         else:
             variant_data = list(self.variants.values())[0]
         if not variant_data.has_loaded:
-            log.font.info(self, "Layers requested, loading variant...")
-            with log.font.indent:
+            with log.font.indent("Layers requested, loading variant...", self):
                 variant_data.load()
         return variant_data.layers
 
@@ -238,8 +233,7 @@ class PixelFont(BaseFont):
             variant_data = list(self.variants.values())[0]
 
         if not variant_data.has_loaded:
-            log.font.info(self, "Text render requested, loading variant...")
-            with log.font.indent:
+            with log.font.indent("Text render requested, loading variant...", self):
                 variant_data.load()
 
         if max_width is None:

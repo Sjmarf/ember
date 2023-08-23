@@ -1,9 +1,10 @@
 import pygame
-from typing import Literal, Union, Sequence, Optional, TYPE_CHECKING, Type
-from collections import UserDict
+import importlib.resources
+from typing import Literal, Union, Sequence, Optional, TYPE_CHECKING, Generator
 from . import event as _event
 from enum import Enum
 from weakref import WeakSet
+from os import PathLike
 
 VERSION: str = "0.0.1"
 is_ce: bool = getattr(pygame, "IS_CE", False)
@@ -11,16 +12,15 @@ is_ce: bool = getattr(pygame, "IS_CE", False)
 event_ids = _event.__dict__.values()
 
 if TYPE_CHECKING:
-    from .ui.base.element import Element
     from .ui.default_style_dict import DefaultStyleDict
-    from .ui.base.context_manager import ContextManagerMixin
 
+package = importlib.resources.files("ember")
 
-class InheritType:
+class DefaultType:
     pass
 
 
-INHERIT = InheritType()
+DEFAULT = DefaultType()
 
 
 class FocusType:
@@ -29,6 +29,7 @@ class FocusType:
 
 FOCUS_CLOSEST = FocusType()
 FOCUS_FIRST = FocusType()
+FOCUS_LAST = FocusType()
 
 
 class BlurMode:
@@ -61,7 +62,14 @@ ColorType = Union[
     Sequence[int],
 ]
 
-MaterialType = Union["Material", pygame.Surface, str]
+ElementType = Union["Element", str]
+SequenceElementType = Union[
+    Optional[ElementType],
+    Sequence[Optional[ElementType]],
+    Generator[Optional[ElementType], None, None],
+]
+
+MaterialType = Union["Material", pygame.Surface, str, PathLike]
 
 RectType = Union[Sequence[float], Sequence[int], pygame.Rect, pygame.FRect]
 
@@ -76,9 +84,6 @@ mouse_pos: tuple[int, int] = (0, 0)
 clock: Optional[pygame.time.Clock] = None
 delta_time: float = 1
 
-# Path to the library. It is an importlib Traversable object, but I can't work out how to typehint it
-package = None
-
 views: WeakSet = WeakSet()
 
 default_styles: "DefaultStyleDict"
@@ -89,15 +94,3 @@ audio_enabled: bool = False
 audio_muted: bool = False
 
 DEFAULT_STYLE: Literal["stone", "plastic", "white", "dark"] = "dark"
-
-
-class Escaping:
-    def __enter__(self):
-        element_context_stack.append(None)
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        element_context_stack.pop()
-
-
-ESCAPING = Escaping()

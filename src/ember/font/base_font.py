@@ -2,16 +2,14 @@ import abc
 import math
 
 import pygame
-import array
-from typing import Literal, Optional, Sequence
+from typing import Optional, Sequence
 
 from .. import common as _c
-from ..common import ColorType
 
-from ..position import Position
+from ember.position.position import Position
 
 from .line import Line
-from .variant import TextVariant, BOLD, ITALIC, UNDERLINE, OUTLINE
+from .variant import TextVariant
 
 
 class BaseFont(abc.ABC):

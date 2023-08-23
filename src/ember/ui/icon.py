@@ -1,34 +1,34 @@
 import pygame
-import inspect
 from typing import Union, Optional, TYPE_CHECKING, Sequence
 
-from .. import common as _c
-from ..common import ColorType
+from ..common import ColorType, DEFAULT
 from .. import log
-from .base.element import Element
-from .base.styled import StyleMixin
+from ember.ui.base.mixin.style import Style, StyleType
 from .base.multi_layer_surfacable import MultiLayerSurfacable
 
 from ..size import SizeType, OptionalSequenceSizeType
-from ..position import PositionType, SequencePositionType
-from .text import Text
+from ember.position import PositionType, SequencePositionType
+from ..font.icon_font import IconFont
+from ember.trait.trait import Trait
 
 if TYPE_CHECKING:
-    from ..style.icon_style import IconStyle
-
-from ..transition.transition import Transition
+    from ..material.material import Material
 
 
-class Icon(StyleMixin, MultiLayerSurfacable):
+class Icon(Style, MultiLayerSurfacable):
     """
-    An element that displays an icon (arrow, pause, save, etc). 
+    An element that displays an icon (arrow, pause, save, etc).
     """
-    
+
     def __init__(
         self,
         name: Union[str, pygame.Surface],
         color: Optional[ColorType] = None,
         material: Optional["Material"] = None,
+        primary_material: Optional["Material"] = None,
+        secondary_material: Optional["Material"] = None,
+        tertiary_material: Optional["Material"] = None,
+        font: Optional[IconFont] = None,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
@@ -36,45 +36,48 @@ class Icon(StyleMixin, MultiLayerSurfacable):
         size: OptionalSequenceSizeType = None,
         w: Optional[SizeType] = None,
         h: Optional[SizeType] = None,
-        style: Optional["IconStyle"] = None,
+        style: Optional[StyleType] = DEFAULT,
     ):
-        self.set_style(style)
-        
-        self._name: Optional[str] = None
+        self._name: Optional[str] = name
+
+        self._font: Trait[IconFont] = Trait(self, element_value=font)
 
         super().__init__(
-           color,
-           material,
-           rect,
-           pos,
-           x,
-           y,
-           size,
-           w,
-           h,
-           style,
-           can_focus=False,
-       )
-             
-        self.set_icon(name, _update=False)
+            # MultiLayerSurfacable
+            color=color,
+            material=material,
+            primary_material=primary_material,
+            secondary_material=secondary_material,
+            tertiary_material=tertiary_material,
+            rect=rect,
+            pos=pos,
+            x=x,
+            y=y,
+            size=size,
+            w=w,
+            h=h,
+            can_focus=False,
+            # Style
+            style=style,
+        )
 
     def __repr__(self) -> str:
         return f"<Icon({self._name})>"
-    
+
+    def _build(self) -> None:
+        super()._build()
+        self.set_icon(self._name, _update=False)
+
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
         rect = self._int_rect.move(*offset)
         pos = (
-                rect.centerx
-                - self._surface_width // 2
-                - surface.get_abs_offset()[0],
-                rect.centery
-                - self._surface_height // 2
-                - surface.get_abs_offset()[1],
-            )
+            rect.centerx - self._surface_width // 2 - surface.get_abs_offset()[0],
+            rect.centery - self._surface_height // 2 - surface.get_abs_offset()[1],
+        )
 
-        self._render_surfaces(surface, pos, alpha)    
+        self._render_surfaces(surface, pos, alpha)
 
     def _draw_surface(
         self,
@@ -85,11 +88,9 @@ class Icon(StyleMixin, MultiLayerSurfacable):
         rect = self._int_rect.move(*offset)
 
         pos = (
-                rect.centerx
-                - my_surface.get_width() // 2,
-                rect.centery
-                - my_surface.get_height() // 2,
-            )
+            rect.centerx - my_surface.get_width() // 2,
+            rect.centery - my_surface.get_height() // 2,
+        )
 
         if self._text:
             surface.blit(
@@ -100,71 +101,52 @@ class Icon(StyleMixin, MultiLayerSurfacable):
                 ),
             )
 
-    @Element._chain_up_decorator
-    def _update_rect_chain_up(self) -> None:
+    def _update_min_size(self) -> None:
         self._min_w = self._surface_width
         self._min_h = self._surface_height
 
     @property
     def name(self) -> Optional[str]:
         """
-        Get or set the name of the icon. The 'name' parameter should be a name of an icon included in the 
+        Get or set the name of the icon. The 'name' parameter should be a name of an icon included in the
         :py:class`IconFont<ember.font.IconFont` object. The property setter is synonymous
         """
         return self._name
-    
+
     @name.setter
     def name(self, name: Union[str, pygame.Surface]) -> None:
         self.set_icon(name)
 
-    def set_icon(
-        self,
-        name: Union[str, pygame.Surface],
-        color: Optional[ColorType] = None,
-        transition: Optional[Transition] = None,
-        _update: bool = True
-    ) -> None:
+    def set_font(self, font: Optional[IconFont]) -> None:
+        self._font.set_value(font)
+
+    def set_icon(self, name: Union[str, pygame.Surface], _update: bool = True) -> None:
         """
         Set the icon image. The 'name' parameter can be a name of an icon included in the :py:class`IconFont<ember.font.IconFont`
-        object, or it can be a pygame Surface. 
-        
+        object, or it can be a pygame Surface.
+
         If it is a Surface, the Surface should contain only black and transparent pixels. Be aware that the Icon will reference
-        the original surface, and may modify it's pixels. If you don't want this to happen, pass a copy of the Surface instead.
-        
+        the original surface, and may modify its pixels. If you don't want this to happen, pass a copy of the Surface instead.
+
         A color can optionally be specified here too. If no color is specified, the color of the Icon will not change. This method
         is synonymous with the :code:`name` property setter.
         """
-        
-        if transition:
-            old_element = self.copy()
-            transition = transition._new_element_controller(
-                old_element=old_element, new_element=self
-            )
-            self._transition = transition
 
         if isinstance(name, str):
             self._name = name
-            surfaces = self._style.font.get(name)
-            
+            surfaces = self._font.value.get(name)
+
         elif isinstance(name, pygame.Surface):
             self._name = None
-            surfaces = (name, )
-        
-        layers = list(range(1,len(surfaces)+1))
+            surfaces = (name,)
+
+        layers = list(range(1, len(surfaces) + 1))
         self._layers = layers
-        
+
         self._surface_width, self._surface_height = surfaces[0].get_size()
 
-        log.mls.line_break()
-        log.mls.info(self, "Icon changed, generating surfaces...")
-        with log.mls.indent:
+        with log.mls.indent("Icon changed, generating surfaces...", self):
             self._generate_surface(layers, surfaces)
-        
-        self._color = color if color is not None else self._color
-        
+
         if _update:
-            log.size.line_break()
-            log.size.info(self, "Icon changed, starting chain up...")
-            
-            with log.size.indent:        
-                self._update_rect_chain_up()
+            self.update_min_size_next_tick()

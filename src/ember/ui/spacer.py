@@ -2,9 +2,11 @@ import pygame
 from typing import Union, Optional, Sequence
 
 from .base.element import Element
-from ..size import Size, AbsoluteSize, SizeType, OptionalSequenceSizeType
-from ..position import PositionType, SequencePositionType
+from ..size import AbsoluteSize, SizeType, OptionalSequenceSizeType
+from ember.position import PositionType, SequencePositionType
 
+
+ZERO = AbsoluteSize(0)
 
 class Spacer(Element):
     def __init__(
@@ -18,7 +20,9 @@ class Spacer(Element):
         h: Optional[SizeType] = None,
     ):
 
-        super().__init__(rect, pos, x, y, size, w, h, default_size=(AbsoluteSize(0), AbsoluteSize(0)), can_focus=False)
+        super().__init__(rect, pos, x, y, size, w, h, can_focus=False)
+        self._w.set_value(ZERO, 2, False)
+        self._h.set_value(ZERO, 2, False)
 
     def __repr__(self) -> str:
         return "<Spacer>"

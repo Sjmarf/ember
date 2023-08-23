@@ -1,12 +1,10 @@
 import pygame
-from typing import Union, Optional, Literal, TYPE_CHECKING, Sequence
+from typing import Union, Optional, TYPE_CHECKING, Sequence
 
 from .base.element import Element
-from ..material.material import Material
-from ..state.state import State, load_background
 
-from ..size import SizeType, OptionalSequenceSizeType, Size
-from ..position import (
+from ..size import SizeType, OptionalSequenceSizeType, ResizableSize
+from ember.position import (
     PositionType,
     SequencePositionType,
     Position,
@@ -15,10 +13,11 @@ from ..position import (
     TOP,
     BOTTOM,
     BasicPosition,
+    OptionalSequencePositionType,
 )
 
 if TYPE_CHECKING:
-    from ..style.container_style import ContainerStyle
+    from ..style.style import Style
 
 from .. import common as _c
 from .. import log
@@ -27,13 +26,12 @@ from .box import Box
 
 class Resizable(Box):
     """
-    A single element container that can be resized with the mouse. Experimental.
+    A subclass of Box that can be resized using the mouse.
     """
 
     def __init__(
         self,
         element: Optional[Element] = None,
-        material: Union["State", Material, None] = None,
         handles: Union[Sequence[BasicPosition], BasicPosition, None] = None,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
         pos: Optional[SequencePositionType] = None,
@@ -42,11 +40,13 @@ class Resizable(Box):
         size: OptionalSequenceSizeType = None,
         w: Optional[SizeType] = None,
         h: Optional[SizeType] = None,
-        min_w: Optional[SizeType] = None,
-        min_h: Optional[SizeType] = None,
-        max_w: Optional[SizeType] = None,
-        max_h: Optional[SizeType] = None,
-        style: Optional["ContainerStyle"] = None,
+        content_pos: OptionalSequencePositionType = None,
+        content_x: Optional[PositionType] = None,
+        content_y: Optional[PositionType] = None,
+        content_size: OptionalSequenceSizeType = None,
+        content_w: Optional[SizeType] = None,
+        content_h: Optional[SizeType] = None,
+        style: Optional["Style"] = None,
     ):
         self.handles: Sequence[BasicPosition] = (
             [handles] if isinstance(handles, Position) else handles
@@ -59,23 +59,22 @@ class Resizable(Box):
         self._resizing: bool = False
 
         super().__init__(
-            element,
-            material,
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            w,
-            h,
-            style,
+            element=element,
+            rect=rect,
+            pos=pos,
+            x=x,
+            y=y,
+            size=size,
+            w=w,
+            h=h,
+            content_pos=content_pos,
+            content_x=content_x,
+            content_y=content_y,
+            content_size=content_size,
+            content_w=content_w,
+            content_h=content_h,
+            style=style,
         )
-
-        self.resize_limits = (30, 100)
-        self.set_min_w(min_w)
-        self.set_min_h(min_h)
-        self.set_max_w(max_w)
-        self.set_max_h(max_h)
 
     def _update(self) -> None:
         super()._update()
@@ -134,7 +133,7 @@ class Resizable(Box):
             return
 
         if self._handle_hovering is None:
-            if value in {LEFT, RIGHT}:
+            if value in [LEFT, RIGHT]:
                 pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_SIZEWE)
             else:
                 pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_SIZENS)
@@ -146,57 +145,30 @@ class Resizable(Box):
 
     def _resize(self) -> None:
         if self._handle_hovering is RIGHT:
-            value = max(
-                min(_c.mouse_pos[0] - self.rect.x, self.resize_limits[1]),
-                self.resize_limits[0],
-            )
-            self.set_w(int(value))
+
+            if isinstance(self.w, ResizableSize):
+                self.w._set_value(int(_c.mouse_pos[0] - self.rect.x))
+            else:
+                raise _c.Error("Non-resizable side on resizable edge.")
+
         if self._handle_hovering is LEFT:
-            value = max(
-                min(self.rect.w + self.rect.x - _c.mouse_pos[0], self.resize_limits[1]),
-                self.resize_limits[0],
-            )
-            self.set_w(int(value))
+
+            if isinstance(self.w, ResizableSize):
+                self.w._set_value(int(self.rect.w + self.rect.x - _c.mouse_pos[0]))
+            else:
+                raise _c.Error("Non-resizable side on resizable edge.")
 
         if self._handle_hovering is BOTTOM:
-            value = max(
-                min(_c.mouse_pos[1] - self.rect.y, self.resize_limits[1]),
-                self.resize_limits[0],
-            )
-            self.set_h(int(value))
+            if isinstance(self.h, ResizableSize):
+                self.h._set_value(int(_c.mouse_pos[1] - self.rect.y))
+            else:
+                raise _c.Error("Non-resizable side on resizable edge.")
 
         if self._handle_hovering is TOP:
-            value = max(
-                min(self.rect.h + self.rect.y - _c.mouse_pos[1], self.resize_limits[1]),
-                self.resize_limits[0],
-            )
-            self.set_h(int(value))
+            if isinstance(self.h, ResizableSize):
+                self.h._set_value(int(self.rect.h + self.rect.y - _c.mouse_pos[1]))
+            else:
+                raise _c.Error("Non-resizable side on resizable edge.")
 
-        if not self.layer._chain_down_from:
-            log.size.info(self, "Resized, starting chain down next tick...")
-            self.layer._chain_down_from = self.parent
-
-    def set_min_w(self, value: Optional[int]) -> None:
-        """
-        Set the minimum width of the Resizable.
-        """
-        self._min_w: int = value
-
-    def set_min_h(self, value: Optional[int]) -> None:
-        """
-        Set the minimum height of the Resizable.
-        """
-        self._min_h: int = value
-
-    def set_max_w(self, value: Optional[int]) -> None:
-        """
-        Set the maximum width of the Resizable.
-        """
-        self._min_w: int = value
-
-    def set_max_h(self, value: Optional[int]) -> None:
-        """
-        Set the maximum height of the Resizable.
-        """
-        self._min_h: int = value
-
+        self.update_min_size_next_tick()
+        self.update_rect_next_tick()

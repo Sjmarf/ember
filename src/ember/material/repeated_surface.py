@@ -1,9 +1,9 @@
 import pygame
 import math
-from typing import Union, Sequence, Optional, Any, TYPE_CHECKING
+from typing import Union, Optional, Any, TYPE_CHECKING
 
 from .material import MaterialWithSizeCache
-from ..position import PositionType, SequencePositionType, CENTER, Position
+from ember.position import PositionType, CENTER, Position, load_position
 
 if TYPE_CHECKING:
     from ember.ui.base.element import Element
@@ -28,8 +28,8 @@ class RepeatedSurface(MaterialWithSizeCache):
             else surface
         )
 
-        self._content_x: Position = Position._load(content_x)
-        self._content_y: Position = Position._load(content_y)
+        self._content_x: Position = load_position(content_x)
+        self._content_y: Position = load_position(content_y)
 
     def __repr__(self) -> str:
         return "<StretchedSurface>"
@@ -83,7 +83,7 @@ class RepeatedSurface(MaterialWithSizeCache):
 
     @content_x.setter
     def content_x(self, value: PositionType):
-        self._content_x = Position._load(value)
+        self._content_x = load_position(value)
         self.clear_cache()
 
     @property
@@ -92,5 +92,5 @@ class RepeatedSurface(MaterialWithSizeCache):
 
     @content_y.setter
     def content_y(self, value: PositionType):
-        self._content_y = Position._load(value)
+        self._content_y = load_position(value)
         self.clear_cache()

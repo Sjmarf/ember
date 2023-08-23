@@ -29,7 +29,7 @@ extensions = ["sphinx.ext.autodoc", "sphinx_rtd_theme", "sphinx_design"]
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
-autodoc_default_options = {
+autodoc_default_ = {
     "members": True,
     "show-inheritance": True,
 }

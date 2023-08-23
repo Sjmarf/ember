@@ -1,18 +1,14 @@
 import pygame
 from typing import Optional, Union, TYPE_CHECKING, Sequence
 
-from ..common import ColorType
-from ..material import Material
-
 if TYPE_CHECKING:
     import pathlib.Path
 
 
 from ..font.base_font import BaseFont, Line
-from ..ui.base.element import Element
-from .variant import TextVariant, BOLD, ITALIC, STRIKETHROUGH, UNDERLINE, OUTLINE
+from .variant import TextVariant, BOLD, ITALIC, UNDERLINE
 
-from ..position import Position
+from ember.position.position import Position
 
 
 class Font(BaseFont):
@@ -59,7 +55,7 @@ class Font(BaseFont):
     def get_width_of_line(self, text: str, variant: Sequence[TextVariant]) -> int:
         self._font.bold = BOLD in variant
         self._font.italic = ITALIC in variant
-        self._font.underline = UNDERLINE in variant        
+        self._font.underline = UNDERLINE in variant
         return self._font.size(text)[0]
 
     def _render_text(
@@ -68,7 +64,7 @@ class Font(BaseFont):
         variant: Sequence[TextVariant],
     ) -> pygame.Surface:
         return self._font.render(text, self.antialias, "black")
-    
+
     def _render_line(
         self,
         surf: pygame.Surface,
@@ -88,7 +84,7 @@ class Font(BaseFont):
         x = round(align.get(max_width, text_surf.get_width()))
 
         surf.blit(text_surf, (x, y))
-        return surf, x, text_surf.get_width()    
+        return surf, x, text_surf.get_width()
 
     def render(
         self,
@@ -96,12 +92,11 @@ class Font(BaseFont):
         variant: Sequence[TextVariant],
         max_width: Optional[int],
         align: Position,
-        ) -> tuple[list[pygame.Surface], [Line]]:
-        
+    ) -> tuple[list[pygame.Surface], [Line]]:
         self._font.bold = BOLD in variant
         self._font.italic = ITALIC in variant
         self._font.underline = UNDERLINE in variant
-        
+
         if max_width is None:
             surf = self._render_text(text, variant)
             return [surf], (Line(content=text),)
@@ -136,4 +131,3 @@ class Font(BaseFont):
                 )
             )
         return [surf], lines
-    

@@ -1,14 +1,13 @@
 import pygame
 from typing import Union, TYPE_CHECKING, Optional, Sequence
 
-from .base.element import Element
 from .base.surfacable import Surfacable
 
 if TYPE_CHECKING:
     pass
 
 from ..size import FIT, SizeType, OptionalSequenceSizeType, FitSize
-from ..position import PositionType, CENTER, SequencePositionType
+from ember.position import PositionType, SequencePositionType
 
 
 class Surface(Surfacable):
@@ -64,13 +63,13 @@ class Surface(Surfacable):
                 ),
             )
 
-    @Element._chain_up_decorator
-    def _update_rect_chain_up(self) -> None:
-        if isinstance(self._w, FitSize):
+    
+    def _update_min_size(self) -> None:
+        if isinstance(self.w, FitSize):
             if self._surface is not None:
                 self._min_w = (
-                    self._surface.get_width() * self._w.percentage
-                    + self._w.value
+                    self._surface.get_width() * self.w.percent
+                    + self.w
                 )
             else:
                 self._min_w = 20
@@ -78,8 +77,8 @@ class Surface(Surfacable):
         if isinstance(self._h, FitSize):
             if self._surface is not None:
                 self._min_h = (
-                    self._surface.get_height() * self._h.percentage
-                    + self._h.value
+                    self._surface.get_height() * self._h.percent
+                    + self.h
                 )
             else:
                 self._min_h = 20
@@ -106,4 +105,4 @@ class Surface(Surfacable):
         else:
             self._surface = None
 
-        self._update_rect_chain_up()
+        self.update_min_size()
