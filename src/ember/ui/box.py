@@ -2,7 +2,7 @@ import pygame
 from typing import Optional, TYPE_CHECKING, TypeVar
 
 from ember.base.single_element_container import SingleElementContainer
-from .base.element import Element
+from ..base.element import Element
 
 if TYPE_CHECKING:
     pass

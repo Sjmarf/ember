@@ -9,6 +9,8 @@ from .. import common as _c
 
 class ClampedSize(ResizableSize):
     relies_on_min_value = True
+    relies_on_max_value = True
+    relies_on_other_value = True
 
     def __init__(
         self,
@@ -19,6 +21,12 @@ class ClampedSize(ResizableSize):
         self.size: Size = load_size(size)
         self.min_size: Optional[Size] = load_size(min_size)
         self.max_size: Optional[Size] = load_size(max_size)
+
+    def __add__(self, other: int) -> "ClampedSize":
+        return ClampedSize(size=self.size + other, min_size=self.min_size, max_size=self.max_size)
+
+    def __sub__(self, other: int) -> "ClampedSize":
+        return ClampedSize(size=self.size - other, min_size=self.min_size, max_size=self.max_size)
 
     def _set_value(self, value: int) -> None:
         if isinstance(self.size, ResizableSize):
@@ -35,15 +43,15 @@ class ClampedSize(ResizableSize):
             or self.max_size.update_pair_value(value)
         )
 
-    def get(self, min_value: float = 0, max_value: Optional[float] = None) -> float:
+    def get(self, min_value: float = 0, max_value: Optional[float] = None, other_value: float = 0) -> float:
         min_size = (
-            self.min_size.get(min_value, max_value) if self.min_size is not None else 0
+            self.min_size.get(min_value, max_value, other_value) if self.min_size is not None else 0
         )
         max_size = (
-            self.max_size.get(min_value, max_value)
+            self.max_size.get(min_value, max_value, other_value)
             if self.max_size is not None
             else math.inf
         )
 
-        size = self.size.get(min_value, max_value)
+        size = self.size.get(min_value, max_value, other_value)
         return pygame.math.clamp(size, min_size, max_size)

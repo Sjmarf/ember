@@ -49,5 +49,6 @@ size = CustomLogger("ember.size")
 ancestry = CustomLogger("ember.ancestry")
 style = CustomLogger("ember.style")
 trait = CustomLogger("ember.trait")
+event_listener = CustomLogger("ember.event_listener")
 # Multi-layer Surfacable
 mls = CustomLogger("ember.mls")

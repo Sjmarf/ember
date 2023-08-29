@@ -6,7 +6,7 @@ from .material import MaterialWithSizeCache
 from ember.position import PositionType, CENTER, Position, load_position
 
 if TYPE_CHECKING:
-    from ember.ui.base.element import Element
+    from ember.base.element import Element
 
 
 class RepeatedSurface(MaterialWithSizeCache):

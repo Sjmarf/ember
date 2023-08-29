@@ -71,7 +71,7 @@ class HStack(PerpendicularContentY, HorizontalContentSize, DirectionalStack):
 
         for i in self._elements:
             if isinstance(i.w, FillSize):
-                self._total_size_of_fill_elements += i.w.percent
+                self._total_size_of_fill_elements += i.w.fraction
                 self._fill_element_count += 1
             else:
                 self._total_size_of_nonfill_elements += i.get_abs_w()
@@ -139,7 +139,7 @@ class HStack(PerpendicularContentY, HorizontalContentSize, DirectionalStack):
                     element_w = (
                         remaining_width
                         // self._total_size_of_fill_elements
-                        * element.w.percent
+                        * element.w.fraction
                         + element.w.value
                     )
                     if (

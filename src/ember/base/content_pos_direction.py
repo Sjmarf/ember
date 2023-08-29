@@ -11,11 +11,6 @@ from .directional import (
 
 
 class PerpendicularContentPos(ABC):
-    @abstractmethod
-    def set_perpendicular_content_pos(
-        self, value: Optional[PositionType], update=True
-    ) -> None:
-        ...
 
     @property
     @abstractmethod
@@ -23,38 +18,32 @@ class PerpendicularContentPos(ABC):
         ...
 
     @perpendicular_content_pos.setter
-    def perpendicular_content_pos(self, value: Optional[PositionType]):
-        self.set_perpendicular_content_pos(value)
+    @abstractmethod
+    def perpendicular_content_pos(self, value: Optional[PositionType]) -> None:
+        ...
 
 
 class PerpendicularContentX(PerpendicularContentPos, ContentX):
-    def set_perpendicular_content_pos(
-        self, value: Optional[PositionType], update=True
-    ) -> None:
-        self.set_content_x(value, update=update)
-
     @property
     def perpendicular_content_pos(self) -> Optional[Position]:
-        return self._content_x.value
+        return self.content_x
+
+    @perpendicular_content_pos.setter
+    def perpendicular_content_pos(self, value: Optional[PositionType]) -> None:
+        self.content_x = value
 
 
 class PerpendicularContentY(PerpendicularContentPos, ContentY):
-    def set_perpendicular_content_pos(
-        self, value: Optional[PositionType], update=True
-    ) -> None:
-        self.set_content_y(value, update=update)
-
     @property
     def perpendicular_content_pos(self) -> Optional[Position]:
-        return self._content_y.value
+        return self.content_y
+
+    @perpendicular_content_pos.setter
+    def perpendicular_content_pos(self, value: Optional[PositionType]) -> None:
+        self.content_y = value
 
 
 class ParallelContentPos(ABC):
-    @abstractmethod
-    def set_parallel_content_pos(
-        self, value: Optional[PositionType], update=True
-    ) -> None:
-        ...
 
     @property
     @abstractmethod
@@ -62,30 +51,28 @@ class ParallelContentPos(ABC):
         ...
 
     @parallel_content_pos.setter
-    def parallel_content_pos(self, value: Optional[PositionType]):
-        self.set_parallel_content_pos(value)
+    @abstractmethod
+    def parallel_content_pos(self, value: Optional[PositionType]) -> None:
+        ...
 
 
 class ParallelContentX(ParallelContentPos, ContentX):
-    def set_parallel_content_pos(
-        self, value: Optional[PositionType], update=True
-    ) -> None:
-        self.set_content_x(value, update=update)
-
     @property
     def parallel_content_pos(self) -> Optional[Position]:
-        return self._content_x.value
+        return self.content_x
 
+    @parallel_content_pos.setter
+    def parallel_content_pos(self, value: Optional[PositionType]) -> None:
+        self.content_x = value
 
 class ParallelContentY(ParallelContentPos, ContentY):
-    def set_parallel_content_pos(
-        self, value: Optional[PositionType], update=True
-    ) -> None:
-        self.set_content_y(value, update=update)
-
     @property
     def parallel_content_pos(self) -> Optional[Position]:
-        return self._content_y.value
+        return self.content_y
+
+    @parallel_content_pos.setter
+    def parallel_content_pos(self, value: Optional[PositionType]) -> None:
+        self.content_y = value
 
 
 class DirectionalContentPos(

@@ -139,7 +139,7 @@ class SingleElementContainer(
     def _update_rect(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        if self._element:
+        if self._element is not None:
             element_w = self._element.get_abs_w(w)
             element_h = self._element.get_abs_h(h)
 

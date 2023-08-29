@@ -31,7 +31,7 @@ class InterpolatedSize(Size):
     def update_pair_value(self, value: float) -> bool:
         return self.new_size.update_pair_value(value) or self.old_size.update_pair_value(value)
 
-    def get(self, min_value: float = 0, max_value: Optional[float] = None) -> float:
-        old_val = self.old_size.get(min_value, max_value)
-        new_val = self.new_size.get(min_value, max_value)
+    def get(self, min_value: float = 0, max_value: Optional[float] = None, other_value: float = 0) -> float:
+        old_val = self.old_size.get(min_value, max_value, other_value)
+        new_val = self.new_size.get(min_value, max_value, other_value)
         return round(old_val + (new_val - old_val) * self.progress)

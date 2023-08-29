@@ -1,7 +1,7 @@
 import pygame
 from typing import Union, Optional, TYPE_CHECKING, Sequence
 
-from .base.element import Element
+from ..base.element import Element
 
 from ..size import SizeType, OptionalSequenceSizeType, ResizableSize
 from ember.position import (
@@ -15,9 +15,6 @@ from ember.position import (
     BasicPosition,
     OptionalSequencePositionType,
 )
-
-if TYPE_CHECKING:
-    from ..style.style import Style
 
 from .. import common as _c
 from .. import log
@@ -45,8 +42,7 @@ class Resizable(Box):
         content_y: Optional[PositionType] = None,
         content_size: OptionalSequenceSizeType = None,
         content_w: Optional[SizeType] = None,
-        content_h: Optional[SizeType] = None,
-        style: Optional["Style"] = None,
+        content_h: Optional[SizeType] = None
     ):
         self.handles: Sequence[BasicPosition] = (
             [handles] if isinstance(handles, Position) else handles
@@ -72,8 +68,7 @@ class Resizable(Box):
             content_y=content_y,
             content_size=content_size,
             content_w=content_w,
-            content_h=content_h,
-            style=style,
+            content_h=content_h
         )
 
     def _update(self) -> None:
@@ -98,33 +93,34 @@ class Resizable(Box):
         return super()._event(event)
 
     def _is_hovering_resizable_edge(self) -> None:
-        if RIGHT in self.handles:
-            if (
-                self.rect.collidepoint(self.rect.x, _c.mouse_pos[1])
-                and self.rect.right - 2 < _c.mouse_pos[0] < self.rect.right + 2
-            ):
-                return self._set_hovering_resizable_edge(RIGHT)
+        for handle in self.handles:
+            if handle is RIGHT:
+                if (
+                    self.rect.collidepoint(self.rect.x, _c.mouse_pos[1])
+                    and self.rect.right - 2 < _c.mouse_pos[0] < self.rect.right + 2
+                ):
+                    return self._set_hovering_resizable_edge(RIGHT)
 
-        if LEFT in self.handles:
-            if (
-                self.rect.collidepoint(self.rect.x, _c.mouse_pos[1])
-                and self.rect.left - 2 < _c.mouse_pos[0] < self.rect.left + 2
-            ):
-                return self._set_hovering_resizable_edge(LEFT)
+            if handle is LEFT:
+                if (
+                    self.rect.collidepoint(self.rect.x, _c.mouse_pos[1])
+                    and self.rect.left - 2 < _c.mouse_pos[0] < self.rect.left + 2
+                ):
+                    return self._set_hovering_resizable_edge(LEFT)
 
-        if TOP in self.handles:
-            if (
-                self.rect.collidepoint(_c.mouse_pos[0], self.rect.y)
-                and self.rect.top - 2 < _c.mouse_pos[1] < self.rect.top + 2
-            ):
-                return self._set_hovering_resizable_edge(TOP)
+            if handle is TOP:
+                if (
+                    self.rect.collidepoint(_c.mouse_pos[0], self.rect.y)
+                    and self.rect.top - 2 < _c.mouse_pos[1] < self.rect.top + 2
+                ):
+                    return self._set_hovering_resizable_edge(TOP)
 
-        if BOTTOM in self.handles:
-            if (
-                self.rect.collidepoint(_c.mouse_pos[0], self.rect.y)
-                and self.rect.bottom - 2 < _c.mouse_pos[1] < self.rect.bottom + 2
-            ):
-                return self._set_hovering_resizable_edge(BOTTOM)
+            if handle is BOTTOM:
+                if (
+                    self.rect.collidepoint(_c.mouse_pos[0], self.rect.y)
+                    and self.rect.bottom - 2 < _c.mouse_pos[1] < self.rect.bottom + 2
+                ):
+                    return self._set_hovering_resizable_edge(BOTTOM)
 
         self._set_hovering_resizable_edge(None)
 

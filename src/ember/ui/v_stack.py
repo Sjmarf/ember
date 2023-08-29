@@ -69,7 +69,7 @@ class VStack(PerpendicularContentX, VerticalContentSize, DirectionalStack):
 
         for i in self.elements:
             if isinstance(i.h, FillSize):
-                self._total_size_of_fill_elements += i.h.percent
+                self._total_size_of_fill_elements += i.h.fraction
                 self._fill_element_count += 1
             else:
                 self._total_size_of_nonfill_elements += i.get_abs_h()
@@ -137,7 +137,7 @@ class VStack(PerpendicularContentX, VerticalContentSize, DirectionalStack):
                     element_h = (
                         remaining_height
                         // self._total_size_of_fill_elements
-                        * element.h.percent
+                        * element.h.fraction
                         + element.h.value
                     )
                     if (

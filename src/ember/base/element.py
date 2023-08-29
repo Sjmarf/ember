@@ -19,17 +19,16 @@ if TYPE_CHECKING:
 
 from ember.base.context_manager import ContextManager
 from ember.animation.animation import Animation, AnimationContext
-from ember.size import Size, SizeType, OptionalSequenceSizeType, load_size, FIT
+from ember.size import Size, SizeType, OptionalSequenceSizeType, FIT, FitSize
 from ember.position import (
     PositionType,
     SequencePositionType,
     Position,
     DualPosition,
     CENTER,
-    load_position,
 )
 
-from ember.trait import new_trait, Trait, TraitValue
+from ember.trait import TraitValue, SizeTrait, PositionTrait
 
 from ember import common as _c
 
@@ -42,21 +41,24 @@ MethodCallable = Callable[["Element"], None]
 
 class CallbackRegistry:
     def __init__(self):
-        self.calls: dict[Optional[int], list[str]] = {None: []}
+        self.calls: dict[Optional[int], set[str]] = {None: set()}
 
     def __getitem__(self, item: Optional[int]):
         return self.calls[item]
 
+    def __bool__(self) -> bool:
+        return len(self.calls) > 1 or bool(self.calls[None])
+
     def add_callback(self, event_types: Iterable[int], func: MethodCallable) -> None:
         if not event_types:
-            self.calls[None].append(func.__name__)
+            self.calls[None].add(func.__name__)
             return
 
         for event_type in event_types:
             if event_type not in self.calls:
-                self.calls[event_type] = []
+                self.calls[event_type] = set()
             if func.__name__ not in self.calls[event_type]:
-                self.calls[event_type].append(func.__name__)
+                self.calls[event_type].add(func.__name__)
 
     def process_event(self, element: "Element", event_type: Optional[int]) -> None:
         for call in self.calls[None]:
@@ -73,7 +75,7 @@ class CallbackRegistry:
     def extend(self, registry: "CallbackRegistry") -> None:
         for event_type, calls in registry.calls.items():
             if event_type in self.calls:
-                self.calls[event_type].extend(calls)
+                self.calls[event_type].update(calls)
             else:
                 self.calls[event_type] = calls
 
@@ -81,15 +83,35 @@ class CallbackRegistry:
 class ElementMeta(abc.ABCMeta, type):
     def __init__(cls: Type["Element"], name, bases, attrs):
         super().__init__(name, bases, attrs)
-        if on_event_queue:
-            old_registry = cls._callback_registry
-            cls._callback_registry = cls._callback_registry.copy()
-            for base in bases:
-                if base._callback_registry is not old_registry:
-                    cls._callback_registry.extend(base._callback_registry)
-            for item in on_event_queue:
-                cls._callback_registry.add_callback(item[1], item[0])
-            on_event_queue.clear()
+
+        if on_event_queue or (
+            len(bases) > 1
+            and any(getattr(i, "_callback_registry", False) for i in bases)
+        ):
+            log.event_listener.line_break()
+            with log.event_listener.indent(
+                f"Creating new CallbackRegistry for {name}..."
+            ):
+                old_registry = cls._callback_registry
+                log.event_listener.info(f"Registry copied from {bases[0].__name__}")
+                cls._callback_registry = cls._callback_registry.copy()
+
+                for base in bases:
+                    if (
+                        getattr(base, "_callback_registry", old_registry)
+                        is not old_registry
+                    ):
+                        log.event_listener.info(
+                            f"Adding callbacks from {base.__name__}"
+                        )
+                        cls._callback_registry.extend(base._callback_registry)
+
+                for item in on_event_queue:
+                    log.event_listener.info(
+                        f"Adding queued callback {item[0].__name__}"
+                    )
+                    cls._callback_registry.add_callback(item[1], item[0])
+                on_event_queue.clear()
 
 
 class Element(abc.ABC, metaclass=ElementMeta):
@@ -103,25 +125,29 @@ class Element(abc.ABC, metaclass=ElementMeta):
 
     # ----------------------------
 
-    x, x_ = new_trait(
+    x_: PositionTrait = PositionTrait(
         default_value=CENTER,
         on_update=lambda self: self.update_min_size_next_tick(must_update_parent=True),
     )
+    x: Position = x_.value_descriptor()
 
-    y, y_ = new_trait(
+    y_: PositionTrait = PositionTrait(
         default_value=CENTER,
         on_update=lambda self: self.update_min_size_next_tick(must_update_parent=True),
     )
+    y: Position = y_.value_descriptor()
 
-    w, w_ = new_trait(
+    w_: SizeTrait = SizeTrait(
         default_value=FIT,
         on_update=lambda self: self.update_min_size_next_tick(must_update_parent=True),
     )
+    w: Size = w_.value_descriptor()
 
-    h, h_ = new_trait(
+    h_: SizeTrait = SizeTrait(
         default_value=FIT,
         on_update=lambda self: self.update_min_size_next_tick(must_update_parent=True),
     )
+    h: Size = h_.value_descriptor()
 
     # ----------------------------
 
@@ -189,8 +215,8 @@ class Element(abc.ABC, metaclass=ElementMeta):
             else:
                 x, y = pos, pos
 
-        self.x = load_position(x)
-        self.y = load_position(y)
+        self.x = x
+        self.y = y
 
         if size is not None:
             if isinstance(size, Sequence):
@@ -201,9 +227,8 @@ class Element(abc.ABC, metaclass=ElementMeta):
         self._min_w: float = 0
         self._min_h: float = 0
 
-        w = load_size(w)
-        self.w = load_size(w)
-        self.h = load_size(h)
+        self.w = w
+        self.h = h
 
         self._animation_contexts: list[AnimationContext] = []
 
@@ -236,15 +261,25 @@ class Element(abc.ABC, metaclass=ElementMeta):
                 filter(lambda a: a is not self, self.layer.rect_update_queue)
             )
 
-        if self.w.update_pair_value(h):
-            log.size.info(f"Width paired value set to {h}.", self)
-            self.update_rect_next_tick()
-            return
+        if self.w.relies_on_other_value:
+            if h != self.rect.h:
+                log.size.info(
+                    f"Height was changed and width calculation relies on height, queueing...",
+                    self,
+                )
+                self.rect.update(x, y, w, h)
+                self.update_rect_next_tick()
+                return
 
-        if self.h.update_pair_value(w):
-            log.size.info(f"Height paired value set to {w}.", self)
-            self.update_rect_next_tick()
-            return
+        if self.h.relies_on_other_value:
+            if w != self.rect.w:
+                log.size.info(
+                    f"Width was changed and height calculation relies on width, queueing...",
+                    self,
+                )
+                self.rect.update(x, y, w, h)
+                self.update_rect_next_tick()
+                return
 
         if self.rect[:] == (x, y, w, h):
             log.size.info("Size didn't change, cutting chain...")
@@ -302,26 +337,64 @@ class Element(abc.ABC, metaclass=ElementMeta):
 
         self._update_min_size()
 
+        log.size.info(f"{self.w}, {self.h}, {self._min_w, self._min_h}")
+
+        # If the container is not empty
+        if self:
+            match (
+                self._min_w == 0 and isinstance(self.w, FitSize),
+                self._min_h == 0 and isinstance(self.h, FitSize),
+            ):
+                case (False, False):
+                    pass
+
+                case (True, True):
+                    raise _c.Error(
+                        f"{type(self).__name__} has a FitSize width and FitSize height "
+                        f"but no dependable child element was found on either dimension. "
+                        f"At least one child element of the {type(self).__name__} must have a "
+                        f"non-FillSize width and one child must have a non-FillSize height."
+                    )
+
+                case (True, False):
+                    raise _c.Error(
+                        f"{type(self).__name__} has a FitSize width "
+                        f"but no dependable child element was found. At least one child element "
+                        f"of the {type(self).__name__} must have a non-FillSize width."
+                    )
+
+                case (False, True):
+                    raise _c.Error(
+                        f"{type(self).__name__} has a FitSize height "
+                        f"but no dependable child element was found. At least one child element "
+                        f"of the {type(self).__name__} must have a non-FillSize height."
+                    )
+
         cut_chain = False
-        if old_w != self._min_w and old_h != self._min_h:
-            log.size.info(
-                f"Minimum size changed from {(old_w, old_h)} to "
-                f"{self._min_w, self._min_h}.",
-                self,
-            )
-        elif old_w != self._min_w:
-            log.size.info(
-                f"Minimum width changed from {old_w} to {self._min_w}. Minimum height {self._min_h} not changed.",
-                self,
-            )
-        elif old_h != self._min_h:
-            log.size.info(
-                f"Minimum height changed from {old_h} to {self._min_h}. Minimum width {self._min_w} not changed.",
-                self,
-            )
-        else:
-            log.size.info("Minimum size wasn't changed.", self)
-            cut_chain = True
+
+        match (old_w != self._min_w, old_h != self._min_h):
+            case (True, True):
+                log.size.info(
+                    f"Minimum size changed from {(old_w, old_h)} to "
+                    f"{self._min_w, self._min_h}.",
+                    self,
+                )
+
+            case (True, False):
+                log.size.info(
+                    f"Minimum width changed from {old_w} to {self._min_w}. Minimum height {self._min_h} not changed.",
+                    self,
+                )
+
+            case (False, True):
+                log.size.info(
+                    f"Minimum height changed from {old_h} to {self._min_h}. Minimum width {self._min_w} not changed.",
+                    self,
+                )
+
+            case _:
+                log.size.info("Minimum size wasn't changed.", self)
+                cut_chain = True
 
         # if self.parent is None or not (
         #     self.parent.w.relies_on_min_value or self.parent.h.relies_on_min_value
@@ -431,75 +504,17 @@ class Element(abc.ABC, metaclass=ElementMeta):
         pygame.event.post(event)
         self._callback_registry.process_event(self, event.type)
 
-    def set_pos(self, *pos: Optional[SequencePositionType], _update=True) -> None:
-        """
-        Set the position of the element.
-        """
-        if isinstance(pos[0], Sequence):
-            pos = pos[0]
-
-        if not isinstance(pos, Sequence):
-            pos = (pos, pos)
-
-        self.x = pos[0]
-        self.y = pos[1]
-
-    def set_x(self, value: Union[PositionType, Trait, None], update=True) -> None:
-        """
-        Set the x position of the element.
-        """
-        self.x = load_position(value)
-
-    def set_y(self, value: Union[PositionType, Trait, None], update=True) -> None:
-        """
-        Set the y position of the element.
-        """
-        self.y = load_position(value)
-
-    def set_size(self, *size: OptionalSequenceSizeType, update=True) -> None:
-        """
-        Set the size of the element.
-        """
-
-        if isinstance(size[0], Sequence):
-            size = size[0]
-
-        if len(size) == 1:
-            size = size[0], size[0]
-
-        self.set_w(size[0], update=update)
-        self.set_h(size[1], update=update)
-
-    def set_w(self, value: Union[SizeType, Trait, None], update=True) -> None:
-        """
-        Set the width of the element.
-        """
-        self.w = load_size(value)
-
-    def set_h(self, value: Union[SizeType, Trait, None], update=True) -> None:
-        """
-        Set the height of the element.
-        """
-        self.h = load_size(value)
-
-    def get_size(self) -> tuple[Size, Size]:
-        """
-        Get the size of the element. Returns ember.size.Size objects.
-        If you want float sizes, use get_abs_size() instead.
-        """
-        return self.w, self.h
-
     def get_abs_w(self, max_width: float = 0) -> float:
         """
         Get the width of the element as a float, given the maximum width to fill.
         """
-        return self.w.get(self._min_w, max_width)
+        return self.w.get(self._min_w, max_width, self.rect.h)
 
     def get_abs_h(self, max_height: float = 0) -> float:
         """
         Get the height of the element as a float, given the maximum height to fill.
         """
-        return self.h.get(self._min_h, max_height)
+        return self.h.get(self._min_h, max_height, self.rect.w)
 
     def focus(self) -> None:
         """

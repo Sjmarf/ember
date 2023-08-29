@@ -10,12 +10,12 @@ from ..size import OptionalSequenceSizeType, Size
 from ember.position.position import SequencePositionType, CENTER, Position
 
 if TYPE_CHECKING:
-    from ..ui.Button import Button
+    from ..ui.button import Button
 
 from .text_style import TextStyle
 from ember.utility.load_material import load_sound
 from ..size import SizeType, SequenceSizeType
-from ..ui.Button import Button
+from ..ui.button import Button
 
 
 class ButtonStyle(Style):

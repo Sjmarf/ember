@@ -2,10 +2,11 @@ from typing import TypeVar, Generic, Optional, TYPE_CHECKING, Union
 
 from ..animation import Animation
 from .trait_layer import TraitLayer
+from . import trait_layer
 
-from .trait import Trait
 if TYPE_CHECKING:
     from .trait_value import TraitValue
+    from .trait import Trait
     from ..base.element import Element
 
 T = TypeVar("T")
@@ -36,11 +37,13 @@ class TraitContext(Generic[T]):
         self._children: list["TraitContext"] = []
 
     def __repr__(self) -> str:
+        trait = getattr(self._element, self.trait_value.trait_name)
         return (
             f"<TraitContext(value={self.value}, "
-            f"animation_value={self.animation_value}, "
-            f"element_value={self.element_value}, "
-            f"parent_value={self.parent_value})>"
+            f"animation={self.animation_value}, "
+            f"element={self.element_value}, "
+            f"parent={self.parent_value}, "
+            f"default={trait._default_value})>"
         )
 
     def __getitem__(self, item: TraitLayer) -> Union[T, "TraitValue", None]:
@@ -55,8 +58,8 @@ class TraitContext(Generic[T]):
         value: Union[T, "Trait", None],
     ) -> bool:
 
-        if not Trait.inspected_layer == TraitLayer.DEFAULT:
-            current_value = self[Trait.inspected_layer]
+        if not trait_layer.inspected == TraitLayer.DEFAULT:
+            current_value = self[trait_layer.inspected]
             if current_value == value:
                 return False
 
@@ -66,9 +69,9 @@ class TraitContext(Generic[T]):
             if isinstance(value, TraitContext):
                 value._children.append(self)
 
-            if Trait.inspected_layer == TraitLayer.ELEMENT:
+            if trait_layer.inspected == TraitLayer.ELEMENT:
                 self.element_value = value
-            elif Trait.inspected_layer == TraitLayer.PARENT:
+            elif trait_layer.inspected == TraitLayer.PARENT:
                 self.parent_value = value
             else:
                 self.animation_value = value

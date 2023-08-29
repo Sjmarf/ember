@@ -9,12 +9,21 @@ class Size(ABC):
     the min_value exact - if this value is False, the Element will avoid updating the min_value if possible.
     """
 
-    @abstractmethod
-    def get(self, min_value: float = 0, max_value: Optional[float] = None) -> float:
-        pass
+    relies_on_max_value: bool = False
+    """
+    Should be True when the Size takes the max_value into account in any way. This tells the Element to keep
+    the max_value exact - if this value is False, the Element will avoid updating the max_value if possible.
+    """
 
-    def update_pair_value(self, value: float) -> bool:
-        return False
+    relies_on_other_value: bool = False
+    """
+    Should be True when the Size takes the other_value into account in any way. This tells the Element to keep
+    the other_value exact - if this value is False, the Element will avoid updating the other_value if possible.
+    """
+
+    @abstractmethod
+    def get(self, min_value: float = 0, max_value: Optional[float] = None, other_value: float = 0) -> float:
+        pass
 
 
 SizeType = Union[Size, int]

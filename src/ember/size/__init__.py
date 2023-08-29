@@ -8,6 +8,6 @@ from .clamped_size import ClampedSize
 from .resizable_size import ResizableSize
 from .ratio_size import RatioSize
 
-FIT = FitSize(0)
-FILL = FillSize(0)
+FIT = FitSize()
+FILL = FillSize()
 RATIO = RatioSize()

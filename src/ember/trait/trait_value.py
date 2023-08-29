@@ -2,6 +2,8 @@ from typing import Optional, Generic, TypeVar, TYPE_CHECKING, Type
 
 from .trait_context import TraitContext
 
+from .. import log
+
 T = TypeVar("T")
 
 if TYPE_CHECKING:
@@ -26,13 +28,16 @@ class TraitValue(Generic[T]):
         return getattr(element, self.context_name).value
 
     def __set__(self, element: "Element", value: T) -> None:
+        trait = getattr(element, self.trait_name)
+        value = trait.load_value(value)
+
+        log.trait.info(f"Setting {element.__class__.__name__}.{self.context_name} value to {value}")
         context: TraitContext = getattr(element, self.context_name, None)
 
         if context is None:
             context = TraitContext(element, self)
             setattr(element, self.context_name, context)
 
-        trait = getattr(element, self.trait_name)
         context.set_value(value)
 
         if context.value is trait._default_value:

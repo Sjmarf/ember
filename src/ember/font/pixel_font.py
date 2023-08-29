@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Sequence, Optional, Union
 
 from ..common import ColorType
-from .base_font import BaseFont
+from .base_font import Font
 from .variant import TextVariant, BOLD, ITALIC, STRIKETHROUGH, UNDERLINE, OUTLINE
 from .. import log
 
@@ -37,7 +37,7 @@ def string_to_text_variant(string: str) -> TextVariant:
 
 
 
-class PixelFont(BaseFont):
+class PixelFont(Font):
     def __init__(
         self,
         path: Union[str, PathLike, None] = None,

@@ -7,12 +7,13 @@ from ember.position import (
     SequencePositionType,
 )
 from ..size import SizeType, OptionalSequenceSizeType
-from .Button import Button
+from .button import Button
 from ..event import TOGGLEON, TOGGLEOFF
 
 from ..event import BUTTONDOWN
 from ..on_event import on_event
 
+from .text import Text
 
 class ToggleButton(Button):
     def __init__(
@@ -55,6 +56,15 @@ class ToggleButton(Button):
         )
 
         self._active: bool = active
+
+    def _post_button_event(self, event_type: int) -> None:
+        text = (
+            self._elements[self.primary_element_index].text
+            if isinstance(self._elements[self.primary_element_index], Text)
+            else None
+        )
+        event = pygame.event.Event(event_type, element=self, text=text, active=self.active)
+        self._post_event(event)
 
     @on_event(BUTTONDOWN)
     def _toggle_active(self):

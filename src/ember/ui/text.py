@@ -5,7 +5,7 @@ from ..common import ColorType
 from ..base.multi_layer_surfacable import MultiLayerSurfacable
 from ember.base.content_pos import ContentPos
 
-from ..font.base_font import BaseFont
+from ..font.base_font import Font
 from ..font.line import Line
 from ..font.variant import TextVariant
 
@@ -20,7 +20,7 @@ from ember.position import (
 if TYPE_CHECKING:
     from ..material.material import Material
 
-from ember.trait import new_trait
+from ember.trait import Trait
 
 
 class Text(ContentPos, MultiLayerSurfacable):
@@ -28,11 +28,13 @@ class Text(ContentPos, MultiLayerSurfacable):
     An Element that displays some text.
     """
 
-    variant, variant_ = new_trait(
+    variant_: Trait[TextVariant] = Trait(
         (), on_update=lambda self: self._update_surface()
     )
+    variant: TextVariant = variant_.value_descriptor()
 
-    font, font_ = new_trait(None)
+    font_: Trait[Font] = Trait(None)
+    font: Font = font_.value_descriptor()
 
     def __init__(
         self,
@@ -43,7 +45,7 @@ class Text(ContentPos, MultiLayerSurfacable):
         secondary_material: Optional["Material"] = None,
         tertiary_material: Optional["Material"] = None,
         variant: Union[TextVariant, Sequence[TextVariant], None] = None,
-        font: Optional[BaseFont] = None,
+        font: Optional[Font] = None,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
         pos: Optional[SequencePositionType] = None,
         x: Optional[PositionType] = None,
@@ -233,12 +235,6 @@ class Text(ContentPos, MultiLayerSurfacable):
                 "Text was set, generating surfaces...", self
             ), log.size.indent("Text was set, generating surfaces...", self):
                 self._update_surface()
-
-    def set_font(self, font: Optional[BaseFont]) -> None:
-        self._font.set_value(font)
-
-    def set_variant(self, variant: Sequence[TextVariant]) -> None:
-        self._variant.set_value(tuple(variant))
 
     def get_line(self, line_index: int) -> Optional[Line]:
         """

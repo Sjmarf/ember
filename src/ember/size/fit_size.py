@@ -11,31 +11,31 @@ class FitSize(Size):
 
     def __init__(
         self,
-        value: int,
-        percent: float = 1,
+        fraction: float = 1,
+        offset: int = 0,
     ):
-        self.value: int = value
-        self.percent: float = percent
+        self.offset: int = offset
+        self.fraction: float = fraction
 
     def __repr__(self) -> str:
-        return f"<FitSize({self.percent * 100}% + {self.value})>"
+        return f"<FitSize({self.fraction * 100}% + {self.offset})>"
 
     def __eq__(self, other):
         if isinstance(other, FitSize):
-            return self.value == other.value and self.percent == other.percent
+            return self.offset == other.offset and self.fraction == other.fraction
         return False
 
     def __add__(self, other: int) -> "FitSize":
-        return FitSize(self.value + other, self.percent)
+        return FitSize(self.fraction, self.offset + other)
 
     def __sub__(self, other: int) -> "FitSize":
-        return FitSize(self.value - other, self.percent)
+        return FitSize(self.fraction, self.offset - other)
 
     def __mul__(self, other: float) -> "FitSize":
-        return FitSize(self.value, self.percent * other)
+        return FitSize(self.fraction * other, self.offset)
 
     def __truediv__(self, other: float) -> "FitSize":
-        return FitSize(self.value, self.percent / other)
+        return FitSize(self.fraction / other, self.offset)
 
-    def get(self, min_value: float = 0, max_value: Optional[float] = None) -> float:
-        return min_value * self.percent + self.value
+    def get(self, min_value: float = 0, max_value: Optional[float] = None, other_value: float = 0) -> float:
+        return min_value * self.fraction + self.offset

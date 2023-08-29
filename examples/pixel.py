@@ -9,28 +9,30 @@ print(f"Pygame import took {time.time()-start_time:.2f}s")
 
 import logging
 
-log = logging.getLogger("ember.trait")
+log = logging.getLogger("ember.size")
 log.setLevel(logging.DEBUG)
 log.addHandler(logging.FileHandler("log.log", "w+"))
 
 import os
-import inspect
 import sys
-
 
 os.chdir(__file__.replace("pixel.py", ""))
 
 start_time = time.time()
 try:
-    path = os.getcwd().replace(f"examples", "src")
-    sys.path.append(path)
-    print("PATH1", str(path))
-    import ember  # noqa
-except ModuleNotFoundError:
-    path = os.path.join(os.getcwd(), "src")
-    sys.path.append(str(path))
-    print("PATH2", str(path))
-    import ember  # noqa
+    try:
+        path = os.getcwd().replace(f"examples", "src")
+        sys.path.append(path)
+        print("PATH1", str(path))
+        import ember  # noqa
+    except ModuleNotFoundError:
+        path = os.path.join(os.getcwd(), "src")
+        sys.path.append(str(path))
+        print("PATH2", str(path))
+        import ember  # noqa
+except RuntimeError as e:
+    raise e.__cause__
+
 print(f"Ember import took {time.time()-start_time:.2f}s")
 pygame.init()
 
@@ -55,10 +57,7 @@ image = pygame.image.load("image.png").convert_alpha()
 ui = ember.style.PixelDark()
 
 with ember.View() as view:
-    with ember.VStack(content_w=50) as stack:
-        button = ui.Button("hello")
-        ui.Button("world")
-        ember.Button(ui.Text("Hi"))
+    pass
 
 is_running = True
 
@@ -72,41 +71,31 @@ while is_running:
             is_running = False
 
         if event.type == ember.BUTTONDOWN:
-            with ember.animation.EaseOut(1):
-                stack.content_w = ember.size.AbsoluteSize(120)
+            pass
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_s:
-                with ember.animation.Linear(1):
-                    stack.set_w(200)
+                with ember.animation.EaseInOut(0.2):
+                    button.w = 50
 
             elif event.key == pygame.K_a:
-                with ember.animation.EaseOut(1):
-                    stack.set_w(100)
+                with ember.animation.EaseInOut(0.2):
+                    button.w = None
 
             elif event.key == pygame.K_y:
                 fps.set_text("One fish, two fish, red fish, blue fish")
 
             elif event.key == pygame.K_u:
-                print(text.rect)
+                view.start_manual_update()
 
             elif event.key == pygame.K_i:
                 print(text2.rect)
 
-    display.fill("gray8")
-    # display.blit(wallpaper, (0,0))
-    ember.update()
-    # start_time = time.time()
+    display.fill(ui.background_color)
     view.update(display)
-    # print(f"1/{round(1/(time.time()-start_time))}s")
     screen.blit(pygame.transform.scale(display, (WIDTH, HEIGHT)), (0, 0))
 
     clock.tick(120)
-    # text.set_text(f"{float(clock.get_fps()): .0f}")
-
-    # fps.set_text(str(round(clock.get_fps())))
-    # for button,text in zip(buttons,size_texts):
-    #     text.set_text(f"{button.rect.x}, {button.rect.w}")
     pygame.display.flip()
 
 pygame.quit()

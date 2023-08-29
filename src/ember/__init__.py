@@ -25,11 +25,11 @@ from . import base
 from .base import *
 
 from . import trait
-from .trait import new_trait
+from .trait import Trait
 
 from . import font
 from .font import (
-    Font,
+    PygameFont,
     PixelFont,
     IconFont,
     TextVariant,
@@ -71,7 +71,7 @@ from .position import (
     MIDBOTTOM,
 )
 from . import spacing
-from .spacing import DEFAULT_SPACING
+from .spacing import FILL_SPACING
 
 from .utility.stretch_surface import stretch_surface
 from .utility.spritesheet import SpriteSheet
@@ -94,11 +94,6 @@ def set_display_zoom(value: float) -> None:
 def update_views() -> None:
     for view in _c.views:
         view.update_elements()
-
-
-def update() -> None:
-    _c.delta_time = 1 / max(1.0, _c.clock.get_fps())
-
 
 def set_clock(clock: pygame.time.Clock) -> None:
     _c.clock = clock

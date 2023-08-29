@@ -49,7 +49,7 @@ Alternative Pygame UI libraries
 
 Contributing
 —————————-
-Ember is a school project of mine. Unfortunately, this means that I cannot accept direct contributions until I hand the project in this December. After that, I will continue to develop the library and will be open to contributions. Until then, you are of course free to fork, modify and redistribute the library under the terms of the license if you so wish. If you have any questions, feel free to DM me `on Discord<https://discord.gg/pygame>`_ @sjmarf.
+I'm open to contributions. You are of course free to fork, modify and redistribute the library under the terms of the license if you so wish. If you have any questions, feel free to DM me `on Discord<https://discord.gg/pygame>`_ @sjmarf.
 
 .. toctree::
    :caption: Getting Started

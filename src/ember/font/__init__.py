@@ -1,6 +1,6 @@
-from .base_font import BaseFont
+from .base_font import Font
 from .pixel_font import PixelFont
-from .ttf_font import Font
+from .ttf_font import PygameFont
 
 from .icon_font import IconFont
 

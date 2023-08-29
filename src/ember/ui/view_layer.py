@@ -25,9 +25,6 @@ T = TypeVar("T", bound="Element", covariant=True)
 
 
 class ViewLayer(SingleElementContainer[T]):
-    default_w = FILL
-    default_h = FILL
-
     def __init__(
         self,
         element: Optional["Element"],
@@ -256,3 +253,6 @@ class ViewLayer(SingleElementContainer[T]):
     @property
     def index(self) -> int:
         return self.view._layers.index(self)
+
+ViewLayer.w_.default_value = FILL
+ViewLayer.h_.default_value = FILL

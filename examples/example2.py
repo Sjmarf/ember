@@ -1,27 +1,27 @@
-import inspect
-class A:
-    def __init__(self):
-        print(f"A")
+import pygame
+import ember
 
+pygame.init()
+clock = pygame.time.Clock()
+ember.set_clock(clock)
 
-class B(A):
-    def __init__(self):
-        print("B")
-        super().__init__()
+screen = pygame.display.set_mode((400, 400))
 
+with ember.View() as view:
+    with ember.VStack(size=(100, 300)):
+        ember.Panel("magenta", size=(100, 100))
+        ember.Panel("aqua", size=(100, 100))
 
-class C(A):
-    def __init__(self):
-        print("C")
-        super().__init__()
+running = True
+while running:
+    for event in pygame.event.get():
+        view.event(event)
+        if event.type == pygame.QUIT:
+            running = False
 
+    screen.fill("black")
+    view.update(screen)
 
-class D(B, C):
-    def __init__(self):
-        print("D")
-        super().__init__()
-
-
-D()
-
-print(inspect.getmro(D))
+    clock.tick(60)
+    pygame.display.flip()
+pygame.quit()

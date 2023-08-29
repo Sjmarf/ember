@@ -7,12 +7,13 @@ from ember.common import (
     FOCUS_CLOSEST,
 )
 from ember.base.multi_element_container import MultiElementContainer
-from ember.trait import new_trait
+from ember.trait import Trait
 
 
 class Stack(MultiElementContainer, ABC):
 
-    focus_on_entry, focus_on_entry_ = new_trait(FOCUS_CLOSEST)
+    focus_on_entry_: Trait[FocusType] = Trait(FOCUS_CLOSEST)
+    focus_on_entry: FocusType = focus_on_entry_.value_descriptor()
 
     def __init__(self, *args, focus_on_entry: Optional[FocusType] = None, **kwargs):
         self.focus_on_entry = focus_on_entry

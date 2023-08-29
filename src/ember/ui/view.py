@@ -124,6 +124,8 @@ class View(ContextManager):
         """
         Update the View. This should be called every tick.
         """
+        _c.delta_time = 1 / max(1.0, _c.clock.get_fps())
+
         mouse = pygame.mouse.get_pos()
         if display_zoom is DEFAULT:
             display_zoom = _c.display_zoom

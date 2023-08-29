@@ -9,8 +9,8 @@ from ember.common import SequenceElementType
 from ember.base.element import Element
 from .stack import Stack
 
-from ember.trait import new_trait
-from ember.spacing import Spacing, SpacingType, load_spacing, DEFAULT_SPACING
+from ember.trait import SpacingTrait, TraitValue
+from ember.spacing import SpacingType, FILL_SPACING
 
 from ..base.content_pos_direction import PerpendicularContentPos
 from ..base.content_size_direction import DirectionalContentSize
@@ -25,9 +25,10 @@ class DirectionalStack(PerpendicularContentPos, DirectionalContentSize, Stack, A
     and :py:class:`ember.ui.HStack`. This base class should not be instantiated directly.
     """
 
-    spacing, spacing_ = new_trait(
-        DEFAULT_SPACING, on_update=lambda self: self.update_min_size_next_tick(self)
+    spacing_ = SpacingTrait(
+        FILL_SPACING, on_update=lambda self: self.update_min_size_next_tick(self)
     )
+    spacing = spacing_.value_descriptor()
 
     def __init__(
         self,
@@ -37,7 +38,7 @@ class DirectionalStack(PerpendicularContentPos, DirectionalContentSize, Stack, A
     ):
         self._first_visible_element: Optional[Element] = None
 
-        self.spacing = load_spacing(spacing)
+        self.spacing = spacing
 
         self._total_size_of_nonfill_elements: int = 0
         self._total_size_of_fill_elements: int = 0

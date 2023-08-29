@@ -1,24 +1,25 @@
 from typing import Optional, Sequence
-from ember.size import SizeType, Size, OptionalSequenceSizeType, load_size
+from ember.size import SizeType, Size, OptionalSequenceSizeType
 
 from ember.base.element import Element
-from ember.trait import new_trait
+from ember.trait import SizeTrait, TraitValue
 
 
 class ContentW(Element):
-    content_w, content_w_ = new_trait(None)
+    content_w_: SizeTrait = SizeTrait(None)
+    content_w: Size = TraitValue()
 
-    print("ContentW")
     def __init__(self, *args, content_w: Optional[SizeType] = None, **kwargs):
-        self.content_w = load_size(content_w)
+        self.content_w = content_w
         super().__init__(*args, **kwargs)
 
 
 class ContentH(Element):
-    content_h, content_h_ = new_trait(None)
+    content_h_: SizeTrait = SizeTrait(None)
+    content_h: Size = TraitValue()
 
     def __init__(self, *args, content_h: Optional[SizeType] = None, **kwargs):
-        self.content_h = load_size(content_h)
+        self.content_h = content_h
         super().__init__(*args, **kwargs)
 
 

@@ -32,7 +32,7 @@ def _decode_element(data, styles):
     elif data[0] == "PixelFont":
         return font.PixelFont(path=_c.package.joinpath(f"default_fonts/{data[1]}"))
     elif data[0] == "Font":
-        return font.Font(pygame.font.SysFont(data[1], data[2]))
+        return font.PygameFont(pygame.font.SysFont(data[1], data[2]))
     elif data[0] == "IconFont":
         return font.IconFont(path=_c.package.joinpath(f"default_icon_fonts/{data[1]}"))
     elif data[0] in {"RoundedRect", "Capsule", "Ellipse"}:

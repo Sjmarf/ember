@@ -2,7 +2,7 @@ import pygame
 from typing import Union, Optional, Sequence
 
 from .style import Style
-from ..font import Font, BaseFont
+from ..font import PygameFont, Font
 from ..common import MaterialType
 from ..common import ColorType
 from ..ui.text import Text
@@ -22,7 +22,7 @@ class TextStyle(Style):
         width: SizeType = None,
         height: SizeType = None,
         content_pos: SequencePositionType = CENTER,
-        font: Union[BaseFont, pygame.Font, None] = None,
+        font: Union[Font, pygame.Font, None] = None,
         variant: Union[TextVariant, Sequence[TextVariant]] = (),
         color: ColorType = "black",
         secondary_color: Optional[ColorType] = None,
@@ -67,7 +67,7 @@ class TextStyle(Style):
         else:
             self.tertiary_material = tertiary_material        
 
-        self.font: BaseFont = (
-            Font(pygame.font.SysFont("arial", 20)) if font is None else font
+        self.font: Font = (
+            PygameFont(pygame.font.SysFont("arial", 20)) if font is None else font
         )
 

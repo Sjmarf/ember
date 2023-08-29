@@ -36,5 +36,5 @@ class AbsoluteSize(ResizableSize):
     def _set_value(self, value: int) -> None:
         self.value = value
 
-    def get(self, min_value: float = 0, max_value: Optional[float] = None) -> float:
+    def get(self, min_value: float = 0, max_value: Optional[float] = None, other_value: float = 0) -> float:
         return self.value

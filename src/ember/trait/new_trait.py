@@ -9,14 +9,3 @@ if TYPE_CHECKING:
 T = TypeVar("T")
 
 ElementCallable = Callable[["Element"], Any]
-
-
-def new_trait(
-    default_value: T,
-    on_update: Union[ElementCallable, tuple[ElementCallable, ...]] = (),
-) -> tuple[TraitValue[T], Trait[T]]:
-
-    trait = Trait(default_value, on_update=on_update)
-    value = TraitValue()
-
-    return value, trait

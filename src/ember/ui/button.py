@@ -118,7 +118,7 @@ class Button(Interactive, ContentPos, ContentSize, MultiElementContainer):
         elif event.type == pygame.KEYUP and event.key == pygame.K_RETURN:
             if self.clicked:
                 self.clicked = False
-                if self.layer.element_focused is self and not self._disabled:
+                if not self._disabled:
                     self._post_button_event(BUTTONUP)
                     return True
 
@@ -142,11 +142,11 @@ class Button(Interactive, ContentPos, ContentSize, MultiElementContainer):
         return False
 
     def _post_button_event(self, event_type: int) -> None:
-        text = (
-            self._elements[self.primary_element_index].text
-            if isinstance(self._elements[self.primary_element_index], Text)
-            else None
-        )
+        text = None
+
+        if isinstance(self._elements[self.primary_element_index], Text):
+            text = self._elements[self.primary_element_index].text
+
         event = pygame.event.Event(event_type, element=self, text=text)
         self._post_event(event)
 

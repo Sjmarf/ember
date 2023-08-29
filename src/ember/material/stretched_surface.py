@@ -17,7 +17,7 @@ class StretchedSurface(MaterialWithSizeCache):
     def __init__(
         self,
         surface: Union[str, pygame.Surface, PathLike],
-        edge: Sequence[int] = (5, 5, 5, 5),
+        edge: Union[int, Sequence[int]] = 8,
         alpha: int = 255,
     ):
         super().__init__(alpha)
@@ -33,7 +33,7 @@ class StretchedSurface(MaterialWithSizeCache):
         """
         The surface to stretch.
         """
-        self._edge: Sequence[int] = edge
+        self._edge: Sequence[int] = (edge, edge, edge, edge) if isinstance(edge, int) else edge
         """
         (left, right, top, bottom). The number of pixels from each side that should be kept intact.
         """

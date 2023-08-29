@@ -12,76 +12,67 @@ from .directional import (
 
 
 class PerpendicularContentSize(ABC):
-    @abstractmethod
-    def set_perpendicular_content_size(
-        self, value: Optional[SizeType], update=True
-    ) -> None:
-        ...
-
     @property
     @abstractmethod
     def perpendicular_content_size(self) -> Optional[Size]:
         ...
 
     @perpendicular_content_size.setter
-    def perpendicular_content_size(self, value: Optional[SizeType]):
-        self.set_perpendicular_content_size(value)
+    @abstractmethod
+    def perpendicular_content_size(self, value: Optional[SizeType]) -> None:
+        ...
 
 
 class PerpendicularContentW(PerpendicularContentSize, ContentW):
-    def set_perpendicular_content_size(
-        self, value: Optional[SizeType], update=True
-    ) -> None:
-        self.set_content_w(value, update=update)
-
     @property
     def perpendicular_content_size(self) -> Optional[Size]:
-        return self._content_w.value
+        return self.content_w
+
+    @perpendicular_content_size.setter
+    def perpendicular_content_size(self, value: Optional[SizeType]) -> None:
+        self.content_w = value
 
 
 class PerpendicularContentH(PerpendicularContentSize, ContentH):
-    def set_perpendicular_content_size(
-        self, value: Optional[SizeType], update=True
-    ) -> None:
-        self.set_content_h(value, update=update)
-
     @property
     def perpendicular_content_size(self) -> Optional[Size]:
-        return self._content_h.value
+        return self.content_h
+
+    @perpendicular_content_size.setter
+    def perpendicular_content_size(self, value: Optional[SizeType]) -> None:
+        self.content_h = value
 
 
 class ParallelContentSize(ABC):
-    @abstractmethod
-    def set_parallel_content_size(self, value: Optional[SizeType], update=True) -> None:
-        ...
-
     @property
     @abstractmethod
     def parallel_content_size(self) -> Optional[Size]:
         ...
 
     @parallel_content_size.setter
-    def parallel_content_size(self, value: Optional[SizeType]):
-        self.set_parallel_content_size(value)
+    @abstractmethod
+    def parallel_content_size(self, value: Optional[SizeType]) -> None:
+        ...
 
 
 class ParallelContentW(ParallelContentSize, ContentW):
-    def set_parallel_content_size(self, value: Optional[SizeType], update=True) -> None:
-        self.set_content_w(value, update=update)
-
     @property
     def parallel_content_size(self) -> Optional[Size]:
-        return self._content_w.value
+        return self.content_w
+
+    @parallel_content_size.setter
+    def parallel_content_size(self, value: Optional[SizeType]) -> None:
+        self.content_w = value
 
 
 class ParallelContentH(ParallelContentSize, ContentH):
-    def set_parallel_content_size(self, value: Optional[SizeType], update=True) -> None:
-        self.set_content_h(value, update=update)
-
     @property
     def parallel_content_size(self) -> Optional[Size]:
-        return self._content_h.value
+        return self.content_h
 
+    @parallel_content_size.setter
+    def parallel_content_size(self, value: Optional[SizeType]) -> None:
+        self.content_h = value
 
 class DirectionalContentSize(
     ParallelContentSize,

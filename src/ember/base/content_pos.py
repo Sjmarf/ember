@@ -4,26 +4,27 @@ from ember.position import (
     PositionType,
     Position,
     DualPosition,
-    load_position,
 )
 
 from ember.base.element import Element
-from ember.trait import new_trait
+from ember.trait import PositionTrait, TraitValue
 
 
 class ContentX(Element):
-    content_x, content_x_ = new_trait(None)
+    content_x_: PositionTrait = PositionTrait(None)
+    content_x: Position = content_x_.value_descriptor()
 
     def __init__(self, *args, content_x: Optional[PositionType] = None, **kwargs):
-        self.content_x = load_position(content_x)
+        self.content_x = content_x
         super().__init__(*args, **kwargs)
 
 
 class ContentY(Element):
-    content_y, content_y_ = new_trait(None)
+    content_y_: PositionTrait = PositionTrait(None)
+    content_y: Position = content_y_.value_descriptor()
 
     def __init__(self, *args, content_y: Optional[PositionType] = None, **kwargs):
-        self.content_y = load_position(content_y)
+        self.content_y = content_y
         super().__init__(*args, **kwargs)
 
 

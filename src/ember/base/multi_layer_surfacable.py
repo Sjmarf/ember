@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 from .surfacable import Surfacable
 
-from ember.trait import new_trait
+from ember.trait import Trait
 
 
 class MultiLayerSurfacable(Surfacable):
@@ -25,20 +25,23 @@ class MultiLayerSurfacable(Surfacable):
     This is a base class and should not be instantiated directly.
     """
 
-    primary_material, primary_material_ = new_trait(
+    primary_material_: Trait["Material"] = Trait(
         DEFAULT_BLACK_MATERIAL,
         on_update=lambda self: self._material_trait_update_callback(),
     )
+    primary_material: "Material" = primary_material_.value_descriptor()
 
-    secondary_material, secondary_material_ = new_trait(
+    secondary_material_: Trait["Material"] = Trait(
         DEFAULT_BLACK_MATERIAL,
         on_update=lambda self: self._material_trait_update_callback(),
     )
+    secondary_material: "Material" = secondary_material_.value_descriptor()
 
-    tertiary_material, tertiary_material_ = new_trait(
+    tertiary_material_: Trait["Material"] = Trait(
         DEFAULT_BLACK_MATERIAL,
         on_update=lambda self: self._material_trait_update_callback(),
     )
+    tertiary_material: "Material" = tertiary_material_.value_descriptor()
 
     def __init__(
         self,

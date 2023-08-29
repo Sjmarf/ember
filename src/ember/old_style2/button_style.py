@@ -18,7 +18,7 @@ from ..event import (
     ELEMENTDISABLED,
 )
 
-from ..ui.Button import Button
+from ..ui.button import Button
 from .style import Style
 
 

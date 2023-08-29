@@ -3,8 +3,7 @@ from typing import Union, Optional, TYPE_CHECKING, Sequence
 
 from ..common import ColorType, DEFAULT
 from .. import log
-from ember.ui.base.mixin.style import Style, StyleType
-from .base.multi_layer_surfacable import MultiLayerSurfacable
+from ..base.multi_layer_surfacable import MultiLayerSurfacable
 
 from ..size import SizeType, OptionalSequenceSizeType
 from ember.position import PositionType, SequencePositionType
@@ -15,10 +14,15 @@ if TYPE_CHECKING:
     from ..material.material import Material
 
 
-class Icon(Style, MultiLayerSurfacable):
+from ..trait import Trait
+
+class Icon(MultiLayerSurfacable):
     """
     An element that displays an icon (arrow, pause, save, etc).
     """
+
+    font_: Trait[IconFont] = Trait(None)
+    font: IconFont = font_.value_descriptor()
 
     def __init__(
         self,
@@ -36,11 +40,9 @@ class Icon(Style, MultiLayerSurfacable):
         size: OptionalSequenceSizeType = None,
         w: Optional[SizeType] = None,
         h: Optional[SizeType] = None,
-        style: Optional[StyleType] = DEFAULT,
     ):
         self._name: Optional[str] = name
-
-        self._font: Trait[IconFont] = Trait(self, element_value=font)
+        self.font = font
 
         super().__init__(
             # MultiLayerSurfacable
@@ -58,7 +60,6 @@ class Icon(Style, MultiLayerSurfacable):
             h=h,
             can_focus=False,
             # Style
-            style=style,
         )
 
     def __repr__(self) -> str:
@@ -109,16 +110,13 @@ class Icon(Style, MultiLayerSurfacable):
     def name(self) -> Optional[str]:
         """
         Get or set the name of the icon. The 'name' parameter should be a name of an icon included in the
-        :py:class`IconFont<ember.font.IconFont` object. The property setter is synonymous
+        :py:class:`IconFont<ember.font.IconFont` object. The property setter is synonymous
         """
         return self._name
 
     @name.setter
     def name(self, name: Union[str, pygame.Surface]) -> None:
         self.set_icon(name)
-
-    def set_font(self, font: Optional[IconFont]) -> None:
-        self._font.set_value(font)
 
     def set_icon(self, name: Union[str, pygame.Surface], _update: bool = True) -> None:
         """

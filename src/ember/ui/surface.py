@@ -68,7 +68,7 @@ class Surface(Surfacable):
         if isinstance(self.w, FitSize):
             if self._surface is not None:
                 self._min_w = (
-                    self._surface.get_width() * self.w.percent
+                    self._surface.get_width() * self.w.fraction
                     + self.w
                 )
             else:
@@ -77,7 +77,7 @@ class Surface(Surfacable):
         if isinstance(self._h, FitSize):
             if self._surface is not None:
                 self._min_h = (
-                    self._surface.get_height() * self._h.percent
+                    self._surface.get_height() * self._h.fraction
                     + self.h
                 )
             else:

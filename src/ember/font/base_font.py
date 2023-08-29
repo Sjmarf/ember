@@ -12,7 +12,7 @@ from .line import Line
 from .variant import TextVariant
 
 
-class BaseFont(abc.ABC):
+class Font(abc.ABC):
     def __init__(
         self,
         line_height: int,

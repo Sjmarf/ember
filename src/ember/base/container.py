@@ -31,13 +31,13 @@ class Container(ContextManager, Element, ABC):
 
     def _prepare_element(self, element: Element) -> None:
         if isinstance(self, ContentX):
-            element.set_x(self._content_x)
+            element.x = self._content_x
         if isinstance(self, ContentY):
-            element.set_y(self._content_y)
+            element.y = self._content_y
         if isinstance(self, ContentW):
-            element.set_w(self._content_w)
+            element.w = self._content_w
         if isinstance(self, ContentH):
-            element.set_h(self._content_h)
+            element.h = self._content_h
 
     def update_can_focus(self) -> None:
         """

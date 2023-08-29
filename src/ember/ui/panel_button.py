@@ -1,7 +1,7 @@
 import pygame
 from typing import Union, Optional, Sequence, Type
 
-from .Button import Button
+from .button import Button
 
 from ..material import Material
 from ..material.blank import Blank
@@ -34,8 +34,6 @@ class PanelButton(Button):
     focus_click_material: Material = Blank()
     disabled_material: Material = Blank()
 
-    default_content_y = CENTER
-
     @classmethod
     def add_materials(
         cls,
@@ -46,14 +44,24 @@ class PanelButton(Button):
         focus_click_material: Optional[MaterialType] = None,
         disabled_material: Optional[MaterialType] = None,
     ) -> None:
-        cls.default_material = load_material(default_material, None)
-        cls.hover_material = load_material(hover_material, cls.default_material)
-        cls.click_material = load_material(click_material, cls.hover_material)
-        cls.focus_material = load_material(focus_material, cls.hover_material)
-        cls.focus_click_material = load_material(
-            focus_click_material, cls.click_material
+        cls.default_material = load_material(
+            default_material, cls.default_material, None
         )
-        cls.disabled_material = load_material(disabled_material, cls.default_material)
+        cls.hover_material = load_material(
+            hover_material, cls.hover_material, cls.default_material
+        )
+        cls.click_material = load_material(
+            click_material, cls.click_material, cls.hover_material
+        )
+        cls.focus_material = load_material(
+            focus_material, cls.focus_material, cls.hover_material
+        )
+        cls.focus_click_material = load_material(
+            focus_click_material, cls.focus_click_material, cls.click_material
+        )
+        cls.disabled_material = load_material(
+            disabled_material, cls.disabled_material, cls.default_material
+        )
 
     def __init__(
         self,
@@ -118,3 +126,6 @@ class PanelButton(Button):
     @on_event(BUTTONUP)
     def _update_content_y_up(self) -> None:
         self.content_y -= 1
+
+
+PanelButton.content_y_.default_value = CENTER

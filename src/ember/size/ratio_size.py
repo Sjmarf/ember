@@ -1,8 +1,12 @@
 from typing import Optional
 from .size import Size
 
+from .. import log
+
 
 class RatioSize(Size):
+    relies_on_other_value = True
+
     def __init__(
         self,
         value: int = 0,
@@ -10,7 +14,6 @@ class RatioSize(Size):
     ):
         self.value: int = value
         self.percent: float = percent
-        self.pair_value: float = 0
 
     def __add__(self, other: int) -> "RatioSize":
         return RatioSize(self.value + other, self.percent)
@@ -24,11 +27,5 @@ class RatioSize(Size):
     def __truediv__(self, other: float) -> "RatioSize":
         return RatioSize(self.value, self.percent / other)
 
-    def update_pair_value(self, value: float) -> bool:
-        if self.pair_value != value:
-            self.pair_value = value
-            return True
-        return False
-
-    def get(self, min_value: float = 0, max_value: Optional[float] = None) -> float:
-        return self.pair_value * self.percent + self.value
+    def get(self, min_value: float = 0, max_value: Optional[float] = None, other_value: float = 0) -> float:
+        return other_value * self.percent + self.value

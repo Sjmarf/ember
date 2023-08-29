@@ -5,13 +5,13 @@ if TYPE_CHECKING:
     import pathlib.Path
 
 
-from ..font.base_font import BaseFont, Line
+from ..font.base_font import Font, Line
 from .variant import TextVariant, BOLD, ITALIC, UNDERLINE
 
 from ember.position.position import Position
 
 
-class Font(BaseFont):
+class PygameFont(Font):
     def __init__(
         self,
         font: Union[pygame.font.Font, str, "pathlib.Path"],

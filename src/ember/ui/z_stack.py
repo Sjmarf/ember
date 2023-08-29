@@ -24,12 +24,8 @@ from ember.position import (
 )
 from ..size import SizeType, OptionalSequenceSizeType, FILL
 
+
 class ZStack(ContentPos, ContentSize, Stack):
-
-    default_w = FILL
-    default_h = FILL
-    default_focus_on_entry = FOCUS_LAST
-
     def __init__(
         self,
         *elements: Optional[SequenceElementType],
@@ -152,3 +148,6 @@ class ZStack(ContentPos, ContentSize, Stack):
         else:
             log.nav.info(f"-> child {element}.")
             return element._focus_chain(_c.FocusDirection.IN)
+
+
+ZStack.focus_on_entry_.default_value = FOCUS_LAST
