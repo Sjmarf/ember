@@ -57,7 +57,7 @@ image = pygame.image.load("image.png").convert_alpha()
 ui = ember.style.PixelDark()
 
 with ember.View() as view:
-    pass
+    ui.Button("Hello world")
 
 is_running = True
 

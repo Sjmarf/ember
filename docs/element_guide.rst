@@ -450,63 +450,63 @@ As you might expect, we can set an absolute value for :code:`spacing` by passing
 
 The default spacing value is :code:`ember.FILL_SPACING`, which is an instance of :py:class:`ember.spacing.FillSpacing`. This spacing type spaces the child elements out such that they take up the entire space provided by the container.
 
-Challenge
-------------------------
-
-Now is a good time to experiment with what you've learnt so far. Below is a simple challenge that you may wish to follow.
-
-You'll be creating a simple clicker game. Your objectives are:
-
-- Display a Button with the text 'click me'.
-- Above the button, display a Text element with the value :code:`0`. This will be our counter.
-- When the button is clicked, the value displayed on the Text element should be incremented by 1.
-
-You are of course free to look at any of the example code above whilst designing your solution. Here's what the finished
-product should look like:
-
-.. dropdown:: Reveal Solution
-
-    .. code-block:: python
-
-        import pygame
-        import ember
-
-        pygame.init()
-        clock = pygame.time.Clock()
-
-        screen = pygame.display.set_mode((400, 400))
-
-        ember.set_clock(clock)
-
-        counter = 0
-
-        font = ember.PygameFont("arial", 20)
-
-        with ember.View() as view:
-            with ember.VStack(spacing=50):
-                text = ember.Text("0", color="white", font=font)
-                with ember.Button(size=(200, 100)) as button:
-                    ember.Panel("red")
-                    ember.Text("Click me!")
-
-
-        running = True
-        while running:
-            for event in pygame.event.get():
-                view.event(event)
-                if event.type == pygame.QUIT:
-                    running = False
-
-                elif event.type == ember.BUTTONCLICKED:
-                    counter += 1
-                    text.set_text(str(counter))
-
-            screen.fill("black")
-            view.update(screen)
-
-            clock.tick(60)
-            pygame.display.flip()
-        pygame.quit()
+.. Challenge
+.. ------------------------
+..
+.. Now is a good time to experiment with what you've learnt so far. Below is a simple challenge that you may wish to follow.
+..
+.. You'll be creating a simple clicker game. Your objectives are:
+..
+.. - Display a Button with the text 'click me'.
+.. - Above the button, display a Text element with the value :code:`0`. This will be our counter.
+.. - When the button is clicked, the value displayed on the Text element should be incremented by 1.
+..
+.. You are of course free to look at any of the example code above whilst designing your solution. Here's what the finished
+.. product should look like:
+..
+.. .. dropdown:: Reveal Solution
+..
+..     .. code-block:: python
+..
+..         import pygame
+..         import ember
+..
+..         pygame.init()
+..         clock = pygame.time.Clock()
+..
+..         screen = pygame.display.set_mode((400, 400))
+..
+..         ember.set_clock(clock)
+..
+..         counter = 0
+..
+..         font = ember.PygameFont("arial", 20)
+..
+..         with ember.View() as view:
+..             with ember.VStack(spacing=50):
+..                 text = ember.Text("0", color="white", font=font)
+..                 with ember.Button(size=(200, 100)) as button:
+..                     ember.Panel("red")
+..                     ember.Text("Click me!")
+..
+..
+..         running = True
+..         while running:
+..             for event in pygame.event.get():
+..                 view.event(event)
+..                 if event.type == pygame.QUIT:
+..                     running = False
+..
+..                 elif event.type == ember.BUTTONCLICKED:
+..                     counter += 1
+..                     text.set_text(str(counter))
+..
+..             screen.fill("black")
+..             view.update(screen)
+..
+..             clock.tick(60)
+..             pygame.display.flip()
+..         pygame.quit()
 
 Content sizes
 ---------------------
