@@ -6,7 +6,7 @@ from ..utility.spritesheet import SpriteSheet
 def stretch_surface(
     surf: pygame.Surface, size: Sequence[int], edge=(10, 10, 10, 10)
 ) -> pygame.Surface:
-    nw, nh = max(0, size[0]), max(0, size[1])
+    nw, nh = max(0, int(size[0])), max(0, int(size[1]))
     new_surf = pygame.Surface((nw, nh), pygame.SRCALPHA)
 
     l, r, t, b = edge
@@ -22,8 +22,7 @@ def stretch_surface(
 
     # Middle
     mid = pygame.transform.scale(
-        surf.subsurface(l, t, w - l - r, h - t - b),
-        (nw - l - r, nh - t - b),
+        surf.subsurface(l, t, w - l - r, h - t - b), (nw - l - r, nh - t - b),
     )
     new_surf.blit(mid, (l, t))
     # Left

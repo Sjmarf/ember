@@ -17,7 +17,7 @@ class StretchedSurface(MaterialWithSizeCache):
     def __init__(
         self,
         surface: Union[str, pygame.Surface, PathLike],
-        edge: Union[int, Sequence[int]] = 8,
+        edge: Union[int, Sequence[int]] = 5,
         alpha: int = 255,
     ):
         super().__init__(alpha)

@@ -140,7 +140,7 @@ class HStack(PerpendicularContentY, HorizontalContentSize, DirectionalStack):
                         remaining_width
                         // self._total_size_of_fill_elements
                         * element.w.fraction
-                        + element.w.value
+                        + element.w.offset
                     )
                     if (
                         fill_n < left_rem
