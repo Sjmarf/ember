@@ -2,7 +2,7 @@
 
 # WIP. This isn't meant to be used yet.
 
-Ember is a UI library for [Pygame CE](https://github.com/pygame-community/pygame-ce). Learn how to get started on the docs page.
+Ember is a UI library for [Pygame CE](https://github.com/pygame-community/pygame-ce). Learn how to get started on the [docs page](https://ember-ui.readthedocs.io/en/latest/index.html).
 
 # Installation
 

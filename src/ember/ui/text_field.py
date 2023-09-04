@@ -579,6 +579,8 @@ class TextField(Interactive, Style, Element):
                     # paste
                     data = pygame.scrap.get_text()
 
+                    if True: print("hi")
+
                     new_text = (
                         self._text[: self._main_cursor.letter_index]
                         + data

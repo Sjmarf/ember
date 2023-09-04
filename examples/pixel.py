@@ -1,6 +1,7 @@
 # import ez_profile
 
 import time
+import inspect
 
 start_time = time.time()
 import pygame
@@ -56,8 +57,10 @@ image = pygame.image.load("image.png").convert_alpha()
 
 ui = ember.style.PixelDark()
 
+print(inspect.getmro(ui.Button))
+
 with ember.View() as view:
-    ui.Button("Hello world")
+    ui.HSwitch(size=(100, 50))
 
 is_running = True
 
@@ -71,7 +74,11 @@ while is_running:
             is_running = False
 
         if event.type == ember.BUTTONDOWN:
-            pass
+            if event.element is play_button:
+                with ember.animation.Spring(60, 1, 5):
+                    stack.w = 150 if event.element.active else 100
+
+
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_s:

@@ -65,6 +65,10 @@ In order for the View to render its child element on the screen, you must call :
 
 I've added a View to the previous example script. The changes I've made are highlighted.
 
+.. image:: _static/element_guide/panel1.png
+  :width: 160
+  :align: right
+
 .. code-block:: python
    :linenos:
    :emphasize-lines: 10,11,12,17,22
@@ -79,7 +83,7 @@ I've added a View to the previous example script. The changes I've made are high
     screen = pygame.display.set_mode((400, 400))
 
     view = ember.View(
-        ember.Panel("red", size=(100, 100))
+        ember.Panel("tomato", size=(100, 100))
     )
 
     running = True
@@ -96,8 +100,6 @@ I've added a View to the previous example script. The changes I've made are high
         pygame.display.flip()
     pygame.quit()
 
-This code produces the following output:
-
 Resizing Elements
 ------------------------
 
@@ -105,21 +107,21 @@ In the example code above, we passed :code:`(100, 100)` as the :code:`size` argu
 
 .. code-block:: python
 
-    ember.Panel("red", size=(100, 100))
+    ember.Panel("tomato", size=(100, 100))
 
 
 This means that our Panel is 100 pixels wide and 100 pixels tall. All Element types can be sized in this way. This is not the only way you can specify element size - you can also specify the width and height seperately:
 
 .. code-block:: python
 
-   ember.Panel("red", w=100, h=100)
+   ember.Panel("tomato", w=100, h=100)
 
 
 Or, if you only pass a single value as the :code:`size` argument, it will be used for `both` the width and height of the Element.
 
 .. code-block:: python
 
-   ember.Panel("red", size=100)
+   ember.Panel("tomato", size=100)
 
 Multiple elements in a View
 ---------------------------------------------
@@ -127,47 +129,67 @@ A View can only hold **one** element at a time. If we want to display more than 
 
 There are several different containers that you can use. Each type of container arranges its child elements in a different way.
 
+.. image:: _static/element_guide/vstack1.png
+  :width: 160
+  :align: right
+
+
 The first container we'll look at is the :py:class:`VStack<ember.ui.VStack>` container. You can pass any number of elements to the VStack constructor, and they will be displayed in a vertical list on the screen when the View is rendered.
 
 .. code-block:: python
 
     view = ember.View(
         ember.VStack(
-            ember.Panel("red", size=100),
-            ember.Panel("blue", size=100),
+            ember.Panel("tomato", size=100),
+            ember.Panel("dodgerblue", size=100),
             size=(100, 200)
         )
     )
 
-Note that :py:class:`VStack<ember.ui.VStack>`, like Panel, accepts a size. Though the area occupied by the VStack itself is invisible, it still takes up a certain amount of space in the same way that Panel does. In the example above, I've set the VStack to match the exact size of the two panels.
+.. image:: _static/element_guide/vstack2.png
+  :width: 160
+  :align: right
+
+Note that :py:class:`VStack<ember.ui.VStack>`, like Panel, accepts a size. Though the area occupied by the VStack itself is invisible, it still occupies an area in the same way that Panel does. In the example above, I've set the VStack to match the exact size of the two panels.
 
 If we increase the height of the VStack, a gap will be formed between the two elements (see image). This is because VStack will space its child elements out so that they completely fill the height of the VStack.
 
 Similarly to VStack, the :py:class:`HStack<ember.ui.HStack>` container displays elements in a horizontal list:
 
+.. image:: _static/element_guide/hstack1.png
+  :width: 160
+  :align: right
+
 .. code-block:: python
 
     view = ember.View(
         ember.HStack(
-            ember.Panel("red", size=100),
-            ember.Panel("blue", size=100),
-            size=(200, 100)
+            ember.Panel("tomato", size=100),
+            ember.Panel("dodgerblue", size=100),
+            size=(250, 100)
         )
     )
 
-Remember, containers such as :py:class:`VStack<ember.ui.VStack>` and :py:class:`ember.ui.HStack` are Elements just like :py:class:`Panel<ember.ui.Panel>` is. This means you can nest them inside of each other like this:
+In the above example each Panel is 100 pixels wide, while the HStack is 250 pixels wide. This means that there will be a 50 pixel gap between the two Panels.
+
+.. image:: _static/element_guide/nested1.png
+  :width: 160
+  :align: right
+
+
+Remember, containers such as :py:class:`VStack<ember.ui.VStack>` and :py:class:`HStack<ember.ui.HStack>` are Elements just like :py:class:`Panel<ember.ui.Panel>` is. This means you can nest them inside of each other like this:
 
 .. code-block:: python
 
     view = ember.View(
         ember.VStack(
-            ember.Panel("red", size=100),
+            ember.Panel("tomato", size=100),
             ember.HStack(
-                ember.Panel("blue", size=100),
-                ember.Panel("green", size=100),
-                size=(200, 100)
+                ember.Panel("dogerblue", size=100),
+                ember.Panel("seagreen1", size=100),
+                size=(250, 100)
             ),
-            size=(200, 200)
+            size=(250, 200)
         )
     )
 
@@ -182,15 +204,15 @@ Consider this Element tree that we looked at earlier:
 
     view = ember.View(
         ember.HStack(
-            ember.Panel("red", size=100),
-            ember.Panel("blue", size=100),
+            ember.Panel("tomato", size=100),
+            ember.Panel("dodgerblue", size=100),
             size=(200, 100)
         )
     )
 
 Here, we've specified the size of the :py:class:`HStack<ember.ui.HStack>` as :code:`(200, 100)`. However, we don't need to do this explicitly.
 
-In addition to accepting integers as size values, Elements can accept a number of other 'size types' defined within ember. These size types are available from the :code:`ember.size` module, and allow elements to have 'implicit' sizes - this means that the integer values represented by these size types aren't absolute; their values are based on some condition.
+In addition to accepting integers as size values, Elements can accept a number of other 'size types' defined within ember. These size types are available from the :code:`ember.size` module, and allow elements to have 'implicit' sizes - this means that the integer values represented by these size types aren't absolute; instead, their values are based on some condition.
 
 One of these size types is :py:class:`ember.size.FitSize`. When used as a size value for a Container, it tells the Container to set its width/height relative to the width/height of its contents. In the example above, we can use this size type inplace of :code:`(200, 100)` as the size of the HStack. The benefeit of this is that, if we change the contents of the HStack later, we won't need to update the size of the container.
 
@@ -202,8 +224,8 @@ Let's create a :py:class:`FitSize<ember.size.FitSize>` object, and use it as the
 
     view = ember.View(
         ember.HStack(
-            ember.Panel("red", size=100),
-            ember.Panel("blue", size=100),
+            ember.Panel("tomato", size=100),
+            ember.Panel("dodgerblue", size=100),
             size=fit_size,
         )
     )
@@ -217,8 +239,8 @@ Because :py:class:`FitSize<ember.size.FitSize>` is used very frequently in ember
 
     view = ember.View(
         ember.HStack(
-            ember.Panel("red", size=100),
-            ember.Panel("blue", size=100),
+            ember.Panel("tomato", size=100),
+            ember.Panel("dodgerblue", size=100),
             size=ember.FIT,
         )
     )
@@ -244,13 +266,13 @@ Similarly, if you only specify one size dimension, the default size will be adop
 
 .. code-block:: python
 
-    # The HStack here has ember.FIT height and a width of 200
+    # The HStack here has ember.FIT height and a width of 250
 
     view = ember.View(
         ember.HStack(
             ember.Panel("red", size=100),
             ember.Panel("blue", size=100),
-            w = 200
+            w=250
         )
     )
 
@@ -262,8 +284,8 @@ In the examples we've looked at so far, we've attributed elements to containers 
 .. code-block:: python
 
     ember.VStack(
-        ember.Panel("red", size=100),
-        ember.Panel("blue", size=100)
+        ember.Panel("tomato", size=100),
+        ember.Panel("dodgerblue", size=100)
     )
 
 This isn't the only way to add elements to containers. VStack and HStack support many of the methods that :code:`list` does, which you can use to modify the contents of the container after you've created it. For example:
@@ -271,21 +293,21 @@ This isn't the only way to add elements to containers. VStack and HStack support
 .. code-block:: python
 
     stack = ember.VStack(
-        ember.Panel("red", size=100),
+        ember.Panel("tomato", size=100),
     )
 
-    stack.append(ember.Panel("blue", size=100))
+    stack.append(ember.Panel("dodgerblue", size=100))
 
 You can also get and set items directly, just like in a python list:
 
 .. code-block:: python
 
     stack = ember.VStack(
-        ember.Panel("red", size=100),
-        ember.Panel("blue", size=100)
+        ember.Panel("tomato", size=100),
+        ember.Panel("dodgerblue", size=100)
     )
 
-    stack[1] = ember.Panel("green", size=100)
+    stack[1] = ember.Panel("seagreen1", size=100)
 
 You can modify the contents of a container at any time. For example, you could write some code that adds a new element to a container when the space key is pressed. If the container being modified has a :code:`FIT` size, the container's size will be updated intelligently to fit the new size of its contents.
 
@@ -297,15 +319,15 @@ We can add elements to a container using the :code:`with` statement, too.
 .. code-block:: python
 
     with ember.VStack() as stack:
-        ember.Panel("red", size=100)
-        ember.Panel("blue", size=100)
+        ember.Panel("tomato", size=100)
+        ember.Panel("dodgerblue", size=100)
 
 This also works with View:
 
 .. code-block:: python
 
     with ember.View() as view:
-        ember.Panel("red", size=100)
+        ember.Panel("tomato", size=100)
 
 Using this syntax can make our element trees much cleaner. Consider this large element tree:
 
@@ -313,10 +335,10 @@ Using this syntax can make our element trees much cleaner. Consider this large e
 
     view = ember.View(
         ember.VStack(
-            ember.Panel("red", size=100),
+            ember.Panel("tomato", size=100),
             ember.HStack(
-                ember.Panel("blue", size=100),
-                ember.Panel("green", size=100),
+                ember.Panel("dodgerblue", size=100),
+                ember.Panel("seagreen1", size=100),
                 size=(200, 100)
             ),
             size=(200, 200)
@@ -329,10 +351,10 @@ Using :code:`with` syntax, we can rewrite this as:
 
     with ember.View() as view:
         with ember.VStack(size=(200, 200)):
-            ember.Panel("red", size=100)
+            ember.Panel("tomato", size=100)
             with ember.HStack(size=(200, 100)):
-                ember.Panel("blue", size=100)
-                ember.Panel("green", size=100)
+                ember.Panel("dodgerblue", size=100)
+                ember.Panel("seagreen1", size=100)
 
 
 This alternative way of constructing menus is often much more convenient than nesting element constructors, because you can run additional code (such as keeping a reference to an element as a variable) whilst creating your menu.
@@ -340,44 +362,52 @@ This alternative way of constructing menus is often much more convenient than ne
 ZStack
 ------------------------
 
-We've seen that VStack stacks elements vertically, and HStack stacks elements horizontally. Next, we'll look at a new container type - :py:class:`ZStack<ember.ui.ZStack>`. This container stacks elements ontop of one another, from back to front.
+.. image:: _static/element_guide/zstack1.png
+  :width: 160
+  :align: right
 
+We've seen that VStack stacks elements vertically, and HStack stacks elements horizontally. Next, we'll look at a new container type - :py:class:`ZStack<ember.ui.ZStack>`. This container stacks elements ontop of one another, from back to front.
 .. code-block:: python
 
     with ember.View() as view:
         with ember.ZStack(size=ember.FIT):
-            ember.Panel("red", size=200)
-            ember.Panel("blue", size=100)
+            ember.Panel("tomato", size=200)
+            ember.Panel("white", size=100)
 
 When :code:`ember.FIT` is used with ZStack, ZStack adopts the size of its largest child element. In this case, the ZStack will have 200 pixels on both axis, because its largest child element (the red Panel) has that size. Just like with VStack and HStack, :code:`ember.FIT` is the default size for ZStack.
 
 Text
 ------------------------
 
+.. image:: _static/element_guide/text1.png
+  :width: 160
+  :align: right
+
+
 Next, we'll look at another basic element type. :py:class:`ember.Text<ember.ui.Text>` can be used to render some text on the screen. We can create a Text object like this:
 
 .. code-block:: python
 
-    font = ember.PygameFont(pygame.SysFont("arial", 20))
+    font = ember.PygameFont(pygame.SysFont("arial", 40))
     text = ember.Text("Hello world!", color="white", font=font)
 
 We can also pass the font name and size directly to PygameFont instead, and ember will create the SysFont for us:
 
 .. code-block:: python
 
-    font = ember.PygameFont("arial", 20)
-    text = ember.Text("Hello world!", size=100, color="white", font=font)
+    font = ember.PygameFont("arial", 40)
+    text = ember.Text("Hello world!", size=200, color="white", font=font)
 
 Lets use our Text object in a View:
 
 .. code-block:: python
 
-    font = ember.PygameFont("arial", 20)
+    font = ember.PygameFont("arial", 40)
 
     with ember.View() as view:
-        ember.Text("Hello world!", size=100, color="white", font=font)
+        ember.Text("Hello world!", size=200, color="white", font=font)
 
-Like any other element, Text has a size. The text itself will be rendered in the center of the Text object by default. The Text element will attempt to render as much of the text as will fit within the width of the Text on one line, and then wrap it to the next line.
+Just like any other element, Text has a size. The text itself will be rendered in the center of the Text object by default. The Text element will attempt to render as much of the text as will fit within the width of the Text on one line, and then wrap it to the next line.
 
 Using :code:`ember.FIT` as a size value for Text will cause the Text to match the size of it's content. :code:`ember.FIT` is the default size for Text.
 
@@ -386,19 +416,22 @@ We can modify the contents of Text after its creation using the :py:meth:`set_te
 Buttons
 ------------------------
 
-Lets look at our first interactive element - the :py:class:`Button<ember.ui.Button>`. Button behaves very similarly to ZStack - it can arrange multiple elements that are stacked ontop of one another.
+Lets look at our first interactive element - the :py:class:`Button<ember.ui.Button>`. Button behaves very similarly to ZStack - it contains multiple elements that are stacked ontop of one another.
+
+.. image:: _static/element_guide/button1.png
+  :width: 160
+  :align: right
 
 .. code-block:: python
 
+    font = ember.PygameFont("arial", 40)
+
     with ember.View() as view:
-        with ember.Button(size=(100, 50)):
-            ember.Panel("red", size=(100, 50))
-            ember.Text("Click me!")
+        with ember.Button(size=(200, 50)):
+            ember.Panel("red", size=(200, 50))
+            ember.Text("Click me!", color="white", font=font)
 
-When the user clicks the Button, an :code:`ember.BUTTONCLICKED` event is emitted. You can listen for this event in the Pygame event stack just like you would with any Pygame event. The :code:`ember.BUTTONCLICKED` Event object has the following attributes:
-
-- :code:`element` - The Button instance that posted the event.
-- :code:`text` - The text displayed on the element (a string) *if* the topmost child of the Button is a Text object.
+When the user clicks the Button, an :code:`ember.BUTTONCLICKED` event is emitted. You can listen for this event in the Pygame event stack just like you would with any Pygame event. The :code:`ember.BUTTONCLICKED` Event object has the :code:`element` attribute, which is a reference to the button that posted the event.
 
 Example usage:
 
@@ -406,12 +439,13 @@ Example usage:
 
     for event in pygame.event.get():
         if event.type == ember.BUTTONCLICKED:
-            print(f"Button with text {event.text} was clicked!")
+            if event.element is my_button:
+                print(f"Button with was clicked!")
 
 'Fill' Sizes
 ------------------------
 
-Previously, we've used :py:class:`ember.size.FitSize` to make an element shrink to fit the size of it's contents. Now, we'll look at :py:class:`ember.size.FillSize`. In a similar way, elements with a FillSize will `expand` to fill the maximum space available.
+Previously, we've used :py:class:`ember.size.FitSize` to make an element shrink to fit the size of it's contents. Now, we'll look at :py:class:`ember.size.FillSize`. In a similar way, elements with a FillSize will _expand_ to fill the maximum space available.
 
 Just like with FitSize and :code:`ember.FIT`, an instance of FillSize is available as :code:`ember.FILL` for convenience.
 
@@ -421,9 +455,9 @@ Consider this example:
 
     # The panel will have a size of (200, 100) - the maximum size available within the Button.
 
-    with ember.Button(size=(200, 100)) as button:
+    with ember.Button(size=(200, 50)) as button:
         ember.Panel("red", size=ember.FILL)
-        ember.Text("Hello world")
+        ember.Text("Hello world", color="white", font=font)
 
 :code:`ember.FILL` is the default size for Panel elements, so we actually don't need to specify a size at all here.
 
@@ -431,9 +465,9 @@ Consider this example:
 
     # The panel still has a FILL size, because it is the default.
 
-    with ember.Button(size=(200, 100)) as button:
+    with ember.Button(size=(200, 50)) as button:
         ember.Panel("red")
-        ember.Text("Hello world")
+        ember.Text("Hello world", color="white", font=font)
 
 Spacing
 -----------------------
@@ -445,82 +479,91 @@ As you might expect, we can set an absolute value for :code:`spacing` by passing
 .. code-block:: python
 
     with ember.VStack(spacing=50) as stack:
-        ember.Panel("red", size=100)
-        ember.Panel("blue", size=100)
+        ember.Panel("tomato", size=100)
+        ember.Panel("dodgerblue", size=100)
 
 The default spacing value is :code:`ember.FILL_SPACING`, which is an instance of :py:class:`ember.spacing.FillSpacing`. This spacing type spaces the child elements out such that they take up the entire space provided by the container.
 
-.. Challenge
-.. ------------------------
-..
-.. Now is a good time to experiment with what you've learnt so far. Below is a simple challenge that you may wish to follow.
-..
-.. You'll be creating a simple clicker game. Your objectives are:
-..
-.. - Display a Button with the text 'click me'.
-.. - Above the button, display a Text element with the value :code:`0`. This will be our counter.
-.. - When the button is clicked, the value displayed on the Text element should be incremented by 1.
-..
-.. You are of course free to look at any of the example code above whilst designing your solution. Here's what the finished
-.. product should look like:
-..
-.. .. dropdown:: Reveal Solution
-..
-..     .. code-block:: python
-..
-..         import pygame
-..         import ember
-..
-..         pygame.init()
-..         clock = pygame.time.Clock()
-..
-..         screen = pygame.display.set_mode((400, 400))
-..
-..         ember.set_clock(clock)
-..
-..         counter = 0
-..
-..         font = ember.PygameFont("arial", 20)
-..
-..         with ember.View() as view:
-..             with ember.VStack(spacing=50):
-..                 text = ember.Text("0", color="white", font=font)
-..                 with ember.Button(size=(200, 100)) as button:
-..                     ember.Panel("red")
-..                     ember.Text("Click me!")
-..
-..
-..         running = True
-..         while running:
-..             for event in pygame.event.get():
-..                 view.event(event)
-..                 if event.type == pygame.QUIT:
-..                     running = False
-..
-..                 elif event.type == ember.BUTTONCLICKED:
-..                     counter += 1
-..                     text.set_text(str(counter))
-..
-..             screen.fill("black")
-..             view.update(screen)
-..
-..             clock.tick(60)
-..             pygame.display.flip()
-..         pygame.quit()
+Challenge
+------------------------
+
+Now is a good time to experiment with what you've learnt so far. Below is a challenge that you may wish to follow.
+
+You'll be creating a simple clicker game. Your objectives are:
+
+- Display a Button with the text 'click me'.
+- Above the button, display a Text element with the value :code:`0`. This will be our counter.
+- When the button is clicked, the value displayed on the Text element should be incremented by 1.
+
+You are of course free to look at any of the example code above whilst designing your solution. Here's what the finished
+product should look like:
+
+
+.. image:: _static/element_guide/challenge.png
+  :width: 50%
+  :align: center
+
+.. dropdown:: Reveal Solution
+
+    .. code-block:: python
+
+        import pygame
+        import ember
+
+        pygame.init()
+        clock = pygame.time.Clock()
+
+        screen = pygame.display.set_mode((400, 400))
+
+        ember.set_clock(clock)
+
+        counter = 0
+
+        font = ember.PygameFont("arial", 40)
+
+        with ember.View() as view:
+            with ember.VStack(spacing=50):
+                text = ember.Text("0", color="white", font=font)
+                with ember.Button(size=(200, 100)) as button:
+                    ember.Panel("red")
+                    ember.Text("Click me!", color="white", font=font)
+
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                view.event(event)
+                if event.type == pygame.QUIT:
+                    running = False
+
+                elif event.type == ember.BUTTONDOWN:
+                    counter += 1
+                    text.set_text(str(counter))
+
+            screen.fill("black")
+            view.update(screen)
+
+            clock.tick(60)
+            pygame.display.flip()
+        pygame.quit()
 
 Content sizes
 ---------------------
 
 Some containers offer :code:`content_size`, :code:`content_w` and :code:`content_h` parameters. You can specify sizes for these parameters just like you would for the :code:`size`, :code:`w` and :code:`h` parameters. When you do this, the size will be applied to every child of the container.
 
-In this example, every Button in the VStack will have a width of 50px.
+.. image:: _static/element_guide/content_size.png
+  :width: 160
+  :align: right
+
+In this example, every Panel in the VStack will have a width of 50px.
 
 .. code-block:: python
 
-    with ember.VStack(content_w=50):
-        ember.Button("A")
-        ember.Button("B")
-        ember.Button("C")
+    with ember.VStack(content_w=100):
+        ember.Panel("tomato", h=50)
+        ember.Panel("dodgerblue", h=50)
+        ember.Panel("seagreen1", h=50)
 
 If a size is specified of the child elements themselves, that size will be prioritied over the content size of the parent container.
 
@@ -554,8 +597,7 @@ We can use the numerical operators :code:`+-*/` to modify these values, too. Whe
 .. code-block:: python
 
     fill_size = ember.FILL - 10
-    # This is equivalent to:
-    # fill_size = ember.size.FillSize(offset=-10)
+    # This is equivalent to ember.size.FillSize(offset=-10)
 
 Element Positioning
 ------------------------
@@ -563,15 +605,19 @@ Element Positioning
 In addition to changing the size of an element, we can change its position relative to its parent element. All elements have :code:`pos`,
 :code:`x` and :code:`y` parameters, which work in a similar way to :code:`size`, :code:`w` and :code:`h`.
 
+.. image:: _static/element_guide/position1.png
+  :width: 160
+  :align: right
+
 Let's look at an example. By default, the VStack container will align its child elements to the center of the VStack. We can change this behaviour by specifying an :code:`x` position for one of the VStack's child elements. Specifying an integer for this parameter will position the element that number of pixels from the left edge of the VStack.
 
 .. code-block:: python
 
-    with ember.VStack():
-        ember.Panel("red", size=100)
-        ember.Button("blue", size=100, x=20)
+    with ember.VStack(w=200, h=250):
+        ember.Panel("tomato", size=100)
+        ember.Panel("dodgerblue", size=100, x=0)
 
-Adjusting the :code:`y` position of elements in a VStack won't do anything - the y position of the elements is dictated entirely by the stack. HStack allows you to adjust the :code:`y`, but not the :code:`x`. ZStack lets you adjust both.
+Adjusting the :code:`y` position of elements in a VStack won't do anything - the y position of the elements is decided entirely by the VStack itself. HStack allows you to adjust the :code:`y`, but not the :code:`x`. ZStack lets you adjust both.
 
 Some containers have :code:`content_pos`, :code:`content_x` and :code:`content_y` parameters which work in the same way as the :code:`content_size`, :code:`content_w` and :code:`content_h` parameters we looked at previously, but for positions.
 

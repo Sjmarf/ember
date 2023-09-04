@@ -1,0 +1,2 @@
+pygame-ce>=2.1.4
+sphinx_design

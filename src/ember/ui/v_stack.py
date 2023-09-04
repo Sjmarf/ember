@@ -76,7 +76,7 @@ class VStack(PerpendicularContentX, VerticalContentSize, DirectionalStack):
 
         # This is the additional padding caused by a height value such as ember.FIT + 20
         vertical_padding = (
-            self.h.value if isinstance(self.h, FitSize) else 0
+            self.h.offset if isinstance(self.h, FitSize) else 0
         )
         spacing = self._get_element_spacing(
             self.rect.h, vertical_padding, isinstance(self.h, FitSize)
