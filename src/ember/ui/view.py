@@ -189,7 +189,7 @@ class View(ContextManager):
                         i += 1
                     log.size.line_break()
                     log.size.info(
-                        f"Tick finishing. Update took 1/{round(1/(time.time()-start_time))} of a second.",
+                        f"Tick finishing.",
                     )
                     log.size.info(
                         "---------------------- TICK END ----------------------"
