@@ -13,7 +13,11 @@ from .common import (
     BLUR_PYGAME,
     FocusDirection,
     package,
+    VERSION
 )
+
+from . import trait
+from .trait import Trait
 
 from . import event
 from .event import *
@@ -23,9 +27,6 @@ from .ui import *
 
 from . import base
 from .base import *
-
-from . import trait
-from .trait import Trait
 
 from . import font
 from .font import (
@@ -50,6 +51,8 @@ from . import style
 from . import size
 from .size import FIT, FILL, Size, ClampedSize, RATIO
 
+from .axis import HORIZONTAL, VERTICAL, Axis
+
 from .on_event import on_event
 
 from . import size
@@ -72,6 +75,8 @@ from .position import (
 )
 from . import spacing
 from .spacing import FILL_SPACING
+
+from ._init import init
 
 from .utility.stretch_surface import stretch_surface
 from .utility.spritesheet import SpriteSheet
@@ -99,4 +104,4 @@ def set_clock(clock: pygame.time.Clock) -> None:
     _c.clock = clock
 
 
-print("Ember 0.0.1")
+print(f"Ember {VERSION}")

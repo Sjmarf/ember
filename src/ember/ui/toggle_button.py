@@ -8,12 +8,13 @@ from ember.position import (
 )
 from ..size import SizeType, OptionalSequenceSizeType
 from .button import Button
-from ..event import TOGGLEON, TOGGLEOFF
+from ..event import TOGGLEDON, TOGGLEDOFF
 
-from ..event import BUTTONDOWN
+from ..event import CLICKEDDOWN
 from ..on_event import on_event
 
 from .text import Text
+
 
 class ToggleButton(Button):
     def __init__(
@@ -28,12 +29,6 @@ class ToggleButton(Button):
         size: OptionalSequenceSizeType = None,
         w: Optional[SizeType] = None,
         h: Optional[SizeType] = None,
-        content_pos: OptionalSequencePositionType = None,
-        content_x: Optional[PositionType] = None,
-        content_y: Optional[PositionType] = None,
-        content_size: OptionalSequenceSizeType = None,
-        content_w: Optional[SizeType] = None,
-        content_h: Optional[SizeType] = None,
         **kwargs
     ):
         super().__init__(
@@ -46,12 +41,6 @@ class ToggleButton(Button):
             size=size,
             w=w,
             h=h,
-            content_pos=content_pos,
-            content_x=content_x,
-            content_y=content_y,
-            content_size=content_size,
-            content_w=content_w,
-            content_h=content_h,
             **kwargs
         )
 
@@ -63,13 +52,15 @@ class ToggleButton(Button):
             if isinstance(self._elements[self.primary_element_index], Text)
             else None
         )
-        event = pygame.event.Event(event_type, element=self, text=text, active=self.active)
+        event = pygame.event.Event(
+            event_type, element=self, text=text, active=self.active
+        )
         self._post_event(event)
 
-    @on_event(BUTTONDOWN)
+    @on_event(CLICKEDDOWN)
     def _toggle_active(self):
         self._active = not self._active
-        self._post_button_event(TOGGLEON if self._active else TOGGLEOFF)
+        self._post_button_event(TOGGLEDON if self._active else TOGGLEDOFF)
 
     @property
     def active(self) -> bool:
@@ -79,4 +70,4 @@ class ToggleButton(Button):
     def active(self, value: bool) -> None:
         if self._active != value:
             self._active = value
-            self._post_button_event(TOGGLEON if self._active else TOGGLEOFF)
+            self._post_button_event(TOGGLEDON if self._active else TOGGLEDOFF)

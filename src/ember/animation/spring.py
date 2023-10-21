@@ -1,7 +1,9 @@
 import math
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from .animation import Animation, AnimationContext
-from ember.trait.trait import Trait
+
+if TYPE_CHECKING:
+    from ember.trait.trait import Trait
 
 from .. import common as _c
 

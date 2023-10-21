@@ -3,13 +3,11 @@ from typing import TYPE_CHECKING, Union
 import pygame
 
 from ember.base.element import Element
-from ember.event import ELEMENTDISABLED, ELEMENTENABLED
+from ember.event import DISABLED, ENABLED
 
 if TYPE_CHECKING:
     pass
-
-
-class Interactive(Element):
+class CanDisable(Element):
     """
     This class is a mixin, and should not be instantiated directly.
     It provides functionality for disabling the element.
@@ -30,9 +28,8 @@ class Interactive(Element):
         """
         if value != self._disabled:
             self._disabled = value
-            self._can_focus = not value
             self._set_disabled(value)
-            event = pygame.event.Event(ELEMENTDISABLED if value else ELEMENTENABLED, element=self)
+            event = pygame.event.Event(DISABLED if value else ENABLED, element=self)
             self._post_event(event)
             if self.parent is not None:
                 self.parent.update_min_size()

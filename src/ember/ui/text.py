@@ -3,7 +3,6 @@ from typing import Union, Optional, TYPE_CHECKING, Sequence
 from .. import log
 from ..common import ColorType
 from ..base.multi_layer_surfacable import MultiLayerSurfacable
-from ember.base.content_pos import ContentPos
 
 from ..font.base_font import Font
 from ..font.line import Line
@@ -23,18 +22,16 @@ if TYPE_CHECKING:
 from ember.trait import Trait
 
 
-class Text(ContentPos, MultiLayerSurfacable):
+class Text(MultiLayerSurfacable):
     """
     An Element that displays some text.
     """
 
-    variant_: Trait[TextVariant] = Trait(
+    variant: TextVariant = Trait(
         (), on_update=lambda self: self._update_surface()
     )
-    variant: TextVariant = variant_.value_descriptor()
 
-    font_: Trait[Font] = Trait(None)
-    font: Font = font_.value_descriptor()
+    font = Trait(None)
 
     def __init__(
         self,
@@ -53,9 +50,6 @@ class Text(ContentPos, MultiLayerSurfacable):
         size: OptionalSequenceSizeType = None,
         w: Optional[SizeType] = None,
         h: Optional[SizeType] = None,
-        content_pos: OptionalSequencePositionType = None,
-        content_x: Optional[PositionType] = None,
-        content_y: Optional[PositionType] = None,
     ):
         self._text: str = text
 
@@ -84,10 +78,6 @@ class Text(ContentPos, MultiLayerSurfacable):
             w=w,
             h=h,
             can_focus=False,
-            # ContentPos
-            content_pos=content_pos,
-            content_x=content_x,
-            content_y=content_y,
         )
 
         self.lines: list[Line] = []
@@ -102,11 +92,14 @@ class Text(ContentPos, MultiLayerSurfacable):
     ) -> None:
         rect = self.rect.move(*offset)
 
+        # Temporary until we reimplement a content trait system
+        content_y = CENTER
+        
         pos = (
-            rect.x - surface.get_abs_offset()[0] + (0.5 if self.rect.w % 2 == 1 else 0),
+            rect.x, #- surface.get_abs_offset()[0] + (0.5 if self.rect.w % 2 == 1 else 0),
             rect.y
-            + self.content_y.get(rect.h, self._surface_height)
-            - (0.5 if self.rect.h % 2 == 0 else 0)
+            + content_y.get(rect.h, self._surface_height)
+            - (0.5 if self.rect.h % 2 == 1 else 0)
             - surface.get_abs_offset()[1],
         )
 
@@ -119,9 +112,13 @@ class Text(ContentPos, MultiLayerSurfacable):
         my_surface: pygame.Surface,
     ) -> None:
         rect = self.rect.move(*offset)
+        
+        # Temporary until we reimplement a content trait system
+        content_y = CENTER
+        
         pos = (
             rect.x,
-            rect.y + self.content_y.get(rect.h, my_surface.get_height()),
+            rect.y + content_y.get(rect.h, my_surface.get_height()),
         )
 
         if self._text:
@@ -152,13 +149,13 @@ class Text(ContentPos, MultiLayerSurfacable):
             self._redraw_next_tick = False
 
     def _update_min_size(self) -> None:
-        self._min_w = (
+        self._min_size.w = (
             self._surface_width
             if self._surface_width
             else self.font.get_width_of_line(self._text, self.variant)
         )
 
-        self._min_h = (
+        self._min_size.h = (
             self._surface_height if self._surface_height else self.font.line_height
         )
 
@@ -169,12 +166,12 @@ class Text(ContentPos, MultiLayerSurfacable):
         max_width = (
             None if self.rect.w == 0 or isinstance(self.w, FitSize) else self.rect.w
         )
-
+        
         surfaces, self.lines = self.font.render(
             self._text,
             variant=self.variant,
             max_width=max_width,
-            align=self.content_x,
+            align=CENTER,
         )
 
         if (self._surface_width, self._surface_height) != (
@@ -254,7 +251,3 @@ class Text(ContentPos, MultiLayerSurfacable):
             if letter_index < i.start_index:
                 return n - 1
         return n
-
-
-Text.content_x_.default_value = CENTER
-Text.content_y_.default_value = CENTER

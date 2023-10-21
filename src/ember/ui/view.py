@@ -91,7 +91,9 @@ class View(ContextManager):
                     )
                 )
 
+        log.size.info("View created")
         for layer in self._layers:
+            log.size.info("Building layer...")
             layer.build()
 
         self._joystick_cooldown = 0
@@ -341,6 +343,7 @@ class View(ContextManager):
             layer.view = self
 
         self._layers.append(layer)
+        log.size.info("Building layer")
         layer.build()
         log.nav.info(f"Added layer {layer}.", self)
 

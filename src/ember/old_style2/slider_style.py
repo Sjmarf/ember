@@ -14,13 +14,13 @@ from ember.position import LEFT, AnchorPosition, TOPLEFT
 from ember.animation.ease import EaseInOut
 from ember.event import (
     ELEMENTHOVERED,
-    ELEMENTUNHOVERED,
-    ELEMENTFOCUSED,
+    UNHOVERED,
+    FOCUSED,
     ELEMENTUNFOCUSED,
-    ELEMENTENABLED,
-    ELEMENTDISABLED,
-    BUTTONDOWN,
-    BUTTONUP,
+    ENABLED,
+    DISABLED,
+    CLICKEDDOWN,
+    CLICKEDUP,
     SLIDERMOVED,
     SLIDERCONTROLACTIVATED,
     SLIDERCONTROLDEACTIVATED,
@@ -98,22 +98,22 @@ class SliderStyle(Style[Slider]):
 
         self.hover_state: State["Slider"] = State(
             activation_triggers=[ELEMENTHOVERED],
-            deactivation_triggers=[ELEMENTUNHOVERED],
+            deactivation_triggers=[UNHOVERED],
             priority=1,
             on_become_primary=self.on_hover,
             name="hover",
         )
 
         self.click_state: State["Slider"] = State(
-            activation_triggers=[BUTTONDOWN, SLIDERCONTROLACTIVATED],
-            deactivation_triggers=[BUTTONUP, SLIDERCONTROLDEACTIVATED],
+            activation_triggers=[CLICKEDDOWN, SLIDERCONTROLACTIVATED],
+            deactivation_triggers=[CLICKEDUP, SLIDERCONTROLDEACTIVATED],
             priority=3,
             on_become_primary=self.on_click,
             name="click",
         )
 
         self.focus_state: State["Slider"] = State(
-            activation_triggers=[ELEMENTFOCUSED],
+            activation_triggers=[FOCUSED],
             deactivation_triggers=[ELEMENTUNFOCUSED],
             priority=2,
             on_become_primary=self.on_focus,
@@ -121,8 +121,8 @@ class SliderStyle(Style[Slider]):
         )
 
         self.disabled_state: State["Slider"] = State(
-            activation_triggers=[ELEMENTDISABLED],
-            deactivation_triggers=[ELEMENTENABLED],
+            activation_triggers=[DISABLED],
+            deactivation_triggers=[ENABLED],
             priority=4,
             on_become_primary=self.on_disabled,
             name="disabled",

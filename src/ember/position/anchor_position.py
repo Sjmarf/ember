@@ -1,5 +1,7 @@
 from .position import Position
 
+from ember.axis import Axis, VERTICAL
+
 
 class AnchorPosition(Position):
     __slots__ = ("value", "percent", "size_offset")
@@ -44,7 +46,7 @@ class AnchorPosition(Position):
         else:
             return NotImplemented
 
-    def get(self, container_size: float = 0, element_size: float = 0) -> float:
+    def get(self, container_size: float = 0, element_size: float = 0, axis: Axis = VERTICAL) -> float:
         return (
             self.padding
             + element_size / 2

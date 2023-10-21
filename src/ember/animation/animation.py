@@ -9,7 +9,7 @@ from .animation_context import AnimationContext, SimpleAnimationContext
 
 class Animation(ABC):
     animation_stack: list[Optional["Animation"]] = [None]
-
+    
     def __enter__(self):
         self.animation_stack.append(self)
         return self

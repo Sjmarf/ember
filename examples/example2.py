@@ -41,9 +41,9 @@ while is_running:
         if event.type == pygame.QUIT:
             is_running = False
 
-        if event.type == ember.BUTTONDOWN:
+        if event.type == ember.CLICKEDDOWN:
             if event.element is play_button:
-                with ember.animation.EaseInOut(0.5):
+                with ember.animation.Spring(60, 1, 5):
                     stack.w = 150 if event.element.active else 100
 
     display.fill(ui.background_color)

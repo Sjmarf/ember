@@ -10,7 +10,6 @@ from ember.common import (
 from ember import log
 from ember.base.element import Element
 
-
 from ember.size import OptionalSequenceSizeType, SizeType, FillSize
 from ember.position import (
     PositionType,
@@ -20,23 +19,14 @@ from ember.position import (
 from .container import Container
 
 from ember.trait.trait import Trait
+from ember.trait.cascading_trait_value import CascadingTraitValue
 
 if TYPE_CHECKING:
     pass
 
 
 class MultiElementContainer(Container, ABC):
-    def __init__(
-        self,
-        *elements: Optional[SequenceElementType],
-        rect: Union[pygame.rect.RectType, Sequence, None] = None,
-        pos: Optional[SequencePositionType] = None,
-        x: Optional[PositionType] = None,
-        y: Optional[PositionType] = None,
-        size: OptionalSequenceSizeType = None,
-        w: Optional[SizeType] = None,
-        h: Optional[SizeType] = None,
-    ):
+    def __init__(self, *elements: Optional[SequenceElementType], **kwargs):
         """
         Base class for Containers that hold more than one element. Should not be instantiated directly.
         """
@@ -44,17 +34,7 @@ class MultiElementContainer(Container, ABC):
         self.layer = None
         self._elements: list[Optional[Element]] = []
 
-        super().__init__(
-            # Element
-            rect,
-            pos,
-            x,
-            y,
-            size,
-            w,
-            h,
-            # Style
-        )
+        super().__init__(**kwargs)
 
         if elements:
             if isinstance(elements[0], Generator):
@@ -89,13 +69,16 @@ class MultiElementContainer(Container, ABC):
         return item in self._elements
 
     def _build(self) -> None:
-        self.layer.can_focus_update_queue.append(self)
         with Trait.inspecting(Trait.Layer.PARENT), log.size.indent():
             for element in self._elements:
                 if element is not None:
                     self._prepare_element(element)
                     element.build()
         super()._build()
+
+    def _prepare_element(self, element: Element) -> None:
+        for value in self.cascading:
+            self.start_cascade(value)
 
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
@@ -105,6 +88,7 @@ class MultiElementContainer(Container, ABC):
                 i.render(surface, offset, alpha=alpha)
 
     def _update(self) -> None:
+        super()._update()
         for i in self._elements:
             if i is not None:
                 i.update()
@@ -115,11 +99,12 @@ class MultiElementContainer(Container, ABC):
         for element in self.elements:
             if element is None:
                 continue
-            element_w = element.get_abs_w(w)
-            element_h = element.get_abs_h(h)
+            
+            element_w = element.get_abs_w(w, element._axis)
+            element_h = element.get_abs_h(h, element._axis)
 
-            element_x = x + element.x.get(w, element_w)
-            element_y = y + element.y.get(h, element_h)
+            element_x = x + element.x.get(w, element_w, element._axis)
+            element_y = y + element.y.get(h, element_h, element._axis)
             element.visible = self.visible
             element.update_rect(surface, element_x, element_y, element_w, element_h)
 
@@ -142,13 +127,32 @@ class MultiElementContainer(Container, ABC):
         for i in self._elements:
             if i is not None and i._event(event):
                 return True
-        return False
+        return super()._event(event)
 
     def update_ancestry(self, ancestry: list["Element"]) -> None:
         super().update_ancestry(ancestry)
         child_ancestry = self.ancestry + [self]
         with log.ancestry.indent():
             [i.update_ancestry(child_ancestry) for i in self._elements if i is not None]
+
+    def update_cascading_value(self, value: CascadingTraitValue, depth: int) -> None:
+        if value.ref in self.cascading:
+            return
+        super().update_cascading_value(value, depth)
+        depth -= 1
+        if depth == 0:
+            return
+        with log.cascade.indent():
+            for element in self._elements:
+                element.update_cascading_value(value, depth)
+
+    def start_cascade(self, value: CascadingTraitValue) -> None:
+        with log.cascade.indent(f"Starting descent for {value}", self):
+            with Trait.inspecting(Trait.Layer.PARENT):
+                value.prepare_for_descent(self)
+                for element in self._elements:
+                    element.update_cascading_value(value, value.depth)
+        log.cascade.line_break()
 
     def set_elements(
         self,
@@ -188,8 +192,9 @@ class MultiElementContainer(Container, ABC):
         """
         Append an element to the end of the stack.
         """
-        with self.adding_element(element, update) as element:
-            self._elements.append(element)
+        with log.ancestry.indent(f"SET {self}, {element}"):
+            with self.adding_element(element, update) as element:
+                self._elements.append(element)
 
     def insert(
         self, index: int, element: Optional[ElementType], update: bool = True

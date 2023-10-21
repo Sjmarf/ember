@@ -12,11 +12,11 @@ We make no promises of backwards compatibility at this time - features may be ch
 
 Features
 ---------------
-- Readable, compact code.
-- Integration with Pygame’s event system for fluid handling of UI interactions.
+- Readable, compact syntax.
+- Integration with Pygame's event system for fluid handling of UI interactions.
 - An easy-to-use animation API.
 - Extensive customisation, with the ability to create custom UI elements and animation logic with ease.
-- Built with Pixel art in mind. Ember offers several built-in pixel art styles, as well as the ability to load your own pixel-art fonts from a spritesheet.
+- Built with pixel art in mind. Ember offers several built-in pixel art styles, as well as the ability to load your own pixel-art fonts from a spritesheet.
 - Support for keyboard and controller navigation.
 
 Getting Started
@@ -48,7 +48,7 @@ Alternative Pygame UI libraries
 
 
 Contributing
-—————————-
+---------------------
 I'm open to contributions. You are of course free to fork, modify and redistribute the library under the terms of the license if you so wish. If you have any questions, feel free to DM me `on Discord<https://discord.gg/pygame>`_ @sjmarf.
 
 .. toctree::

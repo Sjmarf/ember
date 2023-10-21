@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Any, Generator, Optional
 from contextlib import contextmanager
 
 if TYPE_CHECKING:
-    from .ui.base.element import Element
     from .material.material import Material
 
 
@@ -49,6 +48,7 @@ size = CustomLogger("ember.size")
 ancestry = CustomLogger("ember.ancestry")
 style = CustomLogger("ember.style")
 trait = CustomLogger("ember.trait")
+cascade = CustomLogger("ember.cascade")
 event_listener = CustomLogger("ember.event_listener")
 # Multi-layer Surfacable
 mls = CustomLogger("ember.mls")

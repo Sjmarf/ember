@@ -41,9 +41,12 @@ class Color(MaterialWithSizeCache):
         pos: tuple[float, float],
         size: tuple[float, float],
     ) -> bool:
+        if element not in self._cache:
+            return True
+        if 0 in self._cache[element].get_size():
+            return True
         return (
-            element not in self._cache
-            or self._cache[element].get_size() != size
+            self._cache[element].get_size() != size
             or self._cache[element].get_at((0, 0))[:3] != self._color[:-1]
         )
 
@@ -54,7 +57,7 @@ class Color(MaterialWithSizeCache):
         pos: tuple[float, float],
         size: tuple[float, float],
     ) -> Any:
-        surface = pygame.Surface(size, pygame.SRCALPHA)
+        surface = pygame.Surface((max(0.0, size[0]), max(1.0, size[1])), pygame.SRCALPHA)
         pygame.draw.rect(surface, self._color, (0, 0, *size), self.outline)
         return surface
 

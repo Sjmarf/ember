@@ -12,13 +12,13 @@ from ember.position import LEFT, RIGHT
 from ember.animation.ease import EaseInOut
 from ember.event import (
     ELEMENTHOVERED,
-    ELEMENTUNHOVERED,
-    ELEMENTFOCUSED,
+    UNHOVERED,
+    FOCUSED,
     ELEMENTUNFOCUSED,
-    ELEMENTENABLED,
-    ELEMENTDISABLED,
-    TOGGLEON,
-    TOGGLEOFF,
+    ENABLED,
+    DISABLED,
+    TOGGLEDON,
+    TOGGLEDOFF,
 )
 
 from ember.ui.toggle_button import ToggleButton
@@ -73,28 +73,28 @@ class SwitchStyle(Style[ToggleButton]):
 
         self.hover_state: State["ToggleButton"] = State(
             activation_triggers=[ELEMENTHOVERED],
-            deactivation_triggers=[ELEMENTUNHOVERED],
+            deactivation_triggers=[UNHOVERED],
             priority=1,
             on_become_primary=self.on_hover,
         )
 
         self.active_state: State["ToggleButton"] = State(
-            activation_triggers=[TOGGLEON],
-            deactivation_triggers=[TOGGLEOFF],
+            activation_triggers=[TOGGLEDON],
+            deactivation_triggers=[TOGGLEDOFF],
             on_become_active=self.on_toggled_on,
             on_become_deactive=self.on_toggled_off,
             priority=-1
         )
 
         self.focus_state: State["ToggleButton"] = State(
-            activation_triggers=[ELEMENTFOCUSED],
+            activation_triggers=[FOCUSED],
             deactivation_triggers=[ELEMENTUNFOCUSED],
             priority=2,
             on_become_primary=self.on_focus,
         )
         self.disabled_state: State["ToggleButton"] = State(
-            activation_triggers=[ELEMENTDISABLED],
-            deactivation_triggers=[ELEMENTENABLED],
+            activation_triggers=[DISABLED],
+            deactivation_triggers=[ENABLED],
             priority=3,
             on_become_primary=self.on_disabled,
         )

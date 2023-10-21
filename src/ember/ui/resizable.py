@@ -36,13 +36,7 @@ class Resizable(Box):
         y: Optional[PositionType] = None,
         size: OptionalSequenceSizeType = None,
         w: Optional[SizeType] = None,
-        h: Optional[SizeType] = None,
-        content_pos: OptionalSequencePositionType = None,
-        content_x: Optional[PositionType] = None,
-        content_y: Optional[PositionType] = None,
-        content_size: OptionalSequenceSizeType = None,
-        content_w: Optional[SizeType] = None,
-        content_h: Optional[SizeType] = None
+        h: Optional[SizeType] = None
     ):
         self.handles: Sequence[BasicPosition] = (
             [handles] if isinstance(handles, Position) else handles
@@ -62,13 +56,7 @@ class Resizable(Box):
             y=y,
             size=size,
             w=w,
-            h=h,
-            content_pos=content_pos,
-            content_x=content_x,
-            content_y=content_y,
-            content_size=content_size,
-            content_w=content_w,
-            content_h=content_h
+            h=h
         )
 
     def _update(self) -> None:

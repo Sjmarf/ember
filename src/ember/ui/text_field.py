@@ -431,7 +431,6 @@ class TextField(Interactive, Style, Element):
             or element_y + element_h < surface.get_abs_offset()[1]
             or element_y > surface.get_abs_offset()[1] + surface.get_height()
         ):
-            print(element_x, element_y, element_w, element_h)
             self._scroll.visible = False
         else:
             self._scroll.visible = True
@@ -578,8 +577,6 @@ class TextField(Interactive, Style, Element):
                 elif event.key == pygame.K_v:
                     # paste
                     data = pygame.scrap.get_text()
-
-                    if True: print("hi")
 
                     new_text = (
                         self._text[: self._main_cursor.letter_index]

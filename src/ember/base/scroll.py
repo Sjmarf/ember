@@ -6,20 +6,13 @@ from enum import Enum
 from ember import common as _c
 from ember import log
 
-from ember.event import SCROLLMOVED
-
 from .multi_element_container import MultiElementContainer
-
-from .content_size_direction import DirectionalContentSize
-from .content_pos_direction import DirectionalContentPos
 
 if TYPE_CHECKING:
     from .element import Element
 
 
-class Scroll(
-    DirectionalContentPos, DirectionalContentSize, MultiElementContainer, ABC
-):
+class Scroll(MultiElementContainer, ABC):
     class MovementCause(Enum):
         SCROLL = 0
         VISIBILITY = 1

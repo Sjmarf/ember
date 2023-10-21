@@ -3,19 +3,14 @@ import abc
 import pygame
 import copy
 from weakref import WeakSet
+from enum import Enum
 from typing import Union, TYPE_CHECKING, Optional, Sequence, Callable, Iterable, Type
 from ember import log
-
-from ember.event import (
-    ELEMENTFOCUSED,
-    ELEMENTUNFOCUSED,
-    ELEMENTHOVERED,
-    ELEMENTUNHOVERED,
-)
 
 if TYPE_CHECKING:
     from ember.ui.view import ViewLayer
     from .container import Container
+    from ember.material_repository import MaterialRepository
 
 from ember.base.context_manager import ContextManager
 from ember.animation.animation import Animation, AnimationContext
@@ -28,126 +23,122 @@ from ember.position import (
     CENTER,
 )
 
-from ember.trait import TraitValue, SizeTrait, PositionTrait
+from ember.trait import Trait
+from ember.size import load_size
+from ember.position import load_position
+from ember.trait.cascading_trait_value import CascadingTraitValue
 
 from ember import common as _c
+from ember import axis
+from ember.axis import Axis, VERTICAL, HORIZONTAL
 
-from ..on_event import queue as on_event_queue
+from .element_meta import ElementMeta
+from ember.callback_registry import CallbackRegistry
 
 
 EmptyCallable = Callable[[], None]
 MethodCallable = Callable[["Element"], None]
 
+class ElementFRect(pygame.FRect):
+    @property
+    def rel_pos1(self) -> float:
+        if axis.axis == HORIZONTAL:
+            return self.x
+        return self.y
 
-class CallbackRegistry:
-    def __init__(self):
-        self.calls: dict[Optional[int], set[str]] = {None: set()}
+    @property
+    def rel_pos2(self) -> float:
+        if axis.axis == HORIZONTAL:
+            return self.y
+        return self.x
 
-    def __getitem__(self, item: Optional[int]):
-        return self.calls[item]
+    @property
+    def rel_size1(self) -> float:
+        if axis.axis == HORIZONTAL:
+            return self.w
+        return self.h
 
-    def __bool__(self) -> bool:
-        return len(self.calls) > 1 or bool(self.calls[None])
-
-    def add_callback(self, event_types: Iterable[int], func: MethodCallable) -> None:
-        if not event_types:
-            self.calls[None].add(func.__name__)
-            return
-
-        for event_type in event_types:
-            if event_type not in self.calls:
-                self.calls[event_type] = set()
-            if func.__name__ not in self.calls[event_type]:
-                self.calls[event_type].add(func.__name__)
-
-    def process_event(self, element: "Element", event_type: Optional[int]) -> None:
-        for call in self.calls[None]:
-            getattr(element, call)()
-        if calls := self.calls.get(event_type):
-            for call in calls:
-                getattr(element, call)()
-
-    def copy(self) -> "CallbackRegistry":
-        new = copy.copy(self)
-        new.calls = {k: v.copy() for k, v in self.calls.items()}
-        return new
-
-    def extend(self, registry: "CallbackRegistry") -> None:
-        for event_type, calls in registry.calls.items():
-            if event_type in self.calls:
-                self.calls[event_type].update(calls)
-            else:
-                self.calls[event_type] = calls
+    @property
+    def rel_size2(self) -> float:
+        if axis.axis == HORIZONTAL:
+            return self.h
+        return self.w
 
 
-class ElementMeta(abc.ABCMeta, type):
-    def __init__(cls: Type["Element"], name, bases, attrs):
-        super().__init__(name, bases, attrs)
+class ElementMinSize:
+    def __init__(self) -> None:
+        self.w: float = 0
+        self.h: float = 0
 
-        if on_event_queue or (
-            len(bases) > 1
-            and any(getattr(i, "_callback_registry", False) for i in bases)
-        ):
-            log.event_listener.line_break()
-            with log.event_listener.indent(
-                f"Creating new CallbackRegistry for {name}..."
-            ):
-                old_registry = cls._callback_registry
-                log.event_listener.info(f"Registry copied from {bases[0].__name__}")
-                cls._callback_registry = cls._callback_registry.copy()
+    @property
+    def rel_size1(self) -> float:
+        if axis.axis == HORIZONTAL:
+            return self.w
+        return self.h
 
-                for base in bases:
-                    if (
-                        getattr(base, "_callback_registry", old_registry)
-                        is not old_registry
-                    ):
-                        log.event_listener.info(
-                            f"Adding callbacks from {base.__name__}"
-                        )
-                        cls._callback_registry.extend(base._callback_registry)
+    @rel_size1.setter
+    def rel_size1(self, value: float) -> None:
+        if axis.axis == HORIZONTAL:
+            self.w = value
+        else:
+            self.h = value
 
-                for item in on_event_queue:
-                    log.event_listener.info(
-                        f"Adding queued callback {item[0].__name__}"
-                    )
-                    cls._callback_registry.add_callback(item[1], item[0])
-                on_event_queue.clear()
+    @property
+    def rel_size2(self) -> float:
+        if axis.axis == HORIZONTAL:
+            return self.h
+        return self.w
 
+    @rel_size2.setter
+    def rel_size2(self, value: float) -> None:
+        if axis.axis == HORIZONTAL:
+            self.h = value
+        else:
+            self.w = value
 
 class Element(abc.ABC, metaclass=ElementMeta):
     """
     The base element class. All UI elements in the library inherit from this class.
     """
 
-    _trait_values: tuple[TraitValue] = ()
+    _traits: tuple[Trait] = ()
+    _material_repositories: tuple["MaterialRepository"] = ()
     _callback_registry: CallbackRegistry = CallbackRegistry()
     _instances = WeakSet()
 
     # ----------------------------
 
-    x_: PositionTrait = PositionTrait(
+    def _geometry_trait_modified(self, trait_name: str) -> None:
+        with log.size.indent(f"Trait '{trait_name}' modified:"):
+            self.update_min_size_next_tick(must_update_parent=True)
+
+    x = Trait(
         default_value=CENTER,
-        on_update=lambda self: self.update_min_size_next_tick(must_update_parent=True),
+        on_update=lambda self: self._geometry_trait_modified("x"),
+        default_cascade_depth=1,
+        load_value_with=load_position,
     )
-    x: Position = x_.value_descriptor()
 
-    y_: PositionTrait = PositionTrait(
+    y = Trait(
         default_value=CENTER,
-        on_update=lambda self: self.update_min_size_next_tick(must_update_parent=True),
+        on_update=lambda self: self._geometry_trait_modified("y"),
+        default_cascade_depth=1,
+        load_value_with=load_position,
     )
-    y: Position = y_.value_descriptor()
 
-    w_: SizeTrait = SizeTrait(
+    w = Trait(
         default_value=FIT,
-        on_update=lambda self: self.update_min_size_next_tick(must_update_parent=True),
+        on_update=lambda self: self._geometry_trait_modified("w"),
+        default_cascade_depth=1,
+        load_value_with=load_size,
     )
-    w: Size = w_.value_descriptor()
 
-    h_: SizeTrait = SizeTrait(
+    h = Trait(
         default_value=FIT,
-        on_update=lambda self: self.update_min_size_next_tick(must_update_parent=True),
+        on_update=lambda self: self._geometry_trait_modified("h"),
+        default_cascade_depth=1,
+        load_value_with=load_size,
     )
-    h: Size = h_.value_descriptor()
 
     # ----------------------------
 
@@ -166,7 +157,8 @@ class Element(abc.ABC, metaclass=ElementMeta):
         w: Optional[SizeType] = None,
         h: Optional[SizeType] = None,
         layer: Optional["ViewLayer"] = None,
-        can_focus: bool = True,
+        can_focus: bool = False,
+        axis: Axis = VERTICAL,
     ):
         self.layer: Optional["ViewLayer"] = layer
         """
@@ -189,12 +181,7 @@ class Element(abc.ABC, metaclass=ElementMeta):
         Is :code:`True` when any part of the element is visible on the screen. Read-only.
         """
 
-        self.hovered: bool = True
-        """
-        Is :code:`True` when the mouse is hovered over the button. Read-only.
-        """
-
-        self.rect = pygame.FRect(0, 0, 0, 0)
+        self.rect = ElementFRect(0, 0, 0, 0)
         """
         A :code:`pygame.FRect` object containing the absolute position and size of the element. Read-only.
         """
@@ -224,8 +211,7 @@ class Element(abc.ABC, metaclass=ElementMeta):
             else:
                 w, h = size, size
 
-        self._min_w: float = 0
-        self._min_h: float = 0
+        self._min_size: ElementMinSize = ElementMinSize()
 
         self.w = w
         self.h = h
@@ -234,6 +220,8 @@ class Element(abc.ABC, metaclass=ElementMeta):
 
         if ContextManager.context_stack[-1] is not None:
             ContextManager.context_stack[-1].context_queue.append(self)
+
+        self._axis = axis
 
     def build(self) -> None:
         if self._has_built:
@@ -250,8 +238,41 @@ class Element(abc.ABC, metaclass=ElementMeta):
         """
 
     def update_rect(
-        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
+        self,
+        surface: pygame.Surface,
+        x: Optional[float] = None,
+        y: Optional[float] = None,
+        w: Optional[float] = None,
+        h: Optional[float] = None,
+        rel_pos1: Optional[float] = None,
+        rel_pos2: Optional[float] = None,
+        rel_size1: Optional[float] = None,
+        rel_size2: Optional[float] = None,
     ) -> None:
+        if axis.axis == HORIZONTAL:
+            if rel_pos1 is not None:
+                x = rel_pos1
+            if rel_pos2 is not None:
+                y = rel_pos2
+            if rel_size1 is not None:
+                w = rel_size1
+            if rel_size2 is not None:
+                h = rel_size2
+        else:
+            if rel_pos2 is not None:
+                x = rel_pos2
+            if rel_pos1 is not None:
+                y = rel_pos1
+            if rel_size2 is not None:
+                w = rel_size2
+            if rel_size1 is not None:
+                h = rel_size1
+
+        if None in (x, y, w, h):
+            raise ValueError(
+                f"Missing value for updated element geometry - ({x}, {y}, {w}, {h})"
+            )
+
         if self in self.layer.rect_update_queue:
             log.size.info(
                 "Element is queued for update but recieved an update first, removing from list.",
@@ -293,11 +314,14 @@ class Element(abc.ABC, metaclass=ElementMeta):
             int(h),
         )
 
+        prev_axis = axis.axis
+        axis.axis = self._axis
         with log.size.indent(
-            f"Rect updated [{self.rect.x:.2f}, {self.rect.y:.2f}, {self.rect.w:.2f}, {self.rect.h:.2f}].",
+            f"Rect updating with axis {axis.axis}: [{self.rect.x:.2f}, {self.rect.y:.2f}, {self.rect.w:.2f}, {self.rect.h:.2f}].",
             self,
         ):
             self._update_rect(surface, x, y, w, h)
+            axis.axis = prev_axis
 
     def _update_rect(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
@@ -333,17 +357,18 @@ class Element(abc.ABC, metaclass=ElementMeta):
     def update_min_size(
         self, proprogate: bool = True, must_update_parent: bool = False
     ) -> None:
-        old_w, old_h = self._min_w, self._min_h
+        old_w, old_h = self._min_size.w, self._min_size.h
 
+        prev_axis = axis.axis
+        axis.axis = self._axis
         self._update_min_size()
-
-        log.size.info(f"{self.w}, {self.h}, {self._min_w, self._min_h}")
+        axis.axis = prev_axis
 
         # If the container is not empty
         if self:
             match (
-                self._min_w == 0 and isinstance(self.w, FitSize),
-                self._min_h == 0 and isinstance(self.h, FitSize),
+                self._min_size.w == 0 and isinstance(self.w, FitSize),
+                self._min_size.h == 0 and isinstance(self.h, FitSize),
             ):
                 case (False, False):
                     pass
@@ -372,23 +397,23 @@ class Element(abc.ABC, metaclass=ElementMeta):
 
         cut_chain = False
 
-        match (old_w != self._min_w, old_h != self._min_h):
+        match (old_w != self._min_size.w, old_h != self._min_size.h):
             case (True, True):
                 log.size.info(
                     f"Minimum size changed from {(old_w, old_h)} to "
-                    f"{self._min_w, self._min_h}.",
+                    f"{self._min_size.w, self._min_size.h}.",
                     self,
                 )
 
             case (True, False):
                 log.size.info(
-                    f"Minimum width changed from {old_w} to {self._min_w}. Minimum height {self._min_h} not changed.",
+                    f"Minimum width changed from {old_w} to {self._min_size.w}. Minimum height {self._min_size.h} not changed.",
                     self,
                 )
 
             case (False, True):
                 log.size.info(
-                    f"Minimum height changed from {old_h} to {self._min_h}. Minimum width {self._min_w} not changed.",
+                    f"Minimum height changed from {old_h} to {self._min_size.h}. Minimum width {self._min_size.w} not changed.",
                     self,
                 )
 
@@ -415,14 +440,12 @@ class Element(abc.ABC, metaclass=ElementMeta):
         Used internally by the library. Calling this method calls the same method for the container that the element
         is inside.
         """
-        pass
 
     def render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
         """
-        Used internally by the library. Renders the element, with transitions taken into consideration.
-
+        Used internally by the library.
         """
         self._render(surface, offset, alpha=alpha)
 
@@ -432,7 +455,6 @@ class Element(abc.ABC, metaclass=ElementMeta):
         """
         Used intenally by the library.
         """
-        pass
 
     def update(self) -> None:
         """
@@ -442,22 +464,12 @@ class Element(abc.ABC, metaclass=ElementMeta):
             if anim_context._update():
                 anim_context._finish()
                 self._animation_contexts.remove(anim_context)
-
-        if (hovered := self.rect.collidepoint(_c.mouse_pos)) != self.hovered:
-            self.hovered = hovered
-            if hovered:
-                event = pygame.event.Event(ELEMENTHOVERED, element=self)
-            else:
-                event = pygame.event.Event(ELEMENTUNHOVERED, element=self)
-            self._post_event(event)
-
         self._update()
 
     def _update(self) -> None:
         """
         Used intenally by the library.
         """
-        pass
 
     def update_ancestry(self, ancestry: list["Element"]) -> None:
         self.ancestry = ancestry
@@ -469,22 +481,13 @@ class Element(abc.ABC, metaclass=ElementMeta):
         else:
             self.parent, self.layer = None, None
 
-    def _focus_chain(
-        self, direction: _c.FocusDirection, previous: Optional["Element"] = None
-    ) -> "Element":
-        # 'previous' is used for going back up the chain - it is set to None when going downwards
-
-        if direction in {
-            _c.FocusDirection.IN,
-            _c.FocusDirection.IN_FIRST,
-            _c.FocusDirection.SELECT,
-        }:
-            log.nav.info("Returning self.")
-            return self
-        elif self.parent:
-            # Go up a level and try again
-            log.nav.info(f"-> parent {self.parent}.")
-            return self.parent._focus_chain(direction, previous=self)
+    def update_cascading_value(self, value: CascadingTraitValue, depth: int) -> None:
+        if isinstance(self, value.ref.owner):
+            # We have to use setattr here because of CanPivot properties
+            log.cascade.info("Value set", self)
+            setattr(self, value.ref.trait.name, value.value)
+        else:
+            log.cascade.info(f"Not an instance of {value.ref.owner}, did not set", self)
 
     def _event(self, event: pygame.event.Event) -> bool:
         """
@@ -493,69 +496,68 @@ class Element(abc.ABC, metaclass=ElementMeta):
         """
         return False
 
-    def _animatable_value(self, func: callable, **kwargs) -> bool:
-        if (anim := Animation.animation_stack[-1]) is not None:
-            context = anim.create_context(self, func, kwargs)
-            self._animation_contexts.append(context)
-            return True
-        return False
-
-    def _post_event(self, event: pygame.event.Event) -> None:
+    def _post_event(self, event: Union[pygame.event.Event, int]) -> None:
+        if isinstance(event, int):
+            event = pygame.event.Event(event, element=self)
         pygame.event.post(event)
-        self._callback_registry.process_event(self, event.type)
+        self._callback_registry.process_event(self, event.type) 
 
-    def get_abs_w(self, max_width: float = 0) -> float:
+    def get_abs_w(self, max_width: float = 0, axis: Optional[Axis] = None) -> float:
         """
         Get the width of the element as a float, given the maximum width to fill.
         """
-        return self.w.get(self._min_w, max_width, self.rect.h)
+        return self.w.get(self._min_size.w, max_width, self.rect.h, axis if axis is not None else self._axis)
 
-    def get_abs_h(self, max_height: float = 0) -> float:
+    def get_abs_h(self, max_height: float = 0, axis: Optional[Axis] = None) -> float:
         """
         Get the height of the element as a float, given the maximum height to fill.
         """
-        return self.h.get(self._min_h, max_height, self.rect.w)
+        return self.h.get(self._min_size.h, max_height, self.rect.w, axis if axis is not None else self._axis)
 
-    def focus(self) -> None:
-        """
-        Focuses the element. Only works if the element is inside a ViewLayer.
-        """
-        if self.layer:
-            if self.layer.element_focused is not self:
-                self.layer.element_focused = self
-                event = pygame.event.Event(ELEMENTFOCUSED, element=self)
-                self._post_event(event)
-                if not self.visible:
-                    self.parent.make_visible(self)
-        else:
-            raise _c.Error(
-                f"Cannot focus {self} because element is not inside of a ViewLayer."
-            )
+    def get_abs_rel_size1(self, max_size: float = 0) -> float:
+        if axis.axis == HORIZONTAL:
+            return self.get_abs_w(max_size)
+        return self.get_abs_h(max_size)
 
-    def unfocus(self) -> None:
-        """
-        Unfocuses the element.
-        """
-        if self.layer:
-            if self.layer.element_focused is self:
-                self.layer.element_focused = None
-                event = pygame.event.Event(ELEMENTUNFOCUSED, element=self)
-                self._post_event(event)
-        else:
-            raise _c.Error(
-                f"Cannot unfocus {self} because element is not inside of a ViewLayer."
-            )
+    def get_abs_rel_size2(self, max_size: float = 0) -> float:
+        if axis.axis == HORIZONTAL:
+            return self.get_abs_h(max_size)
+        return self.get_abs_w(max_size)
 
     @property
-    def focused(self) -> bool:
-        return self.layer.element_focused is self
+    def rel_pos1(self) -> Size:
+        if axis.axis == HORIZONTAL:
+            return self.x
+        return self.y
 
-    @focused.setter
-    def focused(self, value: bool):
-        if value:
-            self.focus()
-        else:
-            self.unfocus()
+    @property
+    def rel_pos2(self) -> Size:
+        if axis.axis == HORIZONTAL:
+            return self.y
+        return self.x
+
+    @property
+    def rel_size1(self) -> Size:
+        if axis.axis == HORIZONTAL:
+            return self.w
+        return self.h
+
+    @property
+    def rel_size2(self) -> Size:
+        if axis.axis == HORIZONTAL:
+            return self.h
+        return self.w
+
+    @property
+    def axis(self) -> Axis:
+        return self._axis
+
+    @axis.setter
+    def axis(self, value: Axis) -> None:
+        self._axis = value
+        self.update_ancestry(self.ancestry)
+        with log.size.indent("Axis modified:"):
+            self.update_min_size_next_tick(must_update_parent=True)
 
     def copy(self) -> "Element":
         new = copy.copy(self)

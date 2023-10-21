@@ -1,25 +1,24 @@
 import pygame
 
-ELEMENTFOCUSED = pygame.event.custom_type()
-ELEMENTUNFOCUSED = pygame.event.custom_type()
+FOCUSED = pygame.event.custom_type()
+UNFOCUSED = pygame.event.custom_type()
 
-ELEMENTHOVERED = pygame.event.custom_type()
-ELEMENTUNHOVERED = pygame.event.custom_type()
+HOVERED = pygame.event.custom_type()
+UNHOVERED = pygame.event.custom_type()
 
-ELEMENTDISABLED = pygame.event.custom_type()
-ELEMENTENABLED = pygame.event.custom_type()
+DISABLED = pygame.event.custom_type()
+ENABLED = pygame.event.custom_type()
 
-BUTTONDOWN = pygame.event.custom_type()
-BUTTONUP = pygame.event.custom_type()
+CLICKEDDOWN = pygame.event.custom_type()
+CLICKEDUP = pygame.event.custom_type()
 
-TOGGLEON = pygame.event.custom_type()
-TOGGLEOFF = pygame.event.custom_type()
+ACTIVATED = pygame.event.custom_type()
+DEACTIVATED = pygame.event.custom_type()
 
-SLIDERMOVED = pygame.event.custom_type()
-SLIDERCONTROLACTIVATED = pygame.event.custom_type()
-SLIDERCONTROLDEACTIVATED = pygame.event.custom_type()
+TOGGLEDON = pygame.event.custom_type()
+TOGGLEDOFF = pygame.event.custom_type()
 
-SCROLLMOVED = pygame.event.custom_type()
+VALUEMODIFIED = pygame.event.custom_type()
 
 VIEWEXITSTARTED = pygame.event.custom_type()
 VIEWEXITFINISHED = pygame.event.custom_type()

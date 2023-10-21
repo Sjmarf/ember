@@ -1,4 +1,5 @@
 import pygame
+from functools import partial
 from typing import Union, Sequence, Optional, Any, TYPE_CHECKING
 from os import PathLike, fspath
 
@@ -8,6 +9,8 @@ from .material import MaterialWithSizeCache
 if TYPE_CHECKING:
     from ember.ui.base.element import Element
 
+
+from ember._init import init_task
 
 class StretchedSurface(MaterialWithSizeCache):
     """
@@ -21,14 +24,8 @@ class StretchedSurface(MaterialWithSizeCache):
         alpha: int = 255,
     ):
         super().__init__(alpha)
-        self.surface: pygame.Surface
-
-        if isinstance(surface, pygame.Surface):
-            self.surface = surface
-        else:
-            if isinstance(surface, PathLike):
-                surface = fspath(surface)
-            self.surface = pygame.image.load(surface).convert_alpha()
+        self.surface: Optional[pygame.Surface] = None
+        init_task(partial(self.load_surface, surface))
 
         """
         The surface to stretch.
@@ -37,6 +34,14 @@ class StretchedSurface(MaterialWithSizeCache):
         """
         (left, right, top, bottom). The number of pixels from each side that should be kept intact.
         """
+
+    def load_surface(self, surface: Union[str, pygame.Surface, PathLike]) -> None:
+        if isinstance(surface, pygame.Surface):
+            self.surface = surface
+        else:
+            if isinstance(surface, PathLike):
+                surface = fspath(surface)
+            self.surface = pygame.image.load(surface).convert_alpha()
 
     def __repr__(self) -> str:
         return "<StretchedSurface>"

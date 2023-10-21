@@ -1,6 +1,5 @@
 from typing import Union as _Union, Sequence as _Sequence, Optional as _Optional
-from .position import Position
-from .absolute_position import AbsolutePosition
+from .position import Position, AbsolutePosition, PivotablePosition, load_position
 from .anchor_position import (
     AnchorPosition,
     LeftPosition,
@@ -24,7 +23,6 @@ from .dual_position import (
     MidRightPosition,
     MidLeftPosition,
 )
-from .load_position import load_position
 
 PositionType = _Union[int, Position]
 

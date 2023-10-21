@@ -9,9 +9,7 @@ from ..common import (
 )
 from typing import Union, Optional, Sequence, TYPE_CHECKING
 
-from ember.base.stack import Stack
-from ..base.content_pos import ContentPos
-from ember.base.content_size import ContentSize
+from ember.base.focus_passthrough import FocusPassthrough
 from .. import log
 
 from ember.base.element import Element
@@ -25,7 +23,7 @@ from ember.position import (
 from ..size import SizeType, OptionalSequenceSizeType, FILL
 
 
-class ZStack(ContentPos, ContentSize, Stack):
+class ZStack(FocusPassthrough):
     def __init__(
         self,
         *elements: Optional[SequenceElementType],
@@ -37,12 +35,6 @@ class ZStack(ContentPos, ContentSize, Stack):
         size: OptionalSequenceSizeType = None,
         w: Optional[SizeType] = None,
         h: Optional[SizeType] = None,
-        content_pos: OptionalSequencePositionType = None,
-        content_x: Optional[PositionType] = None,
-        content_y: Optional[PositionType] = None,
-        content_size: OptionalSequenceSizeType = None,
-        content_w: Optional[SizeType] = None,
-        content_h: Optional[SizeType] = None,
     ):
         super().__init__(
             # Stack
@@ -54,15 +46,7 @@ class ZStack(ContentPos, ContentSize, Stack):
             y=y,
             size=size,
             w=w,
-            h=h,
-            # ContentPos
-            content_pos=content_pos,
-            content_x=content_x,
-            content_y=content_y,
-            # ContentSize
-            content_size=content_size,
-            content_w=content_w,
-            content_h=content_h,
+            h=h
         )
 
     def __repr__(self) -> str:
@@ -150,4 +134,4 @@ class ZStack(ContentPos, ContentSize, Stack):
             return element._focus_chain(_c.FocusDirection.IN)
 
 
-ZStack.focus_on_entry_.default_value = FOCUS_LAST
+ZStack.focus_on_entry.default_value = FOCUS_LAST

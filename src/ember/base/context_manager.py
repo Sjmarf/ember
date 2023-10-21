@@ -31,7 +31,7 @@ class ContextManager(ABC):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.context_stack.pop()
-
+        
         # Only attribute elements that aren't already attributed to an element.
         for element in self.context_queue:
             if element.parent is None:

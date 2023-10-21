@@ -14,8 +14,9 @@ T = TypeVar("T")
 
 class TraitContext(Generic[T]):
     __slots__ = (
+        "__weakref__",
         "_element",
-        "trait_value",
+        "trait",
         "value",
         "animation_value",
         "element_value",
@@ -23,12 +24,13 @@ class TraitContext(Generic[T]):
         "_children",
     )
 
-    def __init__(self, element: "Element", trait_value: "TraitValue") -> None:
+    def __init__(self, element: "Element", trait: "Trait") -> None:
         self._element: "Element" = element
-        self.trait_value: TraitValue = trait_value
+        self.trait: "Trait" = trait
 
-        trait = getattr(self._element, self.trait_value.trait_name)
         self.value: Optional[T] = trait._default_value
+        if self.value is not None:
+            trait.activate_value(self.value, self._element)
 
         self.animation_value: Union[T, "TraitValue", None] = None
         self.element_value: Union[T, "TraitValue", None] = None
@@ -37,13 +39,12 @@ class TraitContext(Generic[T]):
         self._children: list["TraitContext"] = []
 
     def __repr__(self) -> str:
-        trait = getattr(self._element, self.trait_value.trait_name)
         return (
             f"<TraitContext(value={self.value}, "
             f"animation={self.animation_value}, "
             f"element={self.element_value}, "
             f"parent={self.parent_value}, "
-            f"default={trait._default_value})>"
+            f"default={self.trait._default_value})>"
         )
 
     def __getitem__(self, item: TraitLayer) -> Union[T, "TraitValue", None]:
@@ -52,29 +53,37 @@ class TraitContext(Generic[T]):
         if item == TraitLayer.PARENT:
             return self.parent_value
         return self.animation_value
+    
+    def __setitem__(self, layer: TraitLayer, value: Union[T, "TraitValue", None]) -> None:
+        if layer == TraitLayer.ELEMENT:
+            self.element_value = value
+        elif layer == TraitLayer.PARENT:
+            self.parent_value = value
+        else:
+            self.animation_value = value        
+    
+    def update_existing_value(self, old_value: Union[T, "Trait", None], new_value: Union[T, "Trait", None]) -> None:
+        if self.value is new_value:
+            self.value = old_value
+            self.set_value(new_value)
 
     def set_value(
         self,
         value: Union[T, "Trait", None],
     ) -> bool:
-
         if not trait_layer.inspected == TraitLayer.DEFAULT:
             current_value = self[trait_layer.inspected]
-            if current_value == value:
-                return False
+            
+            #if current_value is value:
+                #return False
 
             if isinstance(current_value, TraitContext):
                 current_value._children.remove(self)
 
             if isinstance(value, TraitContext):
                 value._children.append(self)
-
-            if trait_layer.inspected == TraitLayer.ELEMENT:
-                self.element_value = value
-            elif trait_layer.inspected == TraitLayer.PARENT:
-                self.parent_value = value
-            else:
-                self.animation_value = value
+            
+            self[trait_layer.inspected] = value
 
         old_val = self.value
         needs_update = self.update()
@@ -102,15 +111,18 @@ class TraitContext(Generic[T]):
         return True
 
     def update(self) -> bool:
-        trait = getattr(self._element, self.trait_value.trait_name)
-        for i in (self.animation_value, self.element_value, self.parent_value, trait._default_value):
+        for i in (self.animation_value, self.element_value, self.parent_value, self.trait._default_value):
             if i is not None:
                 if isinstance(i, TraitContext):
                     i = i.value
                     if i is None:
                         continue
-                if i != self.value:
+                if i is not self.value:
+                    if self.value is not None:
+                        self.trait.deactivate_value(self.value, self)
                     self.value = i
+                    if i is not None:
+                        self.trait.activate_value(self.value, self)
                     return True
                 return False
 
@@ -120,9 +132,8 @@ class TraitContext(Generic[T]):
         return True
 
     def send_callbacks(self) -> None:
-        trait = getattr(self._element, self.trait_value.trait_name)
         if self._element._has_built:
-            for call in trait.on_update:
+            for call in self.trait.on_update:
                 call(self._element)
 
             for child in self._children:

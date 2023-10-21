@@ -8,14 +8,14 @@ from ..common import MaterialType
 from ..utility.load_material import load_material
 from ..size import OptionalSequenceSizeType, FILL, SizeType
 from ..event import (
-    BUTTONDOWN,
-    BUTTONUP,
+    CLICKEDDOWN,
+    CLICKEDUP,
     ELEMENTHOVERED,
-    ELEMENTUNHOVERED,
-    ELEMENTFOCUSED,
+    UNHOVERED,
+    FOCUSED,
     ELEMENTUNFOCUSED,
-    ELEMENTENABLED,
-    ELEMENTDISABLED,
+    ENABLED,
+    DISABLED,
 )
 
 from ..ui.button import Button
@@ -59,26 +59,26 @@ class ButtonStyle(Style[Button]):
 
         self.hover_state: State["Button"] = State(
             activation_triggers=[ELEMENTHOVERED],
-            deactivation_triggers=[ELEMENTUNHOVERED],
+            deactivation_triggers=[UNHOVERED],
             priority=1,
             on_become_primary=self.on_hover,
         )
         self.click_state: State["Button"] = State(
-            activation_triggers=[BUTTONDOWN],
-            deactivation_triggers=[BUTTONUP, ELEMENTUNFOCUSED],
+            activation_triggers=[CLICKEDDOWN],
+            deactivation_triggers=[CLICKEDUP, ELEMENTUNFOCUSED],
             priority=3,
             on_become_active=self.on_click_down,
             on_become_deactive=self.on_click_up,
         )
         self.focus_state: State["Button"] = State(
-            activation_triggers=[ELEMENTFOCUSED],
+            activation_triggers=[FOCUSED],
             deactivation_triggers=[ELEMENTUNFOCUSED],
             priority=2,
             on_become_primary=self.on_focus,
         )
         self.disabled_state: State["Button"] = State(
-            activation_triggers=[ELEMENTDISABLED],
-            deactivation_triggers=[ELEMENTENABLED],
+            activation_triggers=[DISABLED],
+            deactivation_triggers=[ENABLED],
             priority=3,
             on_become_primary=self.on_disabled,
         )

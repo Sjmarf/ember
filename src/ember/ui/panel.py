@@ -41,5 +41,5 @@ class Panel(Element):
             self.material.draw(self, surface, rect.topleft, rect.size, alpha)
 
 
-Panel.w_.default_value = FILL
-Panel.h_.default_value = FILL
+Panel.w.default_value = FILL
+Panel.h.default_value = FILL

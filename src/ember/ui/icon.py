@@ -21,8 +21,7 @@ class Icon(MultiLayerSurfacable):
     An element that displays an icon (arrow, pause, save, etc).
     """
 
-    font_: Trait[IconFont] = Trait(None)
-    font: IconFont = font_.value_descriptor()
+    font: IconFont = Trait(None)
 
     def __init__(
         self,

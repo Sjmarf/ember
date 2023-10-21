@@ -26,5 +26,5 @@ class Spacer(Element):
         return "<Spacer>"
 
 
-Spacer.w_.default_value = ZERO
-Spacer.h_.default_value = ZERO
+Spacer.w.default_value = ZERO
+Spacer.h.default_value = ZERO

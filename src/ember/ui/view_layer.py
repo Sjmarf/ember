@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 from ..base.element import Element
 from ember.base.single_element_container import SingleElementContainer
+from ember.base.can_focus import CanHandleFocus, CanFocus
 
 from ..base.scroll import Scroll
 
@@ -24,7 +25,7 @@ from ember.position import (
 T = TypeVar("T", bound="Element", covariant=True)
 
 
-class ViewLayer(SingleElementContainer[T]):
+class ViewLayer(CanHandleFocus, SingleElementContainer[T]):
     def __init__(
         self,
         element: Optional["Element"],
@@ -39,13 +40,7 @@ class ViewLayer(SingleElementContainer[T]):
         y: Optional[PositionType] = None,
         size: OptionalSequenceSizeType = None,
         w: Optional[SizeType] = None,
-        h: Optional[SizeType] = None,
-        content_pos: OptionalSequencePositionType = None,
-        content_x: Optional[PositionType] = None,
-        content_y: Optional[PositionType] = None,
-        content_size: OptionalSequenceSizeType = None,
-        content_w: Optional[SizeType] = None,
-        content_h: Optional[SizeType] = None,
+        h: Optional[SizeType] = None
     ):
         pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
@@ -64,7 +59,7 @@ class ViewLayer(SingleElementContainer[T]):
         Exit the ViewLayer when the user clicks outside of its rect.
         """
 
-        self.element_focused: Optional["Element"] = focused
+        self.element_focused: Optional["CanFocus"] = focused
         """
         The element that is currently focused.
         """
@@ -78,12 +73,6 @@ class ViewLayer(SingleElementContainer[T]):
             size=size,
             w=w,
             h=h,
-            content_pos=content_pos,
-            content_x=content_x,
-            content_y=content_y,
-            content_size=content_size,
-            content_w=content_w,
-            content_h=content_h,
             layer=self,
         )
 
@@ -130,7 +119,7 @@ class ViewLayer(SingleElementContainer[T]):
                 log.size.info(f"Starting rect update from element {element}.")
 
             with log.size.indent():
-                element._update_rect(
+                element.update_rect(
                     surface,
                     element.rect.x,
                     element.rect.y,
@@ -155,14 +144,14 @@ class ViewLayer(SingleElementContainer[T]):
 
         return False
 
-    def _focus_element(self, new_element: Optional["Element"]) -> None:
+    def _focus_element(self, new_element: Optional["CanFocus"]) -> None:
         if self.element_focused is not new_element:
             if self.element_focused is not None:
                 self.element_focused.unfocus()
 
             if new_element is None:
                 event = pygame.event.Event(
-                    ember_event.ELEMENTUNFOCUSED, element=self.element_focused
+                    ember_event.UNFOCUSED, element=self.element_focused
                 )
                 pygame.event.post(event)
                 self.element_focused = None
@@ -225,14 +214,14 @@ class ViewLayer(SingleElementContainer[T]):
                 f"{_c.FocusDirection.SELECT}.",
                 self,
             ):
-                new_element = self._element._focus_chain(_c.FocusDirection.SELECT)
+                new_element = self._element.focus_chain(_c.FocusDirection.SELECT)
         else:
             if element is None:
                 element = self.element_focused
             with log.nav.indent(
                 f"Starting focus chain for {element} with direction {direction}.", self
             ):
-                new_element = element._focus_chain(direction)
+                new_element = element.focus_chain(direction)
 
         self._focus_element(new_element)
 
@@ -254,5 +243,5 @@ class ViewLayer(SingleElementContainer[T]):
     def index(self) -> int:
         return self.view._layers.index(self)
 
-ViewLayer.w_.default_value = FILL
-ViewLayer.h_.default_value = FILL
+ViewLayer.w.default_value = FILL
+ViewLayer.h.default_value = FILL
