@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ember_ui"
+version = "0.1.0"
+authors = [
+  { name="Sjmarf", email="smarf3113@gmail.com" },
+]
+description = "A UI library for Pygame."
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/Sjmarf/ember"
+"Bug Tracker" = "https://github.com/Sjmarf/ember/issues"

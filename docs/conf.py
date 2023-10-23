@@ -16,7 +16,7 @@ path = pathlib.Path(__file__).parent.parent.joinpath("src").resolve()
 sys.path.append(str(path))
 print(f"Appended path {path}")
 
-project = "ember"
+project = "ember-ui"
 copyright = "2023, Sjmarf"
 author = "Sjmarf"
 release = "0.1.0"
