@@ -1,13 +1,13 @@
-from ember.ui.switch import Switch as _Switch
+from ember_ui.ui.switch import Switch as _Switch
 
 from .container import Container
 
-from ember.material.material import Material
-from ember.material.stretched_surface import StretchedSurface
-from ember.size import PivotableSize
+from ember_ui.material.material import Material
+from ember_ui.material.stretched_surface import StretchedSurface
+from ember_ui.size import PivotableSize
 
-from ember.common import package
-from ember._init import init_task
+from ember_ui.common import package
+from ember_ui._init import init_task
 
 root = package / "style/pixel_dark/assets/switch"
 

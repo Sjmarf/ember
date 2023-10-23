@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 from ..font.base_font import Font, Line
 from .variant import TextVariant, BOLD, ITALIC, UNDERLINE
 
-from ember.position.position import Position
+from ember_ui.position.position import Position
 
 
 class PygameFont(Font):

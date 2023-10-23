@@ -1,17 +1,17 @@
 import pygame
 from typing import Union, Optional, Sequence
 
-from ember.size.size import PivotableSize
-from ember.ui.element import Element
+from ember_ui.size.size import PivotableSize
+from ember_ui.ui.element import Element
 from ..size import SizeType, OptionalSequenceSizeType, FILL
-from ember.position import PositionType, SequencePositionType
+from ember_ui.position import PositionType, SequencePositionType
 
 from ..common import ColorType
 
 from ..material.material import Material
 from ..material.color import Color, DEFAULT_BLACK_MATERIAL
 
-from ember.trait import Trait
+from ember_ui.trait import Trait
 
 
 def load_material(material: Union[Material, ColorType, None]) -> Material:

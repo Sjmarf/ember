@@ -1,9 +1,9 @@
-from ember.ui.divider import Divider as _Divider
-from ember.material.color import Color
+from ember_ui.ui.divider import Divider as _Divider
+from ember_ui.material.color import Color
 
-from ember.common import package
-from ember._init import init_task
-from ember.size import FILL, PivotableSize
+from ember_ui.common import package
+from ember_ui._init import init_task
+from ember_ui.size import FILL, PivotableSize
 
 root = package / "style/pixel_dark/assets/divider"
 

@@ -5,7 +5,7 @@ from ..utility.stretch_surface import stretch_surface
 from .material import Material
 
 if TYPE_CHECKING:
-    from ember.ui.base.element import Element
+    from ember_ui.ui.base.element import Element
 
 
 class Surface(Material):

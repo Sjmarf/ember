@@ -1,18 +1,18 @@
-from ember.ui.panel_button import PanelButton
+from ember_ui.ui.panel_button import PanelButton
 
-from ember.material.material import Material
-from ember.material.stretched_surface import StretchedSurface
+from ember_ui.material.material import Material
+from ember_ui.material.stretched_surface import StretchedSurface
 
 from .container import Container
 
-from ember.common import package
+from ember_ui.common import package
 
-from ember.on_event import on_event
+from ember_ui.on_event import on_event
 
 root = package / "style/pixel_dark/assets/button"
 
-from ember.ui.element import Element
-from ember.event import CLICKEDDOWN, CLICKEDUP
+from ember_ui.ui.element import Element
+from ember_ui.event import CLICKEDDOWN, CLICKEDUP
 
 
 class Button(PanelButton, Container):

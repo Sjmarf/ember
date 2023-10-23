@@ -4,7 +4,7 @@ from .material import MaterialWithElementCache
 from typing import Optional, Literal, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ember.ui.base.element import Element
+    from ember_ui.ui.base.element import Element
 
 from .. import common as _c
 from ..common import BlurMode, BLUR_PIL, BLUR_PYGAME

@@ -1,6 +1,6 @@
 from .position import Position
 
-from ember.axis import Axis, VERTICAL
+from ember_ui.axis import Axis, VERTICAL
 
 
 class AnchorPosition(Position):

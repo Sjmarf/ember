@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
-from ember.ui.element import Element
-from ember.event import HOVERED, UNHOVERED
+from ember_ui.ui.element import Element
+from ember_ui.event import HOVERED, UNHOVERED
 
-from ember import common as _c
+from ember_ui import common as _c
 
 if TYPE_CHECKING:
     pass

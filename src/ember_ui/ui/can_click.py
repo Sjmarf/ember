@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from ember.ui.element import Element
-from ember.ui.can_hover import CanHover
-from ember.event import CLICKEDDOWN, CLICKEDUP
+from ember_ui.ui.element import Element
+from ember_ui.ui.can_hover import CanHover
+from ember_ui.event import CLICKEDDOWN, CLICKEDUP
 
 if TYPE_CHECKING:
     pass

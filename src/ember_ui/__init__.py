@@ -25,9 +25,6 @@ from .event import *
 from . import ui
 from .ui import *
 
-from . import base
-from .base import *
-
 from . import font
 from .font import (
     PygameFont,

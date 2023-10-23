@@ -1,15 +1,15 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ember.material.material import Material
+    from ember_ui.material.material import Material
 
 from .container import Container
 from .bar import Bar
-from ember.ui.slider import Slider as _Slider
-from ember.material.stretched_surface import StretchedSurface
+from ember_ui.ui.slider import Slider as _Slider
+from ember_ui.material.stretched_surface import StretchedSurface
 
-from ember.common import package
-from ember._init import init_task
+from ember_ui.common import package
+from ember_ui._init import init_task
 
 root = package / "style/pixel_dark/assets/bar"
 

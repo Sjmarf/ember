@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     pass
 
 from ..size import FIT, SizeType, OptionalSequenceSizeType, FitSize
-from ember.position import PositionType, SequencePositionType
+from ember_ui.position import PositionType, SequencePositionType
 
 
 class Surface(Surfacable):

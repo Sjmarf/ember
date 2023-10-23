@@ -1,11 +1,11 @@
 from typing import Callable, TYPE_CHECKING, TypeVar, Type
 
 if TYPE_CHECKING:
-    from ember.ui.element import Element
+    from ember_ui.ui.element import Element
 
 from .trait import Trait, TraitReference
 from .cascading_trait_value import CascadingTraitValue
-from ember import log
+from ember_ui import log
 
 T = TypeVar("T")
 

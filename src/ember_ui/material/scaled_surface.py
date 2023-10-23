@@ -4,7 +4,7 @@ from typing import Union, Sequence, Optional, Any, TYPE_CHECKING
 from .material import MaterialWithSizeCache
 
 if TYPE_CHECKING:
-    from ember.ui.base.element import Element
+    from ember_ui.ui.base.element import Element
 
 
 class ScaledSurface(MaterialWithSizeCache):

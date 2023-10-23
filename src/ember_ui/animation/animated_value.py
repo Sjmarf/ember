@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any
 from abc import ABC, abstractmethod
 from ..size import Size, InterpolatedSize
-from ember.position import Position, InterpolatedPosition
+from ember_ui.position import Position, InterpolatedPosition
 from ..spacing import Spacing, InterpolatedSpacing
 
 if TYPE_CHECKING:

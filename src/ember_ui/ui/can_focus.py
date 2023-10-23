@@ -3,14 +3,14 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 import pygame
 
-from ember.common import ElementType
-from ember.ui.element import Element
-from ember.event import FOCUSED, UNFOCUSED
+from ember_ui.common import ElementType
+from ember_ui.ui.element import Element
+from ember_ui.event import FOCUSED, UNFOCUSED
 
-from ember import axis
-from ember import common as _c
-from ember.ui.container import Container
-from ember import log
+from ember_ui import axis
+from ember_ui import common as _c
+from ember_ui.ui.container import Container
+from ember_ui import log
 
 if TYPE_CHECKING:
     pass

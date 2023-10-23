@@ -2,15 +2,15 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from typing import Optional, TYPE_CHECKING, Generator, Type, Sequence, Union, TypeVar
 
-from ember.ui.element import Element
-from ember.ui.context_manager import ContextManager
+from ember_ui.ui.element import Element
+from ember_ui.ui.context_manager import ContextManager
 
-from ember import log
-from ember.common import ElementType
-from ember.trait.trait import Trait
-from ember.trait.cascade_repository import CascadeRepository
-from ember.trait.cascading_trait_value import CascadingTraitValue
-from ember.ui.text import Text
+from ember_ui import log
+from ember_ui.common import ElementType
+from ember_ui.trait.trait import Trait
+from ember_ui.trait.cascade_repository import CascadeRepository
+from ember_ui.trait.cascading_trait_value import CascadingTraitValue
+from ember_ui.ui.text import Text
 
 from .element_meta import ElementMeta
 

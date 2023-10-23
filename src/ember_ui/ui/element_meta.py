@@ -2,9 +2,9 @@ import abc
 import itertools
 
 from typing import Union, TYPE_CHECKING, Optional, Sequence, Callable, Iterable, Type
-from ember import log
+from ember_ui import log
 
-from ember.on_event import queue as on_event_queue
+from ember_ui.on_event import queue as on_event_queue
 
 if TYPE_CHECKING:
     from .element import Element

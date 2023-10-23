@@ -1,15 +1,15 @@
 import pygame
 from typing import Optional, TYPE_CHECKING, TypeVar
 
-from ember.ui.single_element_container import SingleElementContainer
-from ember.ui.element import Element
+from ember_ui.ui.single_element_container import SingleElementContainer
+from ember_ui.ui.element import Element
 
 if TYPE_CHECKING:
     pass
 
 from .. import common as _c
 from ..common import ElementType
-from ember.ui.focus_passthrough import FocusPassthrough
+from ember_ui.ui.focus_passthrough import FocusPassthrough
 from .. import log
 
 

@@ -2,8 +2,8 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from ember.ui.element import Element
-from ember.event import DISABLED, ENABLED
+from ember_ui.ui.element import Element
+from ember_ui.event import DISABLED, ENABLED
 
 if TYPE_CHECKING:
     pass

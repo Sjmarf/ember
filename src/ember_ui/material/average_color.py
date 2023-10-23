@@ -3,7 +3,7 @@ from typing import Sequence, Optional, Any, TYPE_CHECKING
 from .material import MaterialWithElementCache
 
 if TYPE_CHECKING:
-    from ember.ui.base.element import Element
+    from ember_ui.ui.base.element import Element
 
 
 class AverageColor(MaterialWithElementCache):

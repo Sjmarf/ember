@@ -1,7 +1,7 @@
 from typing import Optional
 from .size import Size
 
-from ember.axis import Axis, VERTICAL
+from ember_ui.axis import Axis, VERTICAL
 
 
 class InterpolatedSize(Size):

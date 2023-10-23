@@ -10,7 +10,7 @@ from .base_font import Font
 from .variant import TextVariant, BOLD, ITALIC, STRIKETHROUGH, UNDERLINE, OUTLINE
 from .. import log
 
-from ember.position.position import Position
+from ember_ui.position.position import Position
 from .line import Line
 from .variant_data import VariantData
 

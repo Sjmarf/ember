@@ -3,10 +3,10 @@ import math
 from typing import Union, Optional, Any, TYPE_CHECKING
 
 from .material import MaterialWithSizeCache
-from ember.position import PositionType, CENTER, Position, load_position
+from ember_ui.position import PositionType, CENTER, Position, load_position
 
 if TYPE_CHECKING:
-    from ember.ui.element import Element
+    from ember_ui.ui.element import Element
 
 
 class RepeatedSurface(MaterialWithSizeCache):

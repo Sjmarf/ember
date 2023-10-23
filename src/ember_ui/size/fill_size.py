@@ -1,7 +1,7 @@
 from typing import Optional
 from .relative_size import RelativeSize
 
-from ember.axis import Axis, VERTICAL
+from ember_ui.axis import Axis, VERTICAL
 
 class FillSize(RelativeSize):
     """

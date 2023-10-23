@@ -1,12 +1,12 @@
 from typing import TYPE_CHECKING, Sequence
 
 if TYPE_CHECKING:
-    from ember.ui.container import Container
+    from ember_ui.ui.container import Container
 
 from .trait import Trait, TraitReference
 from .cascading_trait_value import CascadingTraitValue
 
-from ember import log
+from ember_ui import log
 
 class CascadeRepository:
     __slots__ = ("element", "values")

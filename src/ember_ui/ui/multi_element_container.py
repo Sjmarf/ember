@@ -3,19 +3,19 @@ from abc import ABC
 import copy
 from typing import Optional, Sequence, Generator, TYPE_CHECKING, Iterable
 
-from ember.common import (
+from ember_ui.common import (
     ElementType,
     SequenceElementType,
 )
-from ember import log
-from ember.ui.element import Element
+from ember_ui import log
+from ember_ui.ui.element import Element
 
-from ember.size import FillSize
+from ember_ui.size import FillSize
 
 from .container import Container
 
-from ember.trait.trait import Trait
-from ember.trait.cascading_trait_value import CascadingTraitValue
+from ember_ui.trait.trait import Trait
+from ember_ui.trait.cascading_trait_value import CascadingTraitValue
 
 if TYPE_CHECKING:
     pass

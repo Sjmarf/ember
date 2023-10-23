@@ -12,13 +12,13 @@ from contextlib import contextmanager
 from abc import ABC, abstractmethod
 from weakref import WeakSet
 
-from ember import log
-from ember.axis import Axis, VERTICAL, HORIZONTAL
-from ember.trait.trait_dependency import TraitDependency
+from ember_ui import log
+from ember_ui.axis import Axis, VERTICAL, HORIZONTAL
+from ember_ui.trait.trait_dependency import TraitDependency
 
 if TYPE_CHECKING:
-    from ember.trait.trait_context import TraitContext
-    from ember.trait.trait import Trait
+    from ember_ui.trait.trait_context import TraitContext
+    from ember_ui.trait.trait import Trait
 
 
 def load_size(

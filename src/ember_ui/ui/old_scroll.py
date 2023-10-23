@@ -2,26 +2,26 @@ import pygame
 import abc
 from typing import TYPE_CHECKING, Optional, Sequence, Union
 
-from ember.common import DEFAULT, DefaultType
+from ember_ui.common import DEFAULT, DefaultType
 
-from ember import log
+from ember_ui import log
 
 if TYPE_CHECKING:
-    from ember.style.style import ScrollStyle
-    from ember.style.state import BackgroundState
+    from ember_ui.style.style import ScrollStyle
+    from ember_ui.style.state import BackgroundState
 
-from ember import common as _c
-from ember.ui.base.element import Element
+from ember_ui import common as _c
+from ember_ui.ui.base.element import Element
 from .single_element_container import SingleElementContainer
-from ember.material.material import Material
-from ember.size import (
+from ember_ui.material.material import Material
+from ember_ui.size import (
     SizeType,
     SequenceSizeType,
     OptionalSequenceSizeType,
     FitSize,
     FillSize,
 )
-from ember.position import (
+from ember_ui.position import (
     PositionType,
     SequencePositionType,
     OptionalSequencePositionType,
@@ -29,7 +29,7 @@ from ember.position import (
 
 
 
-from ember.utility.timekeeper import BasicTimekeeper
+from ember_ui.utility.timekeeper import BasicTimekeeper
 
 
 class Scroll(SingleElementContainer, abc.ABC):

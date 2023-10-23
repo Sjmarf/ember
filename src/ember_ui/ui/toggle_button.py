@@ -1,7 +1,7 @@
 import pygame
 from ..common import SequenceElementType, DEFAULT
 from typing import Optional, Union, Sequence
-from ember.position import (
+from ember_ui.position import (
     PositionType,
     OptionalSequencePositionType,
     SequencePositionType,

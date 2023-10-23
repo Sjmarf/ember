@@ -3,10 +3,10 @@ from contextlib import contextmanager
 from abc import ABC, abstractmethod
 from weakref import WeakSet
 
-from ember import log
+from ember_ui import log
 
 if TYPE_CHECKING:
-    from ember.trait.trait_context import TraitContext
+    from ember_ui.trait.trait_context import TraitContext
     
 P = ParamSpec("P")
 

@@ -5,7 +5,7 @@ from .interactive_gauge import InteractiveGauge
 from .bar import Bar
 
 
-from ember.animation import Animation, EaseInOut, EaseOut
+from ember_ui.animation import Animation, EaseInOut, EaseOut
 
 
 class Slider(InteractiveGauge, Bar, ABC):

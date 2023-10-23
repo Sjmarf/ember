@@ -1,10 +1,10 @@
 import pygame
 from typing import Optional, TYPE_CHECKING
 
-from ember import log
+from ember_ui import log
 from ..event import VALUEMODIFIED
 
-from ember.ui.element import Element
+from ember_ui.ui.element import Element
 
 if TYPE_CHECKING:
     pass

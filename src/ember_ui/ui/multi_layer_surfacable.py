@@ -3,20 +3,20 @@ from abc import ABC
 import pygame
 from typing import Sequence, Union, Optional, TYPE_CHECKING
 
-from ember.position import PositionType, SequencePositionType
-from ember.size import SizeType, OptionalSequenceSizeType
+from ember_ui.position import PositionType, SequencePositionType
+from ember_ui.size import SizeType, OptionalSequenceSizeType
 
 
-from ember import log
-from ember.common import ColorType
-from ember.material.color import Color, DEFAULT_BLACK_MATERIAL
+from ember_ui import log
+from ember_ui.common import ColorType
+from ember_ui.material.color import Color, DEFAULT_BLACK_MATERIAL
 
 if TYPE_CHECKING:
-    from ember.material.material import Material
+    from ember_ui.material.material import Material
 
 from .surfacable import Surfacable
 
-from ember.trait import Trait
+from ember_ui.trait import Trait
 
 
 class MultiLayerSurfacable(Surfacable):

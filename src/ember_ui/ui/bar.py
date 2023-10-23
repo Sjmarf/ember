@@ -4,20 +4,20 @@ import pygame
 import itertools
 
 from .gauge import Gauge
-from ember import log
-from ember.ui.multi_element_container import MultiElementContainer
+from ember_ui import log
+from ember_ui.ui.multi_element_container import MultiElementContainer
 
 from ..material import Material
 
-from ember.ui.element import Element
+from ember_ui.ui.element import Element
 from .panel import Panel
 
 from ..event import VALUEMODIFIED
 from ..common import SequenceElementType
-from ember.axis import Axis, HORIZONTAL
+from ember_ui.axis import Axis, HORIZONTAL
 
 from ..size import SizeType, OptionalSequenceSizeType, FILL, PivotableSize
-from ember.position import (
+from ember_ui.position import (
     PositionType,
     SequencePositionType,
     LEFT,
@@ -26,7 +26,7 @@ from ember.position import (
 )
 
 
-from ember.on_event import on_event
+from ember_ui.on_event import on_event
 
 
 class Bar(Gauge, MultiElementContainer, ABC):

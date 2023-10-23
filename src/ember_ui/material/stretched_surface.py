@@ -7,10 +7,10 @@ from ..utility.stretch_surface import stretch_surface
 from .material import MaterialWithSizeCache
 
 if TYPE_CHECKING:
-    from ember.ui.base.element import Element
+    from ember_ui.ui.base.element import Element
 
 
-from ember._init import init_task
+from ember_ui._init import init_task
 
 class StretchedSurface(MaterialWithSizeCache):
     """

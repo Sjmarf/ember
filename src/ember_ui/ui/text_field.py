@@ -9,19 +9,19 @@ from .text import Text
 from .v_scroll import VScroll
 from .h_scroll import HScroll
 from .base.scroll import Scroll
-from ember.ui.base.mixin.style import Style
-from ember.ui.base.mixin.interactive import Interactive
+from ember_ui.ui.base.mixin.style import Style
+from ember_ui.ui.base.mixin.interactive import Interactive
 
 
 
 from ..size import SizeType, FILL, FIT, OptionalSequenceSizeType
-from ember.position import PositionType, CENTER, SequencePositionType
+from ember_ui.position import PositionType, CENTER, SequencePositionType
 
 from .. import log
 
 if TYPE_CHECKING:
     from .view import ViewLayer
-    from ember.style.style import TextFieldStyle
+    from ember_ui.style.style import TextFieldStyle
 
 # Contains sus characters
 EXCLUDED_CHARS = ["", "\t", "\x00"]

@@ -2,16 +2,16 @@ from abc import ABC
 import pygame
 
 from .gauge import Gauge
-from ember.ui.can_disable import CanDisable
-from ember.ui.has_primary_child import HasPrimaryChild
-from ember.ui.can_focus import CanFocus
-from ember.ui.click_activate_hybrid import ClickActivateHybrid
+from ember_ui.ui.can_disable import CanDisable
+from ember_ui.ui.has_primary_child import HasPrimaryChild
+from ember_ui.ui.can_focus import CanFocus
+from ember_ui.ui.click_activate_hybrid import ClickActivateHybrid
 
 from .. import common as _c
-from ember.axis import HORIZONTAL
+from ember_ui.axis import HORIZONTAL
 
-from ember.event import CLICKEDDOWN
-from ember.on_event import on_event
+from ember_ui.event import CLICKEDDOWN
+from ember_ui.on_event import on_event
 
 
 class InteractiveGauge(

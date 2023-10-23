@@ -1,10 +1,10 @@
 import pygame
 from typing import Union, Optional, Sequence
 
-from ember.ui.element import Element
+from ember_ui.ui.element import Element
 
 from ..size import SizeType, OptionalSequenceSizeType, ResizableSize
-from ember.position import (
+from ember_ui.position import (
     PositionType,
     SequencePositionType,
     Position,

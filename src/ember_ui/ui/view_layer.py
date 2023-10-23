@@ -8,14 +8,14 @@ from typing import Optional, TYPE_CHECKING, Any, Sequence, Union, TypeVar
 if TYPE_CHECKING:
     from .view import View
 
-from ember.ui.element import Element
-from ember.ui.single_element_container import SingleElementContainer
-from ember.ui.can_focus import CanHandleFocus, CanFocus
+from ember_ui.ui.element import Element
+from ember_ui.ui.single_element_container import SingleElementContainer
+from ember_ui.ui.can_focus import CanHandleFocus, CanFocus
 
-from ember.ui.scroll import Scroll
+from ember_ui.ui.scroll import Scroll
 
 from ..size import SizeType, OptionalSequenceSizeType, FILL
-from ember.position import (
+from ember_ui.position import (
     PositionType,
     CENTER,
     SequencePositionType,

@@ -1,14 +1,14 @@
 from typing import Optional
 from abc import ABC
 
-from ember import log
-from ember.common import (
+from ember_ui import log
+from ember_ui.common import (
     FocusType,
     FOCUS_CLOSEST,
 )
-from ember.ui.multi_element_container import MultiElementContainer
-from ember.ui.can_focus import CanHandleFocusChildDependent
-from ember.trait import Trait
+from ember_ui.ui.multi_element_container import MultiElementContainer
+from ember_ui.ui.can_focus import CanHandleFocusChildDependent
+from ember_ui.trait import Trait
 
 
 class FocusPassthrough(CanHandleFocusChildDependent, MultiElementContainer, ABC):

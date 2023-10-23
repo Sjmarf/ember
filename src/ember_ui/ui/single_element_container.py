@@ -2,18 +2,18 @@ import pygame
 from abc import ABC
 from typing import Optional, Sequence, Union, TypeVar, Generic
 
-from ember import log
+from ember_ui import log
 
-from ember.size import SizeType, SequenceSizeType, OptionalSequenceSizeType
-from ember.position import (
+from ember_ui.size import SizeType, SequenceSizeType, OptionalSequenceSizeType
+from ember_ui.position import (
     PositionType,
     SequencePositionType,
     OptionalSequencePositionType,
 )
-from ember.common import ElementType
-from ember.size import FILL, FillSize, FitSize
-from ember.trait.trait import Trait
-from ember.trait.cascading_trait_value import CascadingTraitValue
+from ember_ui.common import ElementType
+from ember_ui.size import FILL, FillSize, FitSize
+from ember_ui.trait.trait import Trait
+from ember_ui.trait.cascading_trait_value import CascadingTraitValue
 from .container import Container
 
 

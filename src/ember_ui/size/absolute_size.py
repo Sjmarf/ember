@@ -2,7 +2,7 @@ from .size import Size
 from .resizable_size import ResizableSize
 from typing import Optional
 
-from ember.axis import Axis, VERTICAL
+from ember_ui.axis import Axis, VERTICAL
 
 class AbsoluteSize(ResizableSize):
     """

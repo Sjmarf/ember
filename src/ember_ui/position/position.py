@@ -2,10 +2,10 @@ from abc import ABC, abstractmethod
 from typing import Union, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from ember.trait import Trait
-    from ember.ui.element import Element
+    from ember_ui.trait import Trait
+    from ember_ui.ui.element import Element
 
-from ember.axis import Axis, HORIZONTAL, VERTICAL
+from ember_ui.axis import Axis, HORIZONTAL, VERTICAL
 
 class Position(ABC):
     @abstractmethod

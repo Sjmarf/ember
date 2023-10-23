@@ -2,14 +2,14 @@ import pygame
 from typing import Union, Optional, TYPE_CHECKING, Sequence
 from .. import log
 from ..common import ColorType
-from ember.ui.multi_layer_surfacable import MultiLayerSurfacable
+from ember_ui.ui.multi_layer_surfacable import MultiLayerSurfacable
 
 from ..font.base_font import Font
 from ..font.line import Line
 from ..font.variant import TextVariant
 
 from ..size import SizeType, OptionalSequenceSizeType, FitSize
-from ember.position import (
+from ember_ui.position import (
     PositionType,
     SequencePositionType,
     CENTER,
@@ -18,7 +18,7 @@ from ember.position import (
 if TYPE_CHECKING:
     from ..material.material import Material
 
-from ember.trait import Trait
+from ember_ui.trait import Trait
 
 
 class Text(MultiLayerSurfacable):

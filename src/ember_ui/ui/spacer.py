@@ -1,9 +1,9 @@
 import pygame
 from typing import Union, Optional, Sequence
 
-from ember.ui.element import Element
+from ember_ui.ui.element import Element
 from ..size import AbsoluteSize, SizeType, OptionalSequenceSizeType
-from ember.position import PositionType, SequencePositionType
+from ember_ui.position import PositionType, SequencePositionType
 
 
 ZERO = AbsoluteSize(0)

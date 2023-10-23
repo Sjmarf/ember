@@ -25,15 +25,15 @@ try:
     try:
         path = os.getcwd().replace(f"examples", "src")
         sys.path.append(path)
-        import ember  # noqa
+        import ember_ui as ember  # noqa
     except ModuleNotFoundError:
         path = os.path.join(os.getcwd(), "src")
         sys.path.append(str(path))
-        import ember  # noqa
+        import ember_ui as ember  # noqa
 except RuntimeError as e:
     raise e.__cause__
 
-from ember.style import pixel_dark as ui
+from ember_ui.style import pixel_dark as ui
 
 print(f"Ember import took {time.time()-start_time:.2f}s")
 pygame.init()

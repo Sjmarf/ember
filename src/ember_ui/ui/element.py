@@ -4,34 +4,34 @@ import pygame
 import copy
 from weakref import WeakSet
 from typing import Union, TYPE_CHECKING, Optional, Sequence, Callable
-from ember import log
+from ember_ui import log
 
 if TYPE_CHECKING:
-    from ember.ui.view import ViewLayer
+    from ember_ui.ui.view import ViewLayer
     from .container import Container
-    from ember.material_repository import MaterialRepository
+    from ember_ui.material_repository import MaterialRepository
 
-from ember.ui.context_manager import ContextManager
-from ember.animation.animation import AnimationContext
-from ember.size import Size, SizeType, OptionalSequenceSizeType, FIT, FitSize
-from ember.position import (
+from ember_ui.ui.context_manager import ContextManager
+from ember_ui.animation.animation import AnimationContext
+from ember_ui.size import Size, SizeType, OptionalSequenceSizeType, FIT, FitSize
+from ember_ui.position import (
     PositionType,
     SequencePositionType,
     DualPosition,
     CENTER,
 )
 
-from ember.trait import Trait
-from ember.size import load_size
-from ember.position import load_position
-from ember.trait.cascading_trait_value import CascadingTraitValue
+from ember_ui.trait import Trait
+from ember_ui.size import load_size
+from ember_ui.position import load_position
+from ember_ui.trait.cascading_trait_value import CascadingTraitValue
 
-from ember import common as _c
-from ember import axis
-from ember.axis import Axis, VERTICAL, HORIZONTAL
+from ember_ui import common as _c
+from ember_ui import axis
+from ember_ui.axis import Axis, VERTICAL, HORIZONTAL
 
 from .element_meta import ElementMeta
-from ember.callback_registry import CallbackRegistry
+from ember_ui.callback_registry import CallbackRegistry
 
 
 EmptyCallable = Callable[[], None]

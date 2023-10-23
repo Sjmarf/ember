@@ -3,7 +3,7 @@ from .relative_size import RelativeSize
 
 from .. import log
 
-from ember.axis import Axis, VERTICAL
+from ember_ui.axis import Axis, VERTICAL
 
 
 class RatioSize(RelativeSize):

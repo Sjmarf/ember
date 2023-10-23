@@ -3,8 +3,8 @@ from typing import Optional, TYPE_CHECKING
 from abc import ABC, abstractmethod
 from enum import Enum
 
-from ember import common as _c
-from ember import log
+from ember_ui import common as _c
+from ember_ui import log
 
 from .multi_element_container import MultiElementContainer
 

@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING, Optional, Sequence, Generator
 
-from ember.common import SequenceElementType
+from ember_ui.common import SequenceElementType
 
-from ember.ui.multi_element_container import MultiElementContainer
+from ember_ui.ui.multi_element_container import MultiElementContainer
 
 if TYPE_CHECKING:
     pass

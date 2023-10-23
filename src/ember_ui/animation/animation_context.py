@@ -6,13 +6,13 @@ from .animated_value import (
     AnimatedSpacingValue,
 )
 from ..size import Size
-from ember.position.position import Position
+from ember_ui.position.position import Position
 from ..spacing import Spacing
 from .. import common as _c
 
 
 if TYPE_CHECKING:
-    from ember.trait.trait import TraitContext
+    from ember_ui.trait.trait import TraitContext
     from .animation import Animation
 
 

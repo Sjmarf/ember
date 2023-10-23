@@ -3,7 +3,7 @@ from typing import Any, TYPE_CHECKING
 from .animation import Animation, AnimationContext
 
 if TYPE_CHECKING:
-    from ember.trait.trait import Trait
+    from ember_ui.trait.trait import Trait
 
 from .. import common as _c
 

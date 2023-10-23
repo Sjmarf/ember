@@ -3,9 +3,9 @@ from typing import Union, Optional
 
 from ..common import MaterialType
 from os import PathLike
-from ember.material.blank import Blank
-from ember.material.stretched_surface import StretchedSurface
-from ember.material.material import Material
+from ember_ui.material.blank import Blank
+from ember_ui.material.stretched_surface import StretchedSurface
+from ember_ui.material.material import Material
 
 def load_material(image: Optional[MaterialType], existing: Material, fallback: Union[Material, None]) -> Material:
     if isinstance(image, Material):

@@ -7,7 +7,7 @@ from .trait_layer import TraitLayer
 from .cascading_trait_value import CascadingTraitValue
 
 if TYPE_CHECKING:
-    from ember.ui.element import Element
+    from ember_ui.ui.element import Element
 
 T = TypeVar("T")
 class BaseTrait(Generic[T], ABC):

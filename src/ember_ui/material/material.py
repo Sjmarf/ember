@@ -5,7 +5,7 @@ from weakref import WeakKeyDictionary, WeakValueDictionary
 from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:
-    from ember.ui.base.element import Element
+    from ember_ui.ui.base.element import Element
 
 from .. import log
 

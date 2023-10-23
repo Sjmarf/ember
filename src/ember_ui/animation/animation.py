@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from ember.trait.trait_context import TraitContext
+    from ember_ui.trait.trait_context import TraitContext
 
 from .animation_context import AnimationContext, SimpleAnimationContext
 

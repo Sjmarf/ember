@@ -14,7 +14,7 @@ event_ids = _event.__dict__.values()
 if TYPE_CHECKING:
     from .ui.default_style_dict import DefaultStyleDict
 
-package = importlib.resources.files("ember")
+package = importlib.resources.files("ember_ui")
 
 
 class DefaultType:

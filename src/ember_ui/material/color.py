@@ -2,7 +2,7 @@ import pygame
 from typing import Optional, Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ember.ui.base.element import Element
+    from ember_ui.ui.base.element import Element
 
 from ..common import ColorType
 from ..material.material import MaterialWithSizeCache

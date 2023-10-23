@@ -1,9 +1,9 @@
-from ember.ui.text import Text as _Text
-from ember.font.pixel_font import PixelFont
-from ember.material.color import Color
+from ember_ui.ui.text import Text as _Text
+from ember_ui.font.pixel_font import PixelFont
+from ember_ui.material.color import Color
 
-from ember.common import package
-from ember._init import init_task
+from ember_ui.common import package
+from ember_ui._init import init_task
 
 class Text(_Text):
     pass

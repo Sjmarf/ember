@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, Self, Optional
 from abc import ABC, abstractmethod
 
-from ember import common as _c
+from ember_ui import common as _c
 
 if TYPE_CHECKING:
-    from ember.ui.base.element import Element
+    from ember_ui.ui.base.element import Element
 
 # DON'T make this inherit from Element - View uses this
 class ContextManager(ABC):

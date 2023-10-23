@@ -3,14 +3,14 @@ from typing import Union, Optional, Sequence, TYPE_CHECKING
 
 from ..common import SequenceElementType
 
-from ember.ui.can_disable import CanDisable
-from ember.ui.can_click import CanClick
-from ember.ui.can_focus import CanFocus
-from ember.ui.multi_element_container import MultiElementContainer
-from ember.ui.has_primary_child import HasPrimaryChild
+from ember_ui.ui.can_disable import CanDisable
+from ember_ui.ui.can_click import CanClick
+from ember_ui.ui.can_focus import CanFocus
+from ember_ui.ui.multi_element_container import MultiElementContainer
+from ember_ui.ui.has_primary_child import HasPrimaryChild
 
 from ..size import SizeType, OptionalSequenceSizeType, FIT
-from ember.position import (
+from ember_ui.position import (
     PositionType,
     SequencePositionType,
 )

@@ -1,15 +1,15 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ember.material.material import Material
+    from ember_ui.material.material import Material
 
-from ember.ui.bar import Bar as _Bar
-from ember.font.pixel_font import PixelFont
-from ember.material.stretched_surface import StretchedSurface
+from ember_ui.ui.bar import Bar as _Bar
+from ember_ui.font.pixel_font import PixelFont
+from ember_ui.material.stretched_surface import StretchedSurface
 
-from ember.common import package
-from ember.size.size import PivotableSize
-from ember._init import init_task
+from ember_ui.common import package
+from ember_ui.size.size import PivotableSize
+from ember_ui._init import init_task
 
 root = package / "style/pixel_dark/assets/bar"
 

@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Union, Optional, Sequence, Type, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ember.material.material import Material
+    from ember_ui.material.material import Material
 
 from .button import Button
 
@@ -13,7 +13,7 @@ from .panel import Panel
 from ..common import SequenceElementType
 
 from ..size import SizeType, OptionalSequenceSizeType, FILL
-from ember.position import (
+from ember_ui.position import (
     PositionType,
     SequencePositionType,
 )

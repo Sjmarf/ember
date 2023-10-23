@@ -2,15 +2,15 @@ import pygame
 from ..common import SequenceElementType, FocusType
 from typing import Optional, Union, Sequence
 
-from ember.ui.stack import Stack
-from ember.size import SizeType, OptionalSequenceSizeType
-from ember.position import (
+from ember_ui.ui.stack import Stack
+from ember_ui.size import SizeType, OptionalSequenceSizeType
+from ember_ui.position import (
     PositionType,
     SequencePositionType,
 )
 from ..spacing import SpacingType
 
-from ember.trait.cascading_trait_value import CascadingTraitValue
+from ember_ui.trait.cascading_trait_value import CascadingTraitValue
 
 class VStack(Stack):
     def __init__(

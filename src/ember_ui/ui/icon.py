@@ -3,10 +3,10 @@ from typing import Union, Optional, TYPE_CHECKING, Sequence
 
 from ..common import ColorType
 from .. import log
-from ember.ui.multi_layer_surfacable import MultiLayerSurfacable
+from ember_ui.ui.multi_layer_surfacable import MultiLayerSurfacable
 
 from ..size import SizeType, OptionalSequenceSizeType
-from ember.position import PositionType, SequencePositionType
+from ember_ui.position import PositionType, SequencePositionType
 from ..font.icon_font import IconFont
 
 if TYPE_CHECKING:

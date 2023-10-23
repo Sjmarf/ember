@@ -11,7 +11,7 @@ from typing import (
 from weakref import WeakSet
 
 if TYPE_CHECKING:
-    from ember.ui.element import Element
+    from ember_ui.ui.element import Element
 
 from .trait_layer import TraitLayer
 from .trait_context import TraitContext

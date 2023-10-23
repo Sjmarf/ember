@@ -6,7 +6,7 @@ from typing import Optional, Sequence
 
 from .. import common as _c
 
-from ember.position.position import Position
+from ember_ui.position.position import Position
 
 from .line import Line
 from .variant import TextVariant
