@@ -1,7 +1,7 @@
 import pygame
-from typing import Union, Optional, TYPE_CHECKING, Sequence
+from typing import Union, Optional, Sequence
 
-from ..base.element import Element
+from ember.ui.element import Element
 
 from ..size import SizeType, OptionalSequenceSizeType, ResizableSize
 from ember.position import (
@@ -13,11 +13,9 @@ from ember.position import (
     TOP,
     BOTTOM,
     BasicPosition,
-    OptionalSequencePositionType,
 )
 
 from .. import common as _c
-from .. import log
 from .box import Box
 
 

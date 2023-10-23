@@ -1,14 +1,14 @@
 import pygame
 from abc import ABC
 import copy
-from typing import Optional, Sequence, Union, Generator, TYPE_CHECKING, Iterable
+from typing import Optional, Sequence, Generator, TYPE_CHECKING, Iterable
 
 from ember.common import (
     ElementType,
     SequenceElementType,
 )
 from ember import log
-from ember.base.element import Element
+from ember.ui.element import Element
 
 from ember.size import FillSize
 

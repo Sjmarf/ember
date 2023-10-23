@@ -1,14 +1,13 @@
 import pygame
 from typing import Union, Optional, TYPE_CHECKING, Sequence
 
-from ..common import ColorType, DEFAULT
+from ..common import ColorType
 from .. import log
-from ..base.multi_layer_surfacable import MultiLayerSurfacable
+from ember.ui.multi_layer_surfacable import MultiLayerSurfacable
 
 from ..size import SizeType, OptionalSequenceSizeType
 from ember.position import PositionType, SequencePositionType
 from ..font.icon_font import IconFont
-from ember.trait.trait import Trait
 
 if TYPE_CHECKING:
     from ..material.material import Material

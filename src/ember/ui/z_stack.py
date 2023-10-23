@@ -7,20 +7,19 @@ from ..common import (
     FOCUS_LAST,
     SequenceElementType,
 )
-from typing import Union, Optional, Sequence, TYPE_CHECKING
+from typing import Union, Optional, Sequence
 
-from ember.base.focus_passthrough import FocusPassthrough
+from ember.ui.focus_passthrough import FocusPassthrough
 from .. import log
 
-from ember.base.element import Element
+from ember.ui.element import Element
 
 
 from ember.position import (
     PositionType,
     SequencePositionType,
-    OptionalSequencePositionType,
 )
-from ..size import SizeType, OptionalSequenceSizeType, FILL
+from ..size import SizeType, OptionalSequenceSizeType
 
 
 class ZStack(FocusPassthrough):

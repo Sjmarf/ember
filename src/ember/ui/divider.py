@@ -1,8 +1,8 @@
 import pygame
-from typing import Union, Optional, Sequence, TYPE_CHECKING
+from typing import Union, Optional, Sequence
 
 from ember.size.size import PivotableSize
-from ..base.element import Element
+from ember.ui.element import Element
 from ..size import SizeType, OptionalSequenceSizeType, FILL
 from ember.position import PositionType, SequencePositionType
 
@@ -11,7 +11,6 @@ from ..common import ColorType
 from ..material.material import Material
 from ..material.color import Color, DEFAULT_BLACK_MATERIAL
 
-from ember.axis import Axis
 from ember.trait import Trait
 
 

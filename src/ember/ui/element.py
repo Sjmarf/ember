@@ -3,8 +3,7 @@ import abc
 import pygame
 import copy
 from weakref import WeakSet
-from enum import Enum
-from typing import Union, TYPE_CHECKING, Optional, Sequence, Callable, Iterable, Type
+from typing import Union, TYPE_CHECKING, Optional, Sequence, Callable
 from ember import log
 
 if TYPE_CHECKING:
@@ -12,13 +11,12 @@ if TYPE_CHECKING:
     from .container import Container
     from ember.material_repository import MaterialRepository
 
-from ember.base.context_manager import ContextManager
-from ember.animation.animation import Animation, AnimationContext
+from ember.ui.context_manager import ContextManager
+from ember.animation.animation import AnimationContext
 from ember.size import Size, SizeType, OptionalSequenceSizeType, FIT, FitSize
 from ember.position import (
     PositionType,
     SequencePositionType,
-    Position,
     DualPosition,
     CENTER,
 )

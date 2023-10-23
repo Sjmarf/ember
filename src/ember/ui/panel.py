@@ -1,8 +1,8 @@
 import pygame
 import math
-from typing import Union, Optional, Sequence, TYPE_CHECKING
+from typing import Union, Optional, Sequence
 
-from ..base.element import Element
+from ember.ui.element import Element
 from ..size import SizeType, OptionalSequenceSizeType, FILL
 from ember.position import PositionType, SequencePositionType
 

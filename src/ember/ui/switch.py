@@ -1,10 +1,9 @@
-import abc
 from typing import Optional, Union, Sequence
 from abc import ABC, abstractmethod
 import pygame
 import itertools
 
-from ember.axis import Axis, HORIZONTAL, VERTICAL
+from ember.axis import Axis, HORIZONTAL
 
 from .toggle_button import ToggleButton
 from ..material import Material
@@ -13,10 +12,8 @@ from ..event import TOGGLEDON, TOGGLEDOFF
 
 from ..size import SizeType, OptionalSequenceSizeType, FILL, RATIO, PivotableSize
 from ember.position import (
-    Position,
     PositionType,
     SequencePositionType,
-    OptionalSequencePositionType,
     PivotablePosition,
     LEFT,
     RIGHT,
@@ -26,9 +23,9 @@ from ember.position import (
 
 from ember.animation import Animation, EaseInOut
 
-from ember.base.element import Element
+from ember.ui.element import Element
 from .panel import Panel
-from ..common import MaterialType, SequenceElementType
+from ..common import SequenceElementType
 
 from ..on_event import on_event
 

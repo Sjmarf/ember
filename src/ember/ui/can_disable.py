@@ -1,8 +1,8 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import pygame
 
-from ember.base.element import Element
+from ember.ui.element import Element
 from ember.event import DISABLED, ENABLED
 
 if TYPE_CHECKING:

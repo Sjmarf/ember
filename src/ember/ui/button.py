@@ -1,23 +1,18 @@
 import pygame
-from typing import Union, Optional, Sequence, TYPE_CHECKING, Generator, Type
+from typing import Union, Optional, Sequence, TYPE_CHECKING
 
-from ..common import SequenceElementType, DEFAULT
-from ..event import CLICKEDDOWN, CLICKEDUP
+from ..common import SequenceElementType
 
-from ..ui.h_stack import HStack
-from ..ui.text import Text
-from ember.base.can_disable import CanDisable
-from ember.base.can_click import CanClick
-from ember.base.can_focus import CanFocus
-from ..base.element import Element
-from ember.base.multi_element_container import MultiElementContainer
-from ember.base.has_primary_child import HasPrimaryChild
+from ember.ui.can_disable import CanDisable
+from ember.ui.can_click import CanClick
+from ember.ui.can_focus import CanFocus
+from ember.ui.multi_element_container import MultiElementContainer
+from ember.ui.has_primary_child import HasPrimaryChild
 
 from ..size import SizeType, OptionalSequenceSizeType, FIT
 from ember.position import (
     PositionType,
     SequencePositionType,
-    OptionalSequencePositionType,
 )
 
 if TYPE_CHECKING:

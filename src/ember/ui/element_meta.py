@@ -4,7 +4,7 @@ import itertools
 from typing import Union, TYPE_CHECKING, Optional, Sequence, Callable, Iterable, Type
 from ember import log
 
-from ..on_event import queue as on_event_queue
+from ember.on_event import queue as on_event_queue
 
 if TYPE_CHECKING:
     from .element import Element

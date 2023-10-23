@@ -1,11 +1,10 @@
 import pygame
-from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING, NewType
+from typing import Optional, TYPE_CHECKING
 
 from ember import log
 from ..event import VALUEMODIFIED
 
-from ember.base.element import Element
+from ember.ui.element import Element
 
 if TYPE_CHECKING:
     pass

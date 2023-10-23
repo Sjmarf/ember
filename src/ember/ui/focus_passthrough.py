@@ -6,8 +6,8 @@ from ember.common import (
     FocusType,
     FOCUS_CLOSEST,
 )
-from ember.base.multi_element_container import MultiElementContainer
-from ember.base.can_focus import CanHandleFocusChildDependent
+from ember.ui.multi_element_container import MultiElementContainer
+from ember.ui.can_focus import CanHandleFocusChildDependent
 from ember.trait import Trait
 
 

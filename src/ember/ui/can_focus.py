@@ -1,15 +1,15 @@
-from typing import TYPE_CHECKING, Union, Optional, Generator
+from typing import TYPE_CHECKING, Optional, Generator
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 import pygame
 
 from ember.common import ElementType
-from ember.base.element import Element
+from ember.ui.element import Element
 from ember.event import FOCUSED, UNFOCUSED
 
 from ember import axis
 from ember import common as _c
-from ember.base.container import Container
+from ember.ui.container import Container
 from ember import log
 
 if TYPE_CHECKING:

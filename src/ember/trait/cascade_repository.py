@@ -1,7 +1,7 @@
-from typing import TYPE_CHECKING, Sequence, Type
+from typing import TYPE_CHECKING, Sequence
 
 if TYPE_CHECKING:
-    from ember.base.container import Container
+    from ember.ui.container import Container
 
 from .trait import Trait, TraitReference
 from .cascading_trait_value import CascadingTraitValue

@@ -60,6 +60,8 @@ with ember.View() as view:
         ui.Slider(value=0.5)
         ui.Divider()
         ui.Button()
+
+print(len(ui.Switch.__mro__))
         
 is_running = True
 

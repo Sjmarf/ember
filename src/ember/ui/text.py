@@ -2,7 +2,7 @@ import pygame
 from typing import Union, Optional, TYPE_CHECKING, Sequence
 from .. import log
 from ..common import ColorType
-from ..base.multi_layer_surfacable import MultiLayerSurfacable
+from ember.ui.multi_layer_surfacable import MultiLayerSurfacable
 
 from ..font.base_font import Font
 from ..font.line import Line
@@ -12,7 +12,6 @@ from ..size import SizeType, OptionalSequenceSizeType, FitSize
 from ember.position import (
     PositionType,
     SequencePositionType,
-    OptionalSequencePositionType,
     CENTER,
 )
 

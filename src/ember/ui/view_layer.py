@@ -8,18 +8,17 @@ from typing import Optional, TYPE_CHECKING, Any, Sequence, Union, TypeVar
 if TYPE_CHECKING:
     from .view import View
 
-from ..base.element import Element
-from ember.base.single_element_container import SingleElementContainer
-from ember.base.can_focus import CanHandleFocus, CanFocus
+from ember.ui.element import Element
+from ember.ui.single_element_container import SingleElementContainer
+from ember.ui.can_focus import CanHandleFocus, CanFocus
 
-from ..base.scroll import Scroll
+from ember.ui.scroll import Scroll
 
 from ..size import SizeType, OptionalSequenceSizeType, FILL
 from ember.position import (
     PositionType,
     CENTER,
     SequencePositionType,
-    OptionalSequencePositionType,
 )
 
 T = TypeVar("T", bound="Element", covariant=True)

@@ -1,12 +1,8 @@
-from typing import TYPE_CHECKING, Union, Optional, Sequence, Generator
-import pygame
+from typing import TYPE_CHECKING, Optional, Sequence, Generator
 
-from ..common import SequenceElementType, DEFAULT
+from ember.common import SequenceElementType
 
-from ember.base.multi_element_container import MultiElementContainer
-from ember.event import CLICKEDDOWN, CLICKEDUP
-
-from ember import common as _c
+from ember.ui.multi_element_container import MultiElementContainer
 
 if TYPE_CHECKING:
     pass

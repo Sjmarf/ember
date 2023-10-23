@@ -11,7 +11,7 @@ from ember.on_event import on_event
 
 root = package / "style/pixel_dark/assets/button"
 
-from ember.base.element import Element
+from ember.ui.element import Element
 from ember.event import CLICKEDDOWN, CLICKEDUP
 
 

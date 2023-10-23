@@ -7,7 +7,7 @@ from . import trait_layer
 if TYPE_CHECKING:
     from .trait_value import TraitValue
     from .trait import Trait
-    from ..base.element import Element
+    from ember.ui.element import Element
 
 T = TypeVar("T")
 

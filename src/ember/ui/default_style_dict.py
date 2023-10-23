@@ -5,7 +5,7 @@ import inspect
 from . import *
 
 if TYPE_CHECKING:
-    from ..base.element import Element
+    from ember.ui.element import Element
 
 class DefaultStyleDict(UserDict):
     def get(self, element_type: Type["Element"]) -> Optional[Style]:

@@ -8,10 +8,9 @@ from ember import axis
 
 from ember import common as _c
 from ember.common import SequenceElementType, FOCUS_CLOSEST, FOCUS_AXIS_FORWARD, FOCUS_AXIS_BACKWARD, FocusDirection
-from ember.base.element import Element
+from ember.ui.element import Element
 from .focus_passthrough import FocusPassthrough
 
-from ember.base.can_focus import CanHandleFocus
 from ember.trait.trait import Trait
 from ember.spacing import SpacingType, FILL_SPACING, load_spacing
 from ember.size import FillSize, FitSize

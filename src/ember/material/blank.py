@@ -3,7 +3,7 @@ from typing import Optional, TYPE_CHECKING
 from .material import Material
 
 if TYPE_CHECKING:
-    from ..base.element import Element
+    from ember.ui.element import Element
 
 
 class Blank(Material):

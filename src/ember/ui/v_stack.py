@@ -2,7 +2,7 @@ import pygame
 from ..common import SequenceElementType, FocusType
 from typing import Optional, Union, Sequence
 
-from ember.base.stack import Stack
+from ember.ui.stack import Stack
 from ember.size import SizeType, OptionalSequenceSizeType
 from ember.position import (
     PositionType,

@@ -7,10 +7,10 @@ from ..common import DefaultType, DEFAULT, RectType
 from typing import Optional, TYPE_CHECKING, Sequence, Union, overload
 
 if TYPE_CHECKING:
-    from ember.base.element import Element
+    from ember.ui.element import Element
 
 from .view_layer import ViewLayer
-from ember.base.context_manager import ContextManager
+from ember.ui.context_manager import ContextManager
 
 KEY_NAMES = {
     pygame.K_RIGHT: _c.FocusDirection.RIGHT,

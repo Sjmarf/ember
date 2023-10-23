@@ -1,8 +1,8 @@
 import copy
-from typing import Union, TYPE_CHECKING, Optional, Sequence, Callable, Iterable, Type
+from typing import TYPE_CHECKING, Optional, Callable, Iterable
 
 if TYPE_CHECKING:
-    from ember.base.element import Element
+    from ember.ui.element import Element
 
 EmptyCallable = Callable[[], None]
 MethodCallable = Callable[["Element"], None]

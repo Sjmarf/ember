@@ -3,7 +3,7 @@ from typing import Union, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from ember.trait import Trait
-    from ember.base.element import Element
+    from ember.ui.element import Element
 
 from ember.axis import Axis, HORIZONTAL, VERTICAL
 

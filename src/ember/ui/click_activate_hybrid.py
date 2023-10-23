@@ -1,17 +1,15 @@
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import pygame
 
-from ember.base.element import Element
-from ember.base.can_hover import CanHover
+from ember.ui.element import Element
+from ember.ui.can_hover import CanHover
 from ember.event import CLICKEDDOWN, CLICKEDUP, ACTIVATED, DEACTIVATED, UNFOCUSED
-
-from ember import common as _c
 
 if TYPE_CHECKING:
     pass
 
-from ..on_event import on_event
+from ember.on_event import on_event
 
 class ClickActivateHybrid(CanHover, Element):
     

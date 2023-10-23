@@ -1,4 +1,4 @@
-from ember.base.stack import Stack as _Stack
+from ember.ui.stack import Stack as _Stack
 from ember.ui.v_stack import VStack as _VStack
 from ember.ui.h_stack import HStack as _HStack
 from .container import Container

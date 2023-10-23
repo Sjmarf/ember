@@ -1,16 +1,14 @@
-from typing import Optional, Union, Sequence
 from abc import ABC
-from contextlib import nullcontext
 import pygame
 
 from .gauge import Gauge
-from ember.base.can_disable import CanDisable
-from ember.base.has_primary_child import HasPrimaryChild
-from ember.base.can_focus import CanFocus
-from ember.base.click_activate_hybrid import ClickActivateHybrid
+from ember.ui.can_disable import CanDisable
+from ember.ui.has_primary_child import HasPrimaryChild
+from ember.ui.can_focus import CanFocus
+from ember.ui.click_activate_hybrid import ClickActivateHybrid
 
 from .. import common as _c
-from ember.axis import Axis, HORIZONTAL, VERTICAL
+from ember.axis import HORIZONTAL
 
 from ember.event import CLICKEDDOWN
 from ember.on_event import on_event

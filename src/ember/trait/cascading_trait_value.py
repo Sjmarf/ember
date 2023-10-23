@@ -1,8 +1,8 @@
 from typing import Generic, TypeVar, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from ember.trait.trait import Trait, TraitReference
-    from ember.base.element import Element
+    from ember.trait.trait import TraitReference
+    from ember.ui.element import Element
 
 T = TypeVar("T")
 

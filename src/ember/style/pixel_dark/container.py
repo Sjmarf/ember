@@ -1,6 +1,6 @@
 from abc import ABC
 
-from ember.base.container import Container as _Container
+from ember.ui.container import Container as _Container
 from .text import Text
 
 

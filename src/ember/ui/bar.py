@@ -1,17 +1,15 @@
 from typing import Optional, Union, Sequence
 from abc import ABC, abstractmethod
-from contextlib import nullcontext
 import pygame
 import itertools
 
 from .gauge import Gauge
 from ember import log
-from ember.base.multi_element_container import MultiElementContainer
+from ember.ui.multi_element_container import MultiElementContainer
 
 from ..material import Material
-from ..material.blank import Blank
 
-from ember.base.element import Element
+from ember.ui.element import Element
 from .panel import Panel
 
 from ..event import VALUEMODIFIED
@@ -24,8 +22,6 @@ from ember.position import (
     SequencePositionType,
     LEFT,
     BOTTOM,
-    RIGHT,
-    TOP,
     PivotablePosition,
 )
 
