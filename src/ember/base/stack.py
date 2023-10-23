@@ -7,14 +7,14 @@ from ember import log
 from ember import axis
 
 from ember import common as _c
-from ember.common import SequenceElementType, FocusDirection, FOCUS_CLOSEST
+from ember.common import SequenceElementType, FOCUS_CLOSEST, FOCUS_AXIS_FORWARD, FOCUS_AXIS_BACKWARD, FocusDirection
 from ember.base.element import Element
 from .focus_passthrough import FocusPassthrough
 
+from ember.base.can_focus import CanHandleFocus
 from ember.trait.trait import Trait
 from ember.spacing import SpacingType, FILL_SPACING, load_spacing
 from ember.size import FillSize, FitSize
-from ..base.can_pivot import CanPivot
 
 if TYPE_CHECKING:
     pass
@@ -246,8 +246,8 @@ class Stack(FocusPassthrough):
             return self._enter_in_first_element(direction)
 
         if direction in {
-            FocusDirection.AXIS_FORWARD[axis.axis],
-            FocusDirection.AXIS_BACKWARD[axis.axis],
+            FOCUS_AXIS_BACKWARD[axis.axis],
+            FOCUS_AXIS_FORWARD[axis.axis],
             FocusDirection.FORWARD,
             FocusDirection.BACKWARD,
         }:
@@ -257,12 +257,12 @@ class Stack(FocusPassthrough):
             else:
                 index = (
                     len(self._elements) - 1
-                    if direction == FocusDirection.AXIS_BACKWARD[axis.axis]
+                    if direction == FOCUS_AXIS_FORWARD[axis.axis]
                     else 0
                 )
 
             if direction in {
-                FocusDirection.AXIS_BACKWARD[axis.axis],
+                FOCUS_AXIS_FORWARD[axis.axis],
                 FocusDirection.BACKWARD,
             }:
                 end = 0

@@ -96,10 +96,10 @@ class Text(MultiLayerSurfacable):
         content_y = CENTER
         
         pos = (
-            rect.x, #- surface.get_abs_offset()[0] + (0.5 if self.rect.w % 2 == 1 else 0),
+            rect.x - surface.get_abs_offset()[0] + (0.5 if self.rect.w % 2 == 1 else 0),
             rect.y
             + content_y.get(rect.h, self._surface_height)
-            - (0.5 if self.rect.h % 2 == 1 else 0)
+            - (0.5 if self.rect.h % 2 == 0 else 0)
             - surface.get_abs_offset()[1],
         )
 

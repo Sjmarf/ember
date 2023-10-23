@@ -52,12 +52,10 @@ class FocusDirection(Enum):
     DOWN = 7
     FORWARD = 8  # Pressing tab.
     BACKWARD = 9  # Pressing shift + tab
-    AXIS_BACKWARD: list["FocusDirection"]
-    AXIS_FORWARD: list["FocusDirection"]
 
 
-FocusDirection.AXIS_BACKWARD = [FocusDirection.LEFT, FocusDirection.UP]
-FocusDirection.AXIS_FORWARD = [FocusDirection.RIGHT, FocusDirection.DOWN]
+FOCUS_AXIS_FORWARD = [FocusDirection.LEFT, FocusDirection.UP]
+FOCUS_AXIS_BACKWARD = [FocusDirection.RIGHT, FocusDirection.DOWN]
 
 ColorType = Union[
     pygame.Color,

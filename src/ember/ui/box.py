@@ -9,12 +9,13 @@ if TYPE_CHECKING:
 
 from .. import common as _c
 from ..common import ElementType
+from ember.base.focus_passthrough import FocusPassthrough
 from .. import log
 
 
 T = TypeVar("T", bound=ElementType, covariant=True)
 
-class Box(SingleElementContainer[T]):
+class Box(SingleElementContainer[T], FocusPassthrough):
     """
     A Box is a container that can optionally hold one Element.
     """
@@ -43,6 +44,7 @@ class Box(SingleElementContainer[T]):
             }
             or self._element is None
         ):
+            log.nav.info(f"-> parent {self.parent}.")
             return self.parent._focus_chain(direction, previous=self)
 
         else:

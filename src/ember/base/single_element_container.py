@@ -88,12 +88,12 @@ class SingleElementContainer(
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
-        if self._element and self._element.visible:
+        if self._element is not None and self._element.visible:
             self._element.render(surface, offset, alpha=alpha)
 
     def _update(self) -> None:
         super()._update()
-        if self._element and self._element.visible:
+        if self._element is not None and self._element.visible:
             self._element.update()
 
     def _update_rect(
@@ -113,7 +113,7 @@ class SingleElementContainer(
             )
 
     def _update_min_size(self) -> None:
-        if self._element:
+        if self._element is not None:
             self._min_size.w = self._element.get_abs_w()
             self._min_size.h = self._element.get_abs_h()
         else:

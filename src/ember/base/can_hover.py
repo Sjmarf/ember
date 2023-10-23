@@ -12,16 +12,8 @@ if TYPE_CHECKING:
 
 
 class CanHover(Element):
-    """
-    This class is a mixin, and should not be instantiated directly.
-    It provides functionality for disabling the element.
-    """
-
     def __init__(self, *args, **kwargs) -> None:
         self._hovered: bool = False
-        """
-        Is :code:`True` when the mouse is hovered over the element. Read-only.
-        """
         super().__init__(*args, **kwargs)
 
     def _update(self) -> None:

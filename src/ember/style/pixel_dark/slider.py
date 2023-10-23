@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ember.material.material import Material
 
+from .container import Container
 from .bar import Bar
 from ember.ui.slider import Slider as _Slider
 from ember.material.stretched_surface import StretchedSurface
@@ -13,7 +14,7 @@ from ember._init import init_task
 root = package / "style/pixel_dark/assets/bar"
 
 
-class Slider(_Slider, Bar):
+class Slider(_Slider, Bar, Container):
     hover_material = StretchedSurface(root / "hover.png")
     focus_material = StretchedSurface(root / "focus.png")
     active_material = StretchedSurface(root / "active.png")

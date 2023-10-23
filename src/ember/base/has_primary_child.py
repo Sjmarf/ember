@@ -19,7 +19,7 @@ class HasPrimaryChild(MultiElementContainer):
     """
     
     def __init__(self, *args, **kwargs) -> None:
-        self.primary_element_index: int = 1
+        self.primary_element_index: int = -1
         """
         The index of the element that is considered the 'main' child element of the button.
         """

@@ -54,6 +54,8 @@ class PixelFont(Font):
         if isinstance(path, str):
             path = Path(path)
 
+        print(path, path.is_dir())
+
         if path.is_dir():
             with open(path / "data.json", "r", encoding="utf-8") as f:
                 data = json.load(f)

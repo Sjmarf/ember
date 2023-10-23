@@ -1,4 +1,5 @@
 import pygame
+import itertools
 from abc import ABC, abstractmethod
 from typing import Union, Optional, Sequence, Type, TYPE_CHECKING
 
@@ -34,10 +35,7 @@ class PanelButton(Button, ABC):
         h: Optional[SizeType] = None,
         **kwargs
     ):
-        self.panel: Panel = Panel(None, y=0, size=FILL)
-
         super().__init__(
-            self.panel,
             *elements,
             disabled=disabled,
             rect=rect,
@@ -50,12 +48,31 @@ class PanelButton(Button, ABC):
             **kwargs
         )
 
-        self.panel.material = self._get_panel_material()
+        with self.adding_element(Panel(None, y=0, size=FILL), update=False) as panel:
+            self._panel: Panel = panel
+
+        self._panel.material = self._get_panel_material()
+
+    @property
+    def panel(self) -> Panel:
+        return self._panel
+
+    @panel.setter
+    def panel(self, value: Panel) -> None:
+        if value is self._panel:
+            return
+        self.removing_element(self._panel)
+        with self.adding_element(value) as panel:
+            self._panel = panel
 
     @on_event()
     def _update_material(self) -> None:
-        self.panel.material = self._get_panel_material()
+        self._panel.material = self._get_panel_material()
 
     @abstractmethod
     def _get_panel_material(self) -> "Material":
         ...
+
+    @property
+    def _elements_to_render(self):
+        return itertools.chain((self._panel,), self._elements)

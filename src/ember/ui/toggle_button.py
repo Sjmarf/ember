@@ -47,11 +47,14 @@ class ToggleButton(Button):
         self._active: bool = active
 
     def _post_button_event(self, event_type: int) -> None:
-        text = (
-            self._elements[self.primary_element_index].text
-            if isinstance(self._elements[self.primary_element_index], Text)
-            else None
-        )
+        if self._elements:
+            text = (
+                self._elements[self.primary_element_index].text
+                if isinstance(self._elements[self.primary_element_index], Text)
+                else None
+            )
+        else:
+            text = None
         event = pygame.event.Event(
             event_type, element=self, text=text, active=self.active
         )

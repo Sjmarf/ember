@@ -1,7 +1,7 @@
 import pygame
 from abc import ABC
 import copy
-from typing import Optional, Sequence, Union, Generator, TYPE_CHECKING
+from typing import Optional, Sequence, Union, Generator, TYPE_CHECKING, Iterable
 
 from ember.common import (
     ElementType,
@@ -10,11 +10,7 @@ from ember.common import (
 from ember import log
 from ember.base.element import Element
 
-from ember.size import OptionalSequenceSizeType, SizeType, FillSize
-from ember.position import (
-    PositionType,
-    SequencePositionType,
-)
+from ember.size import FillSize
 
 from .container import Container
 
@@ -37,10 +33,11 @@ class MultiElementContainer(Container, ABC):
         super().__init__(**kwargs)
 
         if elements:
-            if isinstance(elements[0], Generator):
-                elements = elements[0]
-            elif isinstance(elements[0], Sequence):
-                elements = list(elements[0])
+            if not isinstance(elements[0], str):
+                if isinstance(elements[0], Generator):
+                    elements = elements[0]
+                elif isinstance(elements[0], Iterable):
+                    elements = list(elements[0])
         for element in elements:
             self.append(element, update=False)
 
@@ -66,11 +63,11 @@ class MultiElementContainer(Container, ABC):
         return len(self._elements)
 
     def __contains__(self, item: Optional[Element]) -> bool:
-        return item in self._elements
+        return item in self._elements_to_render
 
     def _build(self) -> None:
         with Trait.inspecting(Trait.Layer.PARENT), log.size.indent():
-            for element in self._elements:
+            for element in self._elements_to_render:
                 if element is not None:
                     self._prepare_element(element)
                     element.build()
@@ -83,20 +80,20 @@ class MultiElementContainer(Container, ABC):
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
-        for i in self._elements:
+        for i in self._elements_to_render:
             if i is not None:
                 i.render(surface, offset, alpha=alpha)
 
     def _update(self) -> None:
         super()._update()
-        for i in self._elements:
+        for i in self._elements_to_render:
             if i is not None:
                 i.update()
 
     def _update_rect(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        for element in self.elements:
+        for element in self._elements_to_render:
             if element is None:
                 continue
             
@@ -110,21 +107,21 @@ class MultiElementContainer(Container, ABC):
 
     def _update_min_size(self) -> None:
         self._min_w = 0
-        for i in self._elements:
+        for i in self._elements_to_render:
             if i is None or isinstance(i.w, FillSize):
                 continue
             if (w := i.get_abs_w()) > self._min_w:
                 self._min_w = w
 
         self._min_h = 0
-        for i in self._elements:
+        for i in self._elements_to_render:
             if i is None or isinstance(i.h, FillSize):
                 continue
             if (h := i.get_abs_h()) > self._min_h:
                 self._min_h = h
 
     def _event(self, event: pygame.event.Event) -> bool:
-        for i in self._elements:
+        for i in self._elements_to_render:
             if i is not None and i._event(event):
                 return True
         return super()._event(event)
@@ -133,7 +130,7 @@ class MultiElementContainer(Container, ABC):
         super().update_ancestry(ancestry)
         child_ancestry = self.ancestry + [self]
         with log.ancestry.indent():
-            [i.update_ancestry(child_ancestry) for i in self._elements if i is not None]
+            [i.update_ancestry(child_ancestry) for i in self._elements_to_render if i is not None]
 
     def update_cascading_value(self, value: CascadingTraitValue, depth: int) -> None:
         if value.ref in self.cascading:
@@ -143,14 +140,14 @@ class MultiElementContainer(Container, ABC):
         if depth == 0:
             return
         with log.cascade.indent():
-            for element in self._elements:
+            for element in self._elements_to_render:
                 element.update_cascading_value(value, depth)
 
     def start_cascade(self, value: CascadingTraitValue) -> None:
         with log.cascade.indent(f"Starting descent for {value}", self):
             with Trait.inspecting(Trait.Layer.PARENT):
                 value.prepare_for_descent(self)
-                for element in self._elements:
+                for element in self._elements_to_render:
                     element.update_cascading_value(value, value.depth)
         log.cascade.line_break()
 
@@ -232,6 +229,10 @@ class MultiElementContainer(Container, ABC):
         Returns the index of the element.
         """
         return self._elements.index(element)
+
+    @property
+    def _elements_to_render(self) -> Iterable[Element]:
+        return self._elements
 
     @property
     def elements(self) -> list[Optional[Element]]:

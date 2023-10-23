@@ -12,7 +12,6 @@ from ..spacing import SpacingType
 
 from ember.trait.cascading_trait_value import CascadingTraitValue
 
-
 class VStack(Stack):
     def __init__(
         self,

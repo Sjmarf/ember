@@ -2,12 +2,12 @@ import abc
 from typing import Optional, Union, Sequence
 from abc import ABC, abstractmethod
 import pygame
+import itertools
 
 from ember.axis import Axis, HORIZONTAL, VERTICAL
 
 from .toggle_button import ToggleButton
 from ..material import Material
-from ..material.blank import Blank
 
 from ..event import TOGGLEDON, TOGGLEDOFF
 
@@ -27,7 +27,6 @@ from ember.position import (
 from ember.animation import Animation, EaseInOut
 
 from ember.base.element import Element
-from ember.base.can_pivot import CanPivot
 from .panel import Panel
 from ..common import MaterialType, SequenceElementType
 
@@ -52,12 +51,7 @@ class Switch(ToggleButton, ABC):
         axis: Axis = HORIZONTAL,
         **kwargs
     ):
-        self.back_panel: Panel = Panel(None, y=0, size=FILL)
-        self.front_panel: Panel = Panel(None)
-
         super().__init__(
-            self.back_panel,
-            self.front_panel,
             *elements,
             active=active,
             disabled=disabled,
@@ -71,9 +65,14 @@ class Switch(ToggleButton, ABC):
             axis=axis,
             **kwargs
         )
+        
+        with self.adding_element(Panel(None, y=0, size=FILL), update=False) as panel:
+            self._back_panel: Panel = panel
+        with self.adding_element(Panel(None), update=False) as panel:
+            self._front_panel: Panel = panel
 
-        self.back_panel.material = self._get_back_material()
-        self.front_panel.material = self._get_front_material()
+        self._back_panel.material = self._get_back_material()
+        self._front_panel.material = self._get_front_material()
 
         x = RIGHT if self.active else LEFT
         y = TOP if self.active else BOTTOM
@@ -82,11 +81,14 @@ class Switch(ToggleButton, ABC):
 
         self.cascading.add(Element.w(PivotableSize(RATIO, FILL, watching=self)))
         self.cascading.add(Element.h(PivotableSize(FILL, RATIO, watching=self)))
+        
+    def __repr__(self) -> str:
+        return "<Switch>"
 
     @on_event()
     def _update_panel_material(self) -> None:
-        self.back_panel.material = self._get_back_material()
-        self.front_panel.material = self._get_front_material()
+        self._back_panel.material = self._get_back_material()
+        self._front_panel.material = self._get_front_material()
 
     @abstractmethod
     def _get_front_material(self) -> "Material":
@@ -107,3 +109,8 @@ class Switch(ToggleButton, ABC):
         with self.animation:
             self.cascading.add(Element.x(PivotablePosition(LEFT, 0, watching=self)))
             self.cascading.add(Element.y(PivotablePosition(0, BOTTOM, watching=self)))
+            
+    @property
+    def _elements_to_render(self):
+        return itertools.chain((self._back_panel, self._front_panel), self._elements)
+    

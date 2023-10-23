@@ -11,9 +11,9 @@ print(f"Pygame import took {time.time()-start_time:.2f}s")
 
 import logging
 
-# log = logging.getLogger("ember.size")
-# log.setLevel(logging.DEBUG)
-# log.addHandler(logging.FileHandler("log.log", "w+"))
+log = logging.getLogger("ember.ancestry")
+log.setLevel(logging.DEBUG)
+log.addHandler(logging.FileHandler("log.log", "w+"))
 
 import os
 import sys
@@ -52,16 +52,15 @@ ember.set_clock(clock)
 ember.set_display_zoom(ZOOM)
 
 with ember.View() as view:
-    with ember.VStack(spacing=6):
-        ui.Button("1", h=13)
-        ui.Button("2", h=13)
-        ui.Button("3", h=13)
+    with ui.VStack:
+        with ui.HStack(w=ember.FILL):
+            ui.Switch()
+            ui.Switch()
         ui.Divider()
-        with ember.HStack(w=ember.FILL):
-            for _ in range(3):
-                ui.Switch()
-        bar = ui.Slider(value=0.2)
-
+        ui.Slider(value=0.5)
+        ui.Divider()
+        ui.Button()
+        
 is_running = True
 
 while is_running:
@@ -76,11 +75,11 @@ while is_running:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_s:
                 with ember.animation.EaseInOut(0.1):
-                    bar.w = 150
+                    stack.w = 150
             
             elif event.key == pygame.K_a:
                 with ember.animation.EaseInOut(0.1):
-                    bar.w = 100
+                    stack.w = 100
 
             elif event.key == pygame.K_y:
                 with ember.animation.EaseInOut(0.3):
@@ -91,6 +90,7 @@ while is_running:
 
     display.fill(ui.background_color)
     view.update(display)
+    display.blit(ui.Text.font.default_value.render(str(round(clock.get_fps())), (), 100, ember.LEFT)[0][0], (0,0))
     screen.blit(pygame.transform.scale(display, (WIDTH, HEIGHT)), (0, 0))
 
     clock.tick(120)

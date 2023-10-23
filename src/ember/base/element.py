@@ -39,6 +39,7 @@ from ember.callback_registry import CallbackRegistry
 EmptyCallable = Callable[[], None]
 MethodCallable = Callable[["Element"], None]
 
+
 class ElementFRect(pygame.FRect):
     @property
     def rel_pos1(self) -> float:
@@ -95,6 +96,7 @@ class ElementMinSize:
             self.h = value
         else:
             self.w = value
+
 
 class Element(abc.ABC, metaclass=ElementMeta):
     """
@@ -333,8 +335,8 @@ class Element(abc.ABC, metaclass=ElementMeta):
         On the next view update, call update_rect for this element.
         """
         if (
-            self.layer
-            and self.parent
+            self.layer is not None
+            and self.parent is not None
             and self.parent not in self.layer.rect_update_queue
         ):
             log.size.info(
@@ -348,7 +350,7 @@ class Element(abc.ABC, metaclass=ElementMeta):
         """
         On the next view update, call update_min_size for this element.
         """
-        if self.layer and self not in self.layer.min_size_update_queue:
+        if self.layer is not None and self not in self.layer.min_size_update_queue:
             log.size.info("Queued for min size update next tick.", self)
             self.layer.min_size_update_queue.append((self, must_update_parent))
         else:
@@ -365,7 +367,7 @@ class Element(abc.ABC, metaclass=ElementMeta):
         axis.axis = prev_axis
 
         # If the container is not empty
-        if self:
+        if getattr(self, "_elements_to_render", False):
             match (
                 self._min_size.w == 0 and isinstance(self.w, FitSize),
                 self._min_size.h == 0 and isinstance(self.h, FitSize),
@@ -427,7 +429,7 @@ class Element(abc.ABC, metaclass=ElementMeta):
         #     cut_chain = True
 
         if (proprogate and not cut_chain) or must_update_parent:
-            if self.parent:
+            if self.parent is not None:
                 self.update_rect_next_tick()
 
                 with log.size.indent(f"-> parent."):
@@ -500,19 +502,29 @@ class Element(abc.ABC, metaclass=ElementMeta):
         if isinstance(event, int):
             event = pygame.event.Event(event, element=self)
         pygame.event.post(event)
-        self._callback_registry.process_event(self, event.type) 
+        self._callback_registry.process_event(self, event.type)
 
     def get_abs_w(self, max_width: float = 0, axis: Optional[Axis] = None) -> float:
         """
         Get the width of the element as a float, given the maximum width to fill.
         """
-        return self.w.get(self._min_size.w, max_width, self.rect.h, axis if axis is not None else self._axis)
+        return self.w.get(
+            self._min_size.w,
+            max_width,
+            self.rect.h,
+            axis if axis is not None else self._axis,
+        )
 
     def get_abs_h(self, max_height: float = 0, axis: Optional[Axis] = None) -> float:
         """
         Get the height of the element as a float, given the maximum height to fill.
         """
-        return self.h.get(self._min_size.h, max_height, self.rect.w, axis if axis is not None else self._axis)
+        return self.h.get(
+            self._min_size.h,
+            max_height,
+            self.rect.w,
+            axis if axis is not None else self._axis,
+        )
 
     def get_abs_rel_size1(self, max_size: float = 0) -> float:
         if axis.axis == HORIZONTAL:
@@ -558,6 +570,9 @@ class Element(abc.ABC, metaclass=ElementMeta):
         self.update_ancestry(self.ancestry)
         with log.size.indent("Axis modified:"):
             self.update_min_size_next_tick(must_update_parent=True)
+
+    def is_animating(self, trait: Trait) -> bool:
+        return any(i.trait_context.trait == trait for i in self._animation_contexts)
 
     def copy(self) -> "Element":
         new = copy.copy(self)

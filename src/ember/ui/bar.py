@@ -1,6 +1,8 @@
 from typing import Optional, Union, Sequence
 from abc import ABC, abstractmethod
+from contextlib import nullcontext
 import pygame
+import itertools
 
 from .gauge import Gauge
 from ember import log
@@ -24,13 +26,15 @@ from ember.position import (
     BOTTOM,
     RIGHT,
     TOP,
-    PivotablePosition
+    PivotablePosition,
 )
+
 
 from ember.on_event import on_event
 
 
 class Bar(Gauge, MultiElementContainer, ABC):
+
     def __init__(
         self,
         *elements: Optional[SequenceElementType],
@@ -47,12 +51,7 @@ class Bar(Gauge, MultiElementContainer, ABC):
         axis: Axis = HORIZONTAL,
         **kwargs,
     ):
-        self.back_panel: Panel = Panel(None, y=0, size=FILL)
-        self.front_panel: Panel = Panel(None)
-
         super().__init__(
-            self.back_panel,
-            self.front_panel,
             *elements,
             # Gauge
             value=value,
@@ -70,8 +69,13 @@ class Bar(Gauge, MultiElementContainer, ABC):
             **kwargs,
         )
         
-        self.back_panel.material = self._get_back_material()
-        self.front_panel.material = self._get_front_material()
+        with self.adding_element(Panel(None, y=0, size=FILL), update=False) as panel:
+            self._back_panel: Panel = panel
+        with self.adding_element(Panel(None), update=False) as panel:
+            self._front_panel: Panel = panel        
+
+        self._back_panel.material = self._get_back_material()
+        self._front_panel.material = self._get_front_material()
 
         self.cascading.add(Element.x(PivotablePosition(LEFT, 0, watching=self)))
         self.cascading.add(Element.y(PivotablePosition(0, BOTTOM, watching=self)))
@@ -79,11 +83,11 @@ class Bar(Gauge, MultiElementContainer, ABC):
         size = PivotableSize(FILL * self._progress, FILL, watching=self)
         self.cascading.add(Element.w(size))
         self.cascading.add(Element.h(~size))
-        
+
     @on_event()
     def _update_panel_material(self) -> None:
-        self.back_panel.material = self._get_back_material()
-        self.front_panel.material = self._get_front_material()
+        self._back_panel.material = self._get_back_material()
+        self._front_panel.material = self._get_front_material()
 
     @abstractmethod
     def _get_front_material(self) -> "Material":
@@ -94,8 +98,14 @@ class Bar(Gauge, MultiElementContainer, ABC):
         ...
 
     @on_event(VALUEMODIFIED)
-    def _update_value_pos1(self):
+    def _update_panel_sizes(self):
         with log.size.indent("Updating bar cascading sizes..."):
             size = PivotableSize(FILL * self._progress, FILL, watching=self)
             self.cascading.add(Element.w(size))
             self.cascading.add(Element.h(~size))
+
+    @property
+    def _elements_to_render(self):
+        return itertools.chain((self._back_panel, self._front_panel), self._elements)
+    
+            

@@ -86,7 +86,7 @@ class CanFocus(CanHandleFocus):
         }:
             log.nav.info("Returning self.")
             return self
-        elif self.parent:
+        elif self.parent is not None:
             # Go up a level and try again
             log.nav.info(f"-> parent {self.parent}.")
             return self.parent.focus_chain(direction, previous=self)

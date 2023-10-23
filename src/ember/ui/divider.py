@@ -1,7 +1,6 @@
 import pygame
 from typing import Union, Optional, Sequence, TYPE_CHECKING
 
-from ..base.can_pivot import CanPivot
 from ember.size.size import PivotableSize
 from ..base.element import Element
 from ..size import SizeType, OptionalSequenceSizeType, FILL

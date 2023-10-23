@@ -3,7 +3,7 @@ from ember.ui.panel_button import PanelButton
 from ember.material.material import Material
 from ember.material.stretched_surface import StretchedSurface
 
-from .text import Text
+from .container import Container
 
 from ember.common import package
 
@@ -15,15 +15,13 @@ from ember.base.element import Element
 from ember.event import CLICKEDDOWN, CLICKEDUP
 
 
-class Button(PanelButton):
+class Button(PanelButton, Container):
     default_material = StretchedSurface(root / "default.png")
     hover_material = StretchedSurface(root / "hover.png")
     click_material = StretchedSurface(root / "click.png")
     focus_material = StretchedSurface(root / "focus.png")
     focus_click_material = StretchedSurface(root / "focus_click.png")
     disabled_material = StretchedSurface(root / "disabled.png")
-
-    text_class = Text
 
     def _get_panel_material(self) -> "Material":
         if self.disabled:
@@ -47,5 +45,5 @@ class Button(PanelButton):
         self.cascading[Element.y] -= 1
 
 
-Button.w.default_value = 100
-Button.h.default_value = 23
+Button.w.default_value = 70
+Button.h.default_value = 21

@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
 EmptyCallable = Callable[[], None]
 MethodCallable = Callable[["Element"], None]
+
+
 class ElementMeta(abc.ABCMeta, type):
     def __init__(cls: Type["Element"], name, bases, attrs):
         super().__init__(name, bases, attrs)

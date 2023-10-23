@@ -1,6 +1,6 @@
 from ember.ui.switch import Switch as _Switch
-from .text import Text
-from .button import Button
+
+from .container import Container
 
 from ember.material.material import Material
 from ember.material.stretched_surface import StretchedSurface
@@ -12,9 +12,7 @@ from ember._init import init_task
 root = package / "style/pixel_dark/assets/switch"
 
 
-class Switch(_Switch):
-    text_class = Text
-
+class Switch(_Switch, Container):
     base_material = StretchedSurface(root / "base.png")
     default_material = StretchedSurface(root / "default.png")
     hover_material = StretchedSurface(root / "hover.png")
