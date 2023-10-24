@@ -28,7 +28,7 @@ To get started with Ember, follow through the series of articles listed below. T
 
 Support
 ---------
-If you have any questions or need help, you can find me (@sjmarf) on the `Pygame Discord Server <https://discord.gg/pygame>`_ .
+If you have any questions or need help, you can find me (@sjmarf) on the `Pygame Discord Server <https://discord.gg/pygame>`_.
 
 Performance
 -----------------
@@ -45,7 +45,7 @@ Alternative Pygame UI libraries
 
 Contributing
 ---------------------
-I'm open to contributions. You are of course free to fork, modify and redistribute the library under the terms of the license if you so wish. If you have any questions, feel free to DM me `on Discord<https://discord.gg/pygame>`_ @sjmarf.
+I'm open to contributions. You are of course free to fork, modify and redistribute the library under the terms of the license if you so wish. If you have any questions, feel free to DM me `on Discord <https://discord.gg/pygame>`_ @sjmarf.
 
 .. toctree::
    :caption: Getting Started
