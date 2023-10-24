@@ -25,14 +25,10 @@ To get started with Ember, follow through the series of articles listed below. T
 
 - :ref:`element_guide`
 - :ref:`style_guide`
-- :ref:`material_guide`
-- :ref:`transition_guide`
-- :ref:`state_guide`
-- :ref:`font_guide`
 
 Support
 ---------
-If you have any questions or need help, you can find me (@sjmarf) on the `Pygame Discord Server <https://discord.gg/pygame>`_.
+If you have any questions or need help, you can find me (@sjmarf) on the `Pygame Discord Server <https://discord.gg/pygame>`_ .
 
 Performance
 -----------------
