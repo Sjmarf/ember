@@ -30,13 +30,6 @@ Support
 ---------
 If you have any questions or need help, you can find me (@sjmarf) on the `Pygame Discord Server <https://discord.gg/pygame>`_.
 
-Performance
------------------
-
-Due to Ember’s high-level design and large feature-set, it is less performant than if you were to implement just the features you need in a custom UI system. Whether Ember is a good fit for you depends on your use case.
-
-In most cases, Ember runs fine. I was able to run the `complex.py` example at a stable 60fps on a low-power PC. This example program includes a dense layout of Ember UI elements, large bodies of text and animations; all rendered on a large surface. If you want to run this example yourself, you can find it under the ‘examples’ folder in your Ember directory.
-
 Alternative Pygame UI libraries
 ---------------------------
 - `Pygame GUI <https://pygame-gui.readthedocs.io/en/latest/>`_
