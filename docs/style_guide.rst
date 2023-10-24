@@ -87,14 +87,14 @@ Previously, we've created buttons with backgrounds by adding a :py:class:`Panel<
 We've only seen how to apply solid colors to a Panel so far, but there are several other options too. :py:class:`ui.Button<ember.style.pixel_dark.Button>` uses a more advanced type of Panel that renders a :code:`pygame.Surface` texture rather than a solid color. We'll look more at this later.
 
 .. note::
-    The default size for the basic :py:class:`ember.Button` element that we looked at previously is :code:`ember.FIT`, which means that it will shrink to fit the size of it's contents by default. :py:class:`ui.Button<ember.style.pixel_dark.Button>` has a different default size of 70 x 21 pixels, which is a size that looks nice at this scale. You can, of course, override this preset when creating an instance of :py:class:`ui.Button<ember.style.pixel_dark.Button>` by specifying :code:`size`/:code:`w`/:code:`h` parameters in the Button constructor.
+    The default size for the basic :py:class:`ember.Button` element that we looked at previously is :code:`ember.FIT`, which means that it will shrink to fit the size of it's contents by default. :py:class:`ui.Button<ember.style.pixel_dark.Button>` has a different default size of 70 x 21 pixels, which is a size that looks nice at this scale.
 
     If you don't like the default button size and want to set a new default, it's easy to do so:
 
     .. code-block:: python
 
-    ui.Button.w.default_value = 100
-    ui.Button.h.default_value = 20
+        ui.Button.w.default_value = 100
+        ui.Button.h.default_value = 20
 
 
     This works on every other element too.
