@@ -16,7 +16,7 @@ Here's some sample code that we'll be building upon to create a menu. You may wi
 
 .. code-block:: python
    :linenos:
-   :emphasize-lines: 3,4,8
+   :emphasize-lines: 7, 8
 
     import pygame
     import ember
@@ -263,8 +263,8 @@ Default Sizes
 
 All elements have a 'default size' that they adopt if you don't specify a size value yourself.
 Each element type has a default value for each dimension - a default width and default height.
-For :py:class:`VStack<ember.ui.VStack>` and :py:class:`HStack<ember.ui.HStack>`, 
-the default size is :code:`ember.FIT` for both the width and height of the container. 
+For :py:class:`VStack<ember.ui.VStack>` and :py:class:`HStack<ember.ui.HStack>`,
+the default size is :code:`ember.FIT` for both the width and height of the container.
 This means that, if you want one of those Containers to use a :code:`ember.FIT` size,
 you don't need to specify a size at all!
 
@@ -574,7 +574,7 @@ product should look like:
     .. code-block:: python
 
         import pygame
-        import ember
+        import ember as ember
 
         pygame.init()
         clock = pygame.time.Clock()

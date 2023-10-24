@@ -5,13 +5,13 @@ UI
 
 View
 ---------
-.. autoclass:: ember_ui.ui.View
-.. autoclass:: ember_ui.ui.ViewLayer
+.. autoclass:: ember.ui.View
+.. autoclass:: ember.ui.ViewLayer
 
 Elements
 ---------
 
-.. automodule:: ember_ui.ui
+.. automodule:: ember.ui
     :members:
     :imported-members:
     :undoc-members:

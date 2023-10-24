@@ -3,7 +3,7 @@
 Material
 *******************
 
-.. automodule:: ember_ui.material
+.. automodule:: ember.material
     :imported-members:
     :exclude-members: Capsule, RoundedRect, Ellipse, Shape
     :undoc-members:
@@ -11,6 +11,6 @@ Material
 Shapes
 ----------
 
-.. automodule:: ember_ui.material.shape
+.. automodule:: ember.material.shape
     :imported-members:
     :undoc-members:

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "ember_ui"
+name = "ember"
 version = "0.1.0"
 authors = [
   { name="Sjmarf", email="smarf3113@gmail.com" },
