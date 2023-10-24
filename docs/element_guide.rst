@@ -388,10 +388,12 @@ because you can run additional code (such as keeping a reference to an element a
 
 For example, you can use a :code:`for` loop to create multiple elements like this:
 
-with ember.View() as view:
-    with ember.VStack():
-        for color in ("tomato", "dodgerblue", "seagreen1"):
-            ember.Panel(color, size=100)
+.. code-block:: python
+
+    with ember.View() as view:
+        with ember.VStack():
+            for color in ("tomato", "dodgerblue", "seagreen1"):
+                ember.Panel(color, size=100)
 
 ZStack
 ------------------------
@@ -449,7 +451,7 @@ Lets use our Text object in a View:
 Just like any other element, Text has a size. The text itself will be rendered in the center of the Text object by default.
 The Text element will attempt to render as much of the text as will fit within the width of the Text on one line, and then wrap it to the next line.
 
-Using :code:`ember.FIT` as a size value for Text will cause the Text to match the size of it's content. :code:`ember.FIT` is the default size for Text.
+Using :code:`ember.FIT` as a size value for Text will cause the Text element to match the size of the rendered text within it. :code:`ember.FIT` is the default size for Text.
 
 We can modify the contents of Text after its creation using the :py:meth:`set_text()<Text.set_text()>` method.
 
@@ -471,15 +473,15 @@ Lets look at our first interactive element - the :py:class:`Button<ember.ui.Butt
             ember.Panel("red", size=(200, 50))
             ember.Text("Click me!", color="white", font=font)
 
-When the user clicks the Button, an :code:`ember.BUTTONCLICKED` event is emitted. You can listen for this event in the Pygame event stack just like you would with any Pygame event.
-The :code:`ember.BUTTONCLICKED` Event object has the :code:`element` attribute, which is a reference to the button that posted the event.
+When the user clicks the Button, an :code:`ember.CLICKDOWN` event is emitted. You can listen for this event in the Pygame event stack just like you would with any Pygame event.
+The :code:`ember.CLICKDOWN` Event object has the :code:`element` attribute, which is a reference to the element that posted the event.
 
 Example usage:
 
 .. code-block:: python
 
     for event in pygame.event.get():
-        if event.type == ember.BUTTONCLICKED:
+        if event.type == ember.CLICKDOWN:
             if event.element is my_button:
                 print(f"Button was clicked!")
 
@@ -487,7 +489,7 @@ Example usage:
 ------------------------
 
 Previously, we've used :py:class:`ember.size.FitSize` to make an element shrink to fit the size of it's contents.
-Now, we'll look at :py:class:`ember.size.FillSize`. In a similar way, elements with a FillSize will _expand_ to fill the maximum space available.
+Now, we'll look at :py:class:`ember.size.FillSize`. Elements with a FillSize will _expand_ to fill the maximum space available.
 
 Just like with FitSize and :code:`ember.FIT`, an instance of FillSize is available as :code:`ember.FILL` for convenience.
 
@@ -495,7 +497,7 @@ Consider this example:
 
 .. code-block:: python
 
-    # The panel will have a size of (200, 100) - the maximum size available within the Button.
+    # The panel will have a size of (200, 50) - the maximum size available within the Button.
 
     with ember.Button(size=(200, 50)) as button:
         ember.Panel("red", size=ember.FILL)
@@ -518,8 +520,7 @@ Note that using FIT and FILL in conjunction can cause errors if there is nowhere
     with ember.VStack(w=ember.FIT):
         ember.Panel("white", w=ember.FILL, h=20)
         
-The Panel has a width of ember.FILL, so it tries to expand to the width of the VStack. But the VStack has a width of ember.FIT, so it tries to shrink to the width
-of its contents! This causes a conflict, and an error is raised.
+The Panel has a width of :code:`ember.FILL`, so it tries to expand to the width of the VStack. But the VStack has a width of :code:`ember.FIT`, so it tries to shrink to the width of its contents! This causes a conflict, and an error is raised.
 
 Writing this is OK though:
 
@@ -561,8 +562,7 @@ You'll be creating a simple clicker game. Your objectives are:
 - Above the button, display a Text element with the value :code:`0`. This will be our counter.
 - When the button is clicked, the value displayed on the Text element should be incremented by 1.
 
-You are of course free to look at any of the example code above whilst designing your solution. Here's what the finished
-product should look like:
+You are of course free to look at any of the example code above whilst designing your solution. Here's what the finished product should look like:
 
 
 .. image:: _static/element_guide/challenge.png
@@ -638,26 +638,23 @@ Additionally, we can specify the :code:`offset` parameter to add or subtract a n
     # This represents 10 pixels more than the width/height of the container's contents
     fit_size = ember.size.FitSize(offset=10)
 
-We can use the numerical operators :code:`+-*/` to modify these values, too. When you use these operators on a size type, a new size type will be returned with the adjustments made.
+We can use the :code:`+-*/` operators to modify these values, too. When you use these operators on a size type, a new size type will be returned with the adjustments made.
 
 .. code-block:: python
 
-    fill_size = ember.FILL - 10
     # This is equivalent to ember.size.FillSize(offset=-10)
+    fill_size = ember.FILL - 10
 
 Element Positioning
 ------------------------
 
-In addition to changing the size of an element, we can change its position relative to its parent element. All elements have :code:`pos`,
-:code:`x` and :code:`y` parameters, which work in a similar way to :code:`size`, :code:`w` and :code:`h`.
+In addition to changing the size of an element, we can change its position relative to its parent element. All elements have :code:`pos`, :code:`x` and :code:`y` parameters, which work in a similar way to :code:`size`, :code:`w` and :code:`h`.
 
 .. image:: _static/element_guide/position1.png
   :width: 160
   :align: right
 
-Let's look at an example. By default, the VStack container will align its child elements to the center of the VStack.
-We can change this behaviour by specifying an :code:`x` position for one of the VStack's child elements.
-Specifying an integer for this parameter will position the element that number of pixels from the left edge of the VStack.
+Let's look at an example. By default, the VStack container will align its child elements to the center of the VStack. We can change this behaviour by specifying an :code:`x` position for one of the VStack's child elements. Specifying an integer for this parameter will position the element that number of pixels from the left edge of the VStack.
 
 .. code-block:: python
 
@@ -665,13 +662,12 @@ Specifying an integer for this parameter will position the element that number o
         ember.Panel("tomato", size=100)
         ember.Panel("dodgerblue", size=100, x=0)
 
-Adjusting the :code:`y` position of elements in a VStack won't do anything - the y position of the elements is decided 
-entirely by the VStack itself. HStack allows you to adjust the :code:`y`, but not the :code:`x`. ZStack lets you adjust both.
+Adjusting the :code:`y` position of elements in a VStack won't do anything - the y position of the elements is decided entirely by the VStack itself. HStack allows you to adjust the :code:`y`, but not the :code:`x`. ZStack lets you adjust both.
 
 Anchors
 .............
 
-As an alternative to passing integers as position arguments, you can use **position types** instead. Consider this example:
+As an alternative to passing integers as position arguments, you can use **position types** instead.
 
 .. code-block:: python
 
@@ -714,9 +710,3 @@ Additionally, there are a number of dual anchors too:
 - :code:`MIDRIGHT`
 - :code:`MIDTOP`
 - :code:`MIDBOTTOM`
-
-What's next?
-----------------
-
-That's everything you need to know regarding the basic structure of ember.
-In the next chapter, we'll look at making some proper menus!
