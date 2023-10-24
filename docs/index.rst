@@ -59,15 +59,6 @@ I'm open to contributions. You are of course free to fork, modify and redistribu
    style_guide
 
 .. toctree::
-   :caption: Articles
-   :hidden:
-
-   view_layer_guide
-   multiple_views_guide
-   controller_guide
-   custom_font_guide
-
-.. toctree::
    :caption: API Reference
    :hidden:
 
