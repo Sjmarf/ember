@@ -47,6 +47,8 @@ Contributing
 ---------------------
 I'm open to contributions. You are of course free to fork, modify and redistribute the library under the terms of the license if you so wish. If you have any questions, feel free to DM me `on Discord <https://discord.gg/pygame>`_ @sjmarf.
 
+To install the module in a developer environment, run :code:`pip install .` in the project directory.
+
 .. toctree::
    :caption: Getting Started
    :hidden:
