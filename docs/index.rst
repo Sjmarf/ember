@@ -56,6 +56,7 @@ I'm open to contributions. You are of course free to fork, modify and redistribu
    :hidden:
 
    element_guide
+   style_guide
 
 .. toctree::
    :caption: Articles
