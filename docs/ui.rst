@@ -12,6 +12,6 @@ Elements
 ---------
 
 .. automodule:: ember_ui.ui
+    :members:
     :imported-members:
-    :exclude-members: Element, Interactive, Container, MultiElementContainer, SingleElementContainer, Stack, Surfacable, View, ViewLayer
     :undoc-members:
