@@ -23,9 +23,6 @@ from .toggle_button import ToggleButton
 from .panel_toggle_button import PanelToggleButton
 from .switch import Switch
 
-# from .h_scroll import HScroll
-# from .v_scroll import VScroll
-
 from .h_stack import HStack
 from .v_stack import VStack
 from .z_stack import ZStack

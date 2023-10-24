@@ -55,13 +55,8 @@ I'm open to contributions. You are of course free to fork, modify and redistribu
    :caption: Getting Started
    :hidden:
 
-   .. quick_start
    element_guide
    material_guide
-   transition_guide
-   style_guide
-   state_guide
-   font_guide
 
 .. toctree::
    :caption: Articles
@@ -77,7 +72,4 @@ I'm open to contributions. You are of course free to fork, modify and redistribu
    :hidden:
 
    ui
-   style
    material
-   transition
-   font

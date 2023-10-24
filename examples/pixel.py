@@ -62,7 +62,7 @@ with ember.View() as view:
         ui.Button()
 
 print(len(ui.Switch.__mro__))
-        
+
 is_running = True
 
 while is_running:

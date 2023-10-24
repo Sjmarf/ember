@@ -16,13 +16,15 @@ Here's some sample code that we'll be building upon to create a menu. You may wi
 
 .. code-block:: python
    :linenos:
-   :emphasize-lines: 2,6
+   :emphasize-lines: 3,4,8
 
     import pygame
     import ember
 
     pygame.init()
     clock = pygame.time.Clock()
+
+    ember.init()
     ember.set_clock(clock)
 
     screen = pygame.display.set_mode((400, 400))
@@ -71,13 +73,15 @@ I've added a View to the previous example script. The changes I've made are high
 
 .. code-block:: python
    :linenos:
-   :emphasize-lines: 10,11,12,17,22
+   :emphasize-lines: 12,13,14,19,24
 
     import pygame
     import ember
 
     pygame.init()
     clock = pygame.time.Clock()
+
+    ember.init()
     ember.set_clock(clock)
 
     screen = pygame.display.set_mode((400, 400))
@@ -577,6 +581,7 @@ product should look like:
 
         screen = pygame.display.set_mode((400, 400))
 
+        ember.init()
         ember.set_clock(clock)
 
         counter = 0

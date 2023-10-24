@@ -5,21 +5,13 @@ UI
 
 View
 ---------
-.. autoclass:: ember.ui.View
-.. autoclass:: ember.ui.ViewLayer
-
-Bases
----------
-
-.. automodule:: ember.ui.base
-    :imported-members:
-    :undoc-members:
-
+.. autoclass:: ember_ui.ui.View
+.. autoclass:: ember_ui.ui.ViewLayer
 
 Elements
 ---------
 
-.. automodule:: ember.ui
+.. automodule:: ember_ui.ui
     :imported-members:
     :exclude-members: Element, Interactive, Container, MultiElementContainer, SingleElementContainer, Stack, Surfacable, View, ViewLayer
     :undoc-members:
