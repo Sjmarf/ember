@@ -3,7 +3,9 @@
 Styling Elements
 ===================================================
 
-Ember comes with a number of 'ui styles' built-in. Each style is stored as a submodule of :code:`ember.style`, and must be imported explicitly to be used. You can import a UI style as shown below. The only style available right now is :code:`pixel_dark` - by release, we'll have a wider range of styles to choose from.
+Ember comes with a number of 'ui styles' built-in. Each style is stored as a submodule of :code:`ember.style`, and must be imported explicitly to be used. Each style contains a number of Element classes similar to those found under :code:`ember.ui`. These classes inherit from :code:`ember.ui` elements, and extend them to provide additional functionality.
+
+You can import a UI style as shown below. The only style available right now is :code:`pixel_dark`, which is a pixel-art style. By release, we'll have a wider range of both pixel-art and non-pixel-art styles to choose from.
 
 .. code-block:: python
 
@@ -11,14 +13,12 @@ Ember comes with a number of 'ui styles' built-in. Each style is stored as a sub
 
 In this chapter, we'll cover how to use the built-in styles. In later chapters, we'll cover how you can create styles yourself.
 
-Each style module contains a number of Element classes similar to those found under :code:`ember.ui`. These classes inherit from :code:`ember.ui` elements, and extend them to provide additional functionality.
-
 Generic setup
 ----------------
 
-The :code:`pixel_dark` style is a pixel art style. In future, we'll have a range of both pixel-art and non pixel-art styles. Because the pixel art style is rendered at a small scale, we'll have to create an intermediate surface to draw the UI on, which we will then scale and draw to the display surface. This is standard practise when creating pixel art games in Pygame.
+The :code:`pixel_dark` style is a pixel art style. Because the pixel art is rendered at a small scale, we'll have to create an intermediate surface to draw the UI on, which we will then scale and draw to the display surface. This is standard practise when creating pixel art games in Pygame.
 
-Here's an example showing how you might do this. Note the :code:`ember.set_display_zoom` call, which is highlighted. This tells ember how much it should scale it's mouse position readings by. It does not affect how ember renders the UI.
+Here's an example showing how you might do this. Note the :code:`ember.set_display_zoom` call, which is highlighted. This tells ember how much it should scale the mouse position readings by. It does not affect how ember renders the UI.
 
 Every style has a :code:`background_color` attribute that you may wish to use as a background for your menus.
 
@@ -82,7 +82,7 @@ Previously, we've created buttons with backgrounds by adding a :py:class:`Panel<
             ember.Text("Click me!", color="white", font=font)
 
 
-:py:class:`ui.Button<ember.style.pixel_dark.Button>` makes this syntax much simpler. Firstly, it creates a :py:class:`Panel<ember.ui.Panel>` internally when you create the button, so that you don't have to specify it yourself.
+:py:class:`ui.Button<ember.style.pixel_dark.Button>` makes this syntax much simpler. It creates a :py:class:`Panel<ember.ui.Panel>` internally when you create the button, so that you don't have to specify it yourself.
 
 We've only seen how to apply solid colors to a Panel so far, but there are several other options too. :py:class:`ui.Button<ember.style.pixel_dark.Button>` uses a more advanced type of Panel that renders a :code:`pygame.Surface` texture rather than a solid color. We'll look more at this later.
 
@@ -114,3 +114,45 @@ This is much cleaner, right? But we can improve this even more! If you pass a st
     with ember.View() as view:
         ui.Button("Click me!")
 
+
+ToggleButton
+-------------------
+
+:py:class:`ember.ToggleButton<ember.ui.ToggleButton>` is a subclass of :py:class:`ember.Button<ember.ui.Button>`, and adds an :code:`active` property that is toggled between :code:`True` and :code:`False` by the button when it is clicked.
+
+The :code:`pixel_dark` style currently offers two different subclasses of :py:class:`ember.ToggleButton<ember.ui.ToggleButton>` - :py:class:`ui.ToggleButton<ember.style.pixel_dark.ToggleButton>` and :py:class:`ui.Switch<ember.style.pixel_dark.Switch>`.
+
+.. code-block:: python
+
+    with ember.View() as view:
+        with ember.VStack(spacing=6):
+            ui.Button("Click me!")
+            ui.ToggleButton("Click me!")
+            ui.Switch()
+
+
+Because these element types are subclasses of :py:class:`ember.Button<ember.ui.Button>`, you can listen for :code:`ember.CLICKEDDOWN` events to detect when they are clicked. In addition, you can listen for :code:`ember.TOGGLEON` and :code:`ember.TOGGLEOFF` to detect specific states.
+
+Stacks
+-----------
+
+Styles provide subclasses of :py:class:`ember.VStack<ember.ui.VStack>` and :py:class:`ember.HStack<ember.ui.HStack>` too. In the case of :code:`pixel_dark`, the minimum spacing of the Stacks has been increased from 0 to 6.
+
+You can add :py:class:`ui.Divider<ember.style.pixel_dark.Divider>` elements to nicely separate your elements. The orientation of the Divider will change automatically depending on whether it is inside of a :py:class:`ember.VStack<ember.ui.VStack>` or :py:class:`ember.HStack<ember.ui.HStack>`.
+
+Here's a more complex UI:
+
+.. code-block:: python
+
+    with ember.View() as view:
+        with ui.VStack(w=140):
+            ui.Text("Options")
+            ui.Divider()
+            for i in range(1, 4):
+                with ui.HStack(w=ember.FILL):
+                    ui.Text(f"Option {i}")
+                    ui.Switch()
+            ui.Divider()
+            with ui.HStack(w=ember.FILL):
+                ui.Button("Cancel", w=ember.FILL)
+                ui.Button("Save", w=ember.FILL)

@@ -7,7 +7,7 @@ if TYPE_CHECKING:
     from ember.material.material import Material
 
 from .button import Button
-
+from .panel_container import PanelContainer
 from .panel import Panel
 
 from ..common import SequenceElementType
@@ -21,7 +21,7 @@ from ember.position import (
 from ..on_event import on_event
 
 
-class PanelButton(Button, ABC):
+class PanelButton(PanelContainer, Button, ABC):
     def __init__(
         self,
         *elements: Optional[SequenceElementType],
@@ -47,23 +47,9 @@ class PanelButton(Button, ABC):
             h=h,
             **kwargs
         )
-
-        with self.adding_element(Panel(None, y=0, size=FILL), update=False) as panel:
-            self._panel: Panel = panel
-
+        
         self._panel.material = self._get_panel_material()
 
-    @property
-    def panel(self) -> Panel:
-        return self._panel
-
-    @panel.setter
-    def panel(self, value: Panel) -> None:
-        if value is self._panel:
-            return
-        self.removing_element(self._panel)
-        with self.adding_element(value) as panel:
-            self._panel = panel
 
     @on_event()
     def _update_material(self) -> None:
@@ -72,7 +58,4 @@ class PanelButton(Button, ABC):
     @abstractmethod
     def _get_panel_material(self) -> "Material":
         ...
-
-    @property
-    def _elements_to_render(self):
-        return itertools.chain((self._panel,), self._elements)
+        

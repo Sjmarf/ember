@@ -6,6 +6,7 @@ import itertools
 from ember.axis import Axis, HORIZONTAL
 
 from .toggle_button import ToggleButton
+from .two_panel_container import TwoPanelContainer
 from ..material import Material
 
 from ..event import TOGGLEDON, TOGGLEDOFF
@@ -30,7 +31,7 @@ from ..common import SequenceElementType
 from ..on_event import on_event
 
 
-class Switch(ToggleButton, ABC):
+class Switch(TwoPanelContainer, ToggleButton, ABC):
     animation: Animation = EaseInOut(0.2)
 
     def __init__(
@@ -62,12 +63,6 @@ class Switch(ToggleButton, ABC):
             axis=axis,
             **kwargs
         )
-        
-        with self.adding_element(Panel(None, y=0, size=FILL), update=False) as panel:
-            self._back_panel: Panel = panel
-        with self.adding_element(Panel(None), update=False) as panel:
-            self._front_panel: Panel = panel
-
         self._back_panel.material = self._get_back_material()
         self._front_panel.material = self._get_front_material()
 
@@ -107,7 +102,3 @@ class Switch(ToggleButton, ABC):
             self.cascading.add(Element.x(PivotablePosition(LEFT, 0, watching=self)))
             self.cascading.add(Element.y(PivotablePosition(0, BOTTOM, watching=self)))
             
-    @property
-    def _elements_to_render(self):
-        return itertools.chain((self._back_panel, self._front_panel), self._elements)
-    

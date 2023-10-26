@@ -11,6 +11,7 @@ from ..material import Material
 
 from ember.ui.element import Element
 from .panel import Panel
+from .two_panel_container import TwoPanelContainer
 
 from ..event import VALUEMODIFIED
 from ..common import SequenceElementType
@@ -25,11 +26,10 @@ from ember.position import (
     PivotablePosition,
 )
 
-
 from ember.on_event import on_event
 
 
-class Bar(Gauge, MultiElementContainer, ABC):
+class Bar(TwoPanelContainer, Gauge, MultiElementContainer, ABC):
 
     def __init__(
         self,
@@ -65,11 +65,6 @@ class Bar(Gauge, MultiElementContainer, ABC):
             **kwargs,
         )
         
-        with self.adding_element(Panel(None, y=0, size=FILL), update=False) as panel:
-            self._back_panel: Panel = panel
-        with self.adding_element(Panel(None), update=False) as panel:
-            self._front_panel: Panel = panel        
-
         self._back_panel.material = self._get_back_material()
         self._front_panel.material = self._get_front_material()
 
@@ -99,9 +94,5 @@ class Bar(Gauge, MultiElementContainer, ABC):
             size = PivotableSize(FILL * self._progress, FILL, watching=self)
             self.cascading.add(Element.w(size))
             self.cascading.add(Element.h(~size))
-
-    @property
-    def _elements_to_render(self):
-        return itertools.chain((self._back_panel, self._front_panel), self._elements)
-    
+            
             
