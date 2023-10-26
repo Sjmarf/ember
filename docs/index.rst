@@ -40,7 +40,7 @@ Contributing
 ---------------------
 I'm open to contributions. You are of course free to fork, modify and redistribute the library under the terms of the license if you so wish. If you have any questions, feel free to DM me `on Discord <https://discord.gg/pygame>`_ @sjmarf.
 
-To install the module in a developer environment, run :code:`pip install .` in the project directory. Whenever you make changes to the project and want to see those changes, you can run :code:`python3 -m build` followed by :code:`pip install . --force-reinstall`.
+To install the module in a developer environment, run :code:`python3 -m build` followed by :code:`pip install . --force-reinstall` in the project directory.
 
 If you'd rather avoid reinstalling ember every time you make a change, you can add the :code:`src` folder to :code:`sys.path` manually. Here's how you can do this for scripts running from the :code:`examples` directory, for example:
 
