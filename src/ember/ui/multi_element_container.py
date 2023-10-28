@@ -145,7 +145,7 @@ class MultiElementContainer(Container, ABC):
         return self._elements.index(element)
 
     @property
-    def _elements_to_render(self) -> Iterable[Element]:
+    def _elements_to_render(self) -> Sequence[Element]:
         return self._elements
 
     @property

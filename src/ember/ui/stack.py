@@ -7,13 +7,19 @@ from ember import log
 from ember import axis
 
 from ember import common as _c
-from ember.common import SequenceElementType, FOCUS_CLOSEST, FOCUS_AXIS_FORWARD, FOCUS_AXIS_BACKWARD, FocusDirection
+from ember.common import (
+    SequenceElementType,
+    FOCUS_CLOSEST,
+    FOCUS_AXIS_FORWARD,
+    FOCUS_AXIS_BACKWARD,
+    FocusDirection,
+)
 from ember.ui.element import Element
 from .focus_passthrough import FocusPassthrough
 
 from ember.trait.trait import Trait
 from ember.spacing import SpacingType, FILL_SPACING, load_spacing
-from ember.size import FillSize, FitSize
+from ember.size import FillSize, FitSize, AbsoluteSize
 
 if TYPE_CHECKING:
     pass
@@ -22,7 +28,7 @@ if TYPE_CHECKING:
 class Stack(FocusPassthrough):
     """
     A Stack is a collection of Elements. There are two subclasses of Stack - :py:class:`ember.ui.VStack`
-    and :py:class:`ember.ui.HStack`. This base class should not be instantiated directly.
+    and :py:class:`ember.ui.HStack`.
     """
 
     spacing = Trait(
@@ -41,151 +47,62 @@ class Stack(FocusPassthrough):
 
         self.spacing = spacing
 
-        super().__init__(
-            # MultiElementContainer
-            *elements,
-            **kwargs,
-        )
+        super().__init__(*elements, **kwargs)
 
     def _update_rect(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        if not self._elements:
-            return
+        elements = list(self._elements_to_render)
+        spacing = self.spacing.get_min()
 
-        fill_element_count = 0
-        total_size_of_fill_elements = 0
-        total_size_of_nonfill_elements = 0
+        unallocated_space = self.rect.rel_size1 - spacing * (len(elements) - 1)
 
-        for i in self.elements:
-            if i is None:
-                continue
-            if isinstance(i.rel_size1, FillSize):
-                total_size_of_fill_elements += i.rel_size1.fraction
-                fill_element_count += 1
-            else:
-                total_size_of_nonfill_elements += i.get_abs_rel_size1()
+        element_sizes: dict[Element, float] = {}
 
-        # This is the additional padding caused by a rel_size1 value such as ember.FIT + 20
-        parallel_padding = (
-            self.rel_size1.offset if isinstance(self.rel_size1, FitSize) else 0
-        )
-        
-        if len(self._elements) == 1:
-            spacing = 0
-
-        elif fill_element_count > 0 or isinstance(self.rel_size1, FitSize):
-            spacing = self.spacing.get_min()
-
-        else:
-            spacing = self.spacing.get(
-                int(
-                    (self.rect.rel_size1 - parallel_padding - total_size_of_nonfill_elements)
-                    / (len(self._elements) - 1)
+        for n, element in enumerate(
+            sorted(
+                elements,
+                key=lambda i: int(
+                    i.rel_size1.relies_on_min_value or i.rel_size1.relies_on_max_value
                 ),
-            )        
+            )
+        ):
+            element: Element
+            max_size = unallocated_space / (len(elements) - n)
+            size = element.get_abs_rel_size1(max_size)
+            unallocated_space -= size
+            element_sizes[element] = size
 
-        # The parallel space that is available to divide among FILL elements
-        remaining_space = (
-            self.rect.rel_size1
-            - parallel_padding
-            - total_size_of_nonfill_elements
-            - spacing * (len(self._elements) - 1)
+        if unallocated_space:
+            spacing = self.spacing.get(
+                spacing + int(unallocated_space / (len(elements) - 1))
+            )
+
+        element_rel_pos1 = (
+            self.rect.rel_size1 / 2
+            - (sum(element_sizes.values()) + spacing * (len(elements) - 1)) / 2
         )
 
-        # Find the starting position of the first child element
-        if fill_element_count == 0:
-            if isinstance(self.rel_size1, FitSize):
-                element_rel_pos1 = remaining_space / 2 + parallel_padding / 2
-            else:
-                element_rel_pos1 = (
-                    self.rect.rel_size1 / 2
-                    - (
-                        total_size_of_nonfill_elements
-                        + spacing * (len(self._elements) - 1)
-                    )
-                    / 2
-                )
-        else:
-            element_rel_pos1 = parallel_padding / 2
-
-        # This is used to equally split the remaining size up between elements with a FILL size
-        if fill_element_count != 0:
-            remainder = remaining_space % fill_element_count
-            leading_remainder = (
-                math.ceil(remainder / 2)
-                if self.rect.rel_size1 % 2 == 0
-                else remainder // 2
+        for element in elements:
+            element_rel_size1 = element_sizes[element]
+            element_rel_pos2 = element.rel_pos2.get(
+                self.rect.rel_size2,
+                element.get_abs_rel_size2(
+                    self.rect.rel_size2 - abs(element.rel_pos2.value)
+                ),
+                self.axis,
             )
-            trailing_remainder = remainder - leading_remainder
-            fill_n = -1
 
-            if abs(int(self.rect.rel_pos1) - self.rect.rel_pos1) not in {0, 1}:
-                if leading_remainder > trailing_remainder:
-                    element_rel_pos1 -= 0.5
-
-                if trailing_remainder > leading_remainder:
-                    element_rel_pos1 += 0.5
-
-        self._first_visible_element = None
-
-        # Iterate over child elements
-        with log.size.indent():
-            for n, element in enumerate(self._elements):
-                element_rel_pos2 = element.rel_pos2.get(
-                    self.rect.rel_size2,
-                    element.get_abs_rel_size2(
-                        self.rect.rel_size2 - abs(element.rel_pos2.value)
-                    ),
-                    self.axis
-                )
-
-                # Find the height of the child element
-                if isinstance(element.rel_size1, FillSize):
-                    fill_n += 1
-                    element_rel_size1 = (
-                        remaining_space
-                        // total_size_of_fill_elements
-                        * element.rel_size1.fraction
-                        + element.rel_size1.offset
-                    )
-                    if (
-                        fill_n < leading_remainder
-                        or fill_n >= fill_element_count - trailing_remainder
-                    ):
-                        element_rel_size1 += 1
-                else:
-                    element_rel_size1 = element.get_abs_rel_size1()
-
-                # Determine whether the element is visible on screen or not
-                if not self.visible:
-                    element.visible = False
-                elif (
-                    self.rect.rel_pos1 + element_rel_pos1 + element_rel_size1
-                    <= surface.get_abs_offset()[axis.axis]
-                    or self.rect.rel_pos1 + element_rel_pos1
-                    >= surface.get_abs_offset()[axis.axis]
-                    + surface.get_size()[axis.axis]
-                ):
-                    element.visible = False
-                else:
-                    element.visible = True
-                    if self._first_visible_element is None:
-                        self._first_visible_element = n
-
-                # Start the chain for the child element
-                element.update_rect(
-                    surface,
-                    rel_pos1=self.rect.rel_pos1 + element_rel_pos1,
-                    rel_pos2=self.rect.rel_pos2 + element_rel_pos2,
-                    rel_size2=element.get_abs_rel_size2(
-                        self.rect.rel_size2 - abs(element.rel_pos2.value)
-                    ),
-                    rel_size1=element_rel_size1,
-                )
-
-                # Increment the y position for the next child element
-                element_rel_pos1 += spacing + element_rel_size1
+            element.update_rect(
+                surface,
+                rel_pos1=self.rect.rel_pos1 + element_rel_pos1,
+                rel_pos2=self.rect.rel_pos2 + element_rel_pos2,
+                rel_size2=element.get_abs_rel_size2(
+                    self.rect.rel_size2 - abs(element.rel_pos2.value)
+                ),
+                rel_size1=element_rel_size1,
+            )
+            element_rel_pos1 += element_rel_size1 + spacing
 
     def _update_min_size(self) -> None:
         if self._elements:
