@@ -16,7 +16,7 @@ Here's some sample code that we'll be building upon to create a menu. You may wi
 
 .. code-block:: python
    :linenos:
-   :emphasize-lines: 7, 8
+   :emphasize-lines: 9, 10
 
     import pygame
     import ember
@@ -24,10 +24,10 @@ Here's some sample code that we'll be building upon to create a menu. You may wi
     pygame.init()
     clock = pygame.time.Clock()
 
+    screen = pygame.display.set_mode((400, 400))
+
     ember.init()
     ember.set_clock(clock)
-
-    screen = pygame.display.set_mode((400, 400))
 
     running = True
     while running:
@@ -81,10 +81,10 @@ I've added a View to the previous example script. The changes I've made are high
     pygame.init()
     clock = pygame.time.Clock()
 
+    screen = pygame.display.set_mode((400, 400))
+
     ember.init()
     ember.set_clock(clock)
-
-    screen = pygame.display.set_mode((400, 400))
 
     view = ember.View(
         ember.Panel("tomato", size=(100, 100))

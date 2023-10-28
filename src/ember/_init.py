@@ -7,8 +7,8 @@ init_queue: list[Callable[[], None]] = []
 has_init: bool = False
 
 def init():
-    if not pygame.get_init():
-        raise _c.Error("You must call pygame.init() before ember.init()")
+    if not (pygame.get_init() and pygame.display.get_active()):
+        raise _c.Error("You must call pygame.init() and pygame.display.set_mode() before ember.init()")
     
     for i in init_queue:
         i()

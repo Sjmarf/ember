@@ -2,14 +2,6 @@ import pygame
 import ember
 from ember.style import pixel_dark as ui
 
-# Uncomment this to enable logging.
-#
-# import logging
-#
-# log = logging.getLogger("ember.size")
-# log.setLevel(logging.DEBUG)
-# log.addHandler(logging.FileHandler("log.log", "w+"))
-
 pygame.init()
 
 WIDTH = 300
