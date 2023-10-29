@@ -62,9 +62,7 @@ class Stack(FocusPassthrough):
         for n, element in enumerate(
             sorted(
                 elements,
-                key=lambda i: int(
-                    i.rel_size1.relies_on_min_value or i.rel_size1.relies_on_max_value
-                ),
+                key=lambda i: (int(i.rel_size1.relies_on_max_value)),
             )
         ):
             element: Element

@@ -9,7 +9,6 @@ from ember import log
 if TYPE_CHECKING:
     from ember.ui.view import ViewLayer
     from .container import Container
-    from ember.material_repository import MaterialRepository
 
 from ember.ui.context_manager import ContextManager
 from ember.animation.animation import AnimationContext
@@ -27,7 +26,7 @@ from ember.position import load_position
 from ember.trait.cascading_trait_value import CascadingTraitValue
 
 from ember import common as _c
-from ember import axis
+from ember import axis as axis_module
 from ember.axis import Axis, VERTICAL, HORIZONTAL
 
 from .element_meta import ElementMeta
@@ -41,25 +40,25 @@ MethodCallable = Callable[["Element"], None]
 class ElementFRect(pygame.FRect):
     @property
     def rel_pos1(self) -> float:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             return self.x
         return self.y
 
     @property
     def rel_pos2(self) -> float:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             return self.y
         return self.x
 
     @property
     def rel_size1(self) -> float:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             return self.w
         return self.h
 
     @property
     def rel_size2(self) -> float:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             return self.h
         return self.w
 
@@ -71,26 +70,26 @@ class ElementMinSize:
 
     @property
     def rel_size1(self) -> float:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             return self.w
         return self.h
 
     @rel_size1.setter
     def rel_size1(self, value: float) -> None:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             self.w = value
         else:
             self.h = value
 
     @property
     def rel_size2(self) -> float:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             return self.h
         return self.w
 
     @rel_size2.setter
     def rel_size2(self, value: float) -> None:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             self.h = value
         else:
             self.w = value
@@ -249,7 +248,7 @@ class Element(abc.ABC, metaclass=ElementMeta):
         rel_size1: Optional[float] = None,
         rel_size2: Optional[float] = None,
     ) -> None:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             if rel_pos1 is not None:
                 x = rel_pos1
             if rel_pos2 is not None:
@@ -314,14 +313,14 @@ class Element(abc.ABC, metaclass=ElementMeta):
             int(h),
         )
 
-        prev_axis = axis.axis
-        axis.axis = self._axis
+        prev_axis = axis_module.axis
+        axis_module.axis = self._axis
         with log.size.indent(
-            f"Rect updating with axis {axis.axis}: [{self.rect.x:.2f}, {self.rect.y:.2f}, {self.rect.w:.2f}, {self.rect.h:.2f}].",
+            f"Rect updating with axis {axis_module.axis}: [{self.rect.x:.2f}, {self.rect.y:.2f}, {self.rect.w:.2f}, {self.rect.h:.2f}].",
             self,
         ):
             self._update_rect(surface, x, y, w, h)
-            axis.axis = prev_axis
+            axis_module.axis = prev_axis
 
     def _update_rect(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
@@ -359,10 +358,10 @@ class Element(abc.ABC, metaclass=ElementMeta):
     ) -> None:
         old_w, old_h = self._min_size.w, self._min_size.h
 
-        prev_axis = axis.axis
-        axis.axis = self._axis
+        prev_axis = axis_module.axis
+        axis_module.axis = self._axis
         self._update_min_size()
-        axis.axis = prev_axis
+        axis_module.axis = prev_axis
 
         # If the container is not empty
         if getattr(self, "_elements_to_render", False):
@@ -525,36 +524,36 @@ class Element(abc.ABC, metaclass=ElementMeta):
         )
 
     def get_abs_rel_size1(self, max_size: float = 0) -> float:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             return self.get_abs_w(max_size)
         return self.get_abs_h(max_size)
 
     def get_abs_rel_size2(self, max_size: float = 0) -> float:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             return self.get_abs_h(max_size)
         return self.get_abs_w(max_size)
 
     @property
     def rel_pos1(self) -> Size:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             return self.x
         return self.y
 
     @property
     def rel_pos2(self) -> Size:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             return self.y
         return self.x
 
     @property
     def rel_size1(self) -> Size:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             return self.w
         return self.h
 
     @property
     def rel_size2(self) -> Size:
-        if axis.axis == HORIZONTAL:
+        if axis_module.axis == HORIZONTAL:
             return self.h
         return self.w
 
