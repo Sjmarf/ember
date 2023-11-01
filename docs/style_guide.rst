@@ -78,8 +78,9 @@ Previously, we've created buttons with backgrounds by adding a :py:class:`Panel<
 
     with ember.View() as view:
         with ember.Button(size=(200, 50)):
-            ember.Panel("red")
-            ember.Text("Click me!", color="white", font=font)
+            with ember.ZStack():
+                ember.Panel("red")
+                ember.Text("Click me!", color="white", font=font)
 
 
 :py:class:`ui.Button<ember.style.pixel_dark.Button>` makes this syntax much simpler. It creates a :py:class:`Panel<ember.ui.Panel>` internally when you create the button, so that you don't have to specify it yourself.

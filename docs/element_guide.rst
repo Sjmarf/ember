@@ -458,7 +458,7 @@ We can modify the contents of Text after its creation using the :py:meth:`set_te
 Buttons
 ------------------------
 
-Lets look at our first interactive element - the :py:class:`Button<ember.ui.Button>`. Button behaves very similarly to ZStack - it contains multiple elements that are stacked ontop of one another.
+Lets look at our first interactive element - the :py:class:`Button<ember.ui.Button>`. Button is a container that can hold one element.
 
 .. image:: _static/element_guide/button1.png
   :width: 160
@@ -470,8 +470,9 @@ Lets look at our first interactive element - the :py:class:`Button<ember.ui.Butt
 
     with ember.View() as view:
         with ember.Button(size=(200, 50)):
-            ember.Panel("red", size=(200, 50))
-            ember.Text("Click me!", color="white", font=font)
+            with ember.ZStack():
+                ember.Panel("red", size=(200, 50))
+                ember.Text("Click me!", color="white", font=font)
 
 When the user clicks the Button, an :code:`ember.CLICKDOWN` event is emitted. You can listen for this event in the Pygame event stack just like you would with any Pygame event.
 The :code:`ember.CLICKDOWN` Event object has the :code:`element` attribute, which is a reference to the element that posted the event.
@@ -592,8 +593,9 @@ You are of course free to look at any of the example code above whilst designing
             with ember.VStack(spacing=50):
                 text = ember.Text("0", color="white", font=font)
                 with ember.Button(size=(200, 100)) as button:
-                    ember.Panel("red")
-                    ember.Text("Click me!", color="white", font=font)
+                    with ember.ZStack():
+                        ember.Panel("red")
+                        ember.Text("Click me!", color="white", font=font)
 
 
         running = True
