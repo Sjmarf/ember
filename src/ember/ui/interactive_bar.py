@@ -8,7 +8,7 @@ from .bar import Bar
 from ember.animation import Animation, EaseInOut, EaseOut
 
 
-class Slider(InteractiveGauge, Bar, ABC):
+class InteractiveBar(InteractiveGauge, Bar, ABC):
     click_animation: Animation | None = EaseInOut(0.1)
 
     def _set_progress(

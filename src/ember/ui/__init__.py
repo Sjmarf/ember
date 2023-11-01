@@ -17,7 +17,7 @@ from .panel_button import PanelButton
 from .gauge import Gauge
 from .bar import Bar
 from .interactive_gauge import InteractiveGauge
-from .slider import Slider
+from .interactive_bar import InteractiveBar
 
 from .toggle_button import ToggleButton
 from .panel_toggle_button import PanelToggleButton

@@ -12,7 +12,7 @@ Requires:
 
 - Python 3.11 or later.
 
-- [Pygame CE](https://github.com/pygame-community/pygame-ce) v 2.2.0 or later. Upstream Pygame is not supported.
+- [Pygame CE](https://github.com/pygame-community/pygame-ce) 2.2.0 or later. Upstream Pygame is not supported.
 
 # License 
 

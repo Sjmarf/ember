@@ -32,7 +32,7 @@ class DefaultStyleDict(UserDict):
 
     @property
     def slider(self) -> Optional[Style]:
-        return self.get(Slider)
+        return self.get(InteractiveBar)
 
     @property
     def text(self) -> Optional[Style]:

@@ -6,8 +6,7 @@ from ..common import SequenceElementType
 from ember.ui.can_disable import CanDisable
 from ember.ui.can_click import CanClick
 from ember.ui.can_focus import CanFocus
-from ember.ui.multi_element_container import MultiElementContainer
-from ember.ui.has_primary_child import HasPrimaryChild
+from ember.ui.single_element_container import SingleElementContainer
 
 from ..size import SizeType, OptionalSequenceSizeType, FIT
 from ember.position import (
@@ -18,7 +17,8 @@ from ember.position import (
 if TYPE_CHECKING:
     pass
 
-class Button(CanDisable, HasPrimaryChild, CanFocus, CanClick, MultiElementContainer):
+
+class Button(CanDisable, CanFocus, CanClick, SingleElementContainer):
     """
     A Button is an interactive Element. Buttons can hold exactly one child Element, which is rendered on the button.
     When the button is clicked, it will post the :code:`ember.BUTTONCLICKED` event.
@@ -54,6 +54,7 @@ class Button(CanDisable, HasPrimaryChild, CanFocus, CanClick, MultiElementContai
 
     def __repr__(self) -> str:
         return f"<Button>"
+
 
 Button.w.default_value = FIT
 Button.h.default_value = FIT

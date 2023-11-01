@@ -33,7 +33,7 @@ class PanelButton(PanelContainer, Button, ABC):
         size: OptionalSequenceSizeType = None,
         w: Optional[SizeType] = None,
         h: Optional[SizeType] = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             *elements,
@@ -45,11 +45,10 @@ class PanelButton(PanelContainer, Button, ABC):
             size=size,
             w=w,
             h=h,
-            **kwargs
+            **kwargs,
         )
-        
-        self._panel.material = self._get_panel_material()
 
+        self._panel.material = self._get_panel_material()
 
     @on_event()
     def _update_material(self) -> None:
@@ -58,4 +57,3 @@ class PanelButton(PanelContainer, Button, ABC):
     @abstractmethod
     def _get_panel_material(self) -> "Material":
         ...
-        

@@ -73,7 +73,8 @@ class Container(ContextManager, Element, ABC, metaclass=ContainerMeta):
             with Trait.inspecting(Trait.Layer.PARENT):
                 value.prepare_for_descent(self)
                 for element in self._elements_to_render:
-                    element.update_cascading_value(value, value.depth)
+                    if element is not None:
+                        element.update_cascading_value(value, value.depth)
         log.cascade.line_break() 
         
     def _render(

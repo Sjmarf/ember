@@ -22,14 +22,8 @@ from .element import Element
 T = TypeVar("T", bound=ElementType, covariant=True)
 
 
-class SingleElementContainer(
-    Generic[T], Container, ABC
-):
-    def __init__(
-        self,
-        element: Optional[T] = None,
-        **kwargs
-    ):
+class SingleElementContainer(Generic[T], Container, ABC):
+    def __init__(self, element: Optional[T] = None, **kwargs):
         """
         Base class for Containers that hold one or zero elements. Should not be instantiated directly.
         """
@@ -60,7 +54,12 @@ class SingleElementContainer(
             self._element = None
 
     def _attribute_element(self, element: T) -> None:
-        self.set_element(element, _update=False)
+        if self._element is None:
+            self.set_element(element, _update=False)
+        else:
+            raise ValueError(
+                "Tried to attribute an element to the container using a `with` statement when it already had an element."
+            )
 
     @property
     def element(self) -> Optional[T]:
@@ -69,7 +68,7 @@ class SingleElementContainer(
     @element.setter
     def element(self, element: Optional[T]) -> None:
         self.set_element(element)
-        
+
     @property
     def _elements_to_render(self) -> Iterable[Element]:
         return (self._element,)

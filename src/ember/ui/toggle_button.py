@@ -47,10 +47,10 @@ class ToggleButton(Button):
         self._active: bool = active
 
     def _post_button_event(self, event_type: int) -> None:
-        if self._elements:
+        if self._element:
             text = (
-                self._elements[self.primary_element_index].text
-                if isinstance(self._elements[self.primary_element_index], Text)
+                self._element.text
+                if isinstance(self._element, Text)
                 else None
             )
         else:

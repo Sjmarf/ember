@@ -5,7 +5,7 @@ if TYPE_CHECKING:
 
 from .container import Container
 from .bar import Bar
-from ember.ui.slider import Slider as _Slider
+from ember.ui.interactive_bar import InteractiveBar as _Slider
 from ember.material.stretched_surface import StretchedSurface
 
 from ember.common import package
