@@ -1,9 +1,8 @@
 import pygame
-from ..common import SequenceElementType, DEFAULT
+from ..common import ElementType
 from typing import Optional, Union, Sequence
 from ember.position import (
     PositionType,
-    OptionalSequencePositionType,
     SequencePositionType,
 )
 from ..size import SizeType, OptionalSequenceSizeType
@@ -19,7 +18,7 @@ from .text import Text
 class ToggleButton(Button):
     def __init__(
         self,
-        *elements: Optional[SequenceElementType],
+        element: Optional[ElementType] = None,
         active: bool = False,
         disabled: bool = False,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
@@ -32,7 +31,7 @@ class ToggleButton(Button):
         **kwargs
     ):
         super().__init__(
-            *elements,
+            element,
             disabled=disabled,
             rect=rect,
             pos=pos,

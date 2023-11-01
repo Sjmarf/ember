@@ -1,7 +1,7 @@
 import pygame
 from typing import Union, Optional, Sequence, TYPE_CHECKING
 
-from ..common import SequenceElementType
+from ..common import SequenceElementType, ElementType
 
 from ember.ui.can_disable import CanDisable
 from ember.ui.can_click import CanClick
@@ -26,7 +26,7 @@ class Button(CanDisable, CanFocus, CanClick, SingleElementContainer):
 
     def __init__(
         self,
-        *elements: Optional[SequenceElementType],
+        element: Optional[ElementType] = None,
         disabled: bool = False,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
         pos: Optional[SequencePositionType] = None,
@@ -38,8 +38,7 @@ class Button(CanDisable, CanFocus, CanClick, SingleElementContainer):
         **kwargs,
     ):
         super().__init__(
-            # MultiElementContainer
-            *elements,
+            element,
             rect=rect,
             pos=pos,
             x=x,
@@ -47,7 +46,6 @@ class Button(CanDisable, CanFocus, CanClick, SingleElementContainer):
             size=size,
             w=w,
             h=h,
-            # CanDisable
             disabled=disabled,
             **kwargs,
         )

@@ -5,7 +5,7 @@ if TYPE_CHECKING:
 
 from .container import Container
 from .bar import Bar
-from ember.ui.interactive_bar import InteractiveBar as _Slider
+from ember.ui.interactive_bar import InteractiveBar
 from ember.material.stretched_surface import StretchedSurface
 
 from ember.common import package
@@ -14,7 +14,7 @@ from ember._init import init_task
 root = package / "style/pixel_dark/assets/bar"
 
 
-class Slider(_Slider, Bar, Container):
+class Slider(InteractiveBar, Bar, Container):
     hover_material = StretchedSurface(root / "hover.png")
     focus_material = StretchedSurface(root / "focus.png")
     active_material = StretchedSurface(root / "active.png")

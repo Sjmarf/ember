@@ -1,13 +1,13 @@
 from typing import Optional, Union, Sequence
 from abc import ABC, abstractmethod
 import pygame
-import itertools
 
 from ember.axis import Axis, HORIZONTAL
 
 from .toggle_button import ToggleButton
-from .two_panel_container import TwoPanelContainer
+from .two_panel_container import UpdatingTwoPanelContainer
 from ..material import Material
+from ember.ui.panel import Panel
 
 from ..event import TOGGLEDON, TOGGLEDOFF
 
@@ -25,18 +25,17 @@ from ember.position import (
 from ember.animation import Animation, EaseInOut
 
 from ember.ui.element import Element
-from .panel import Panel
-from ..common import SequenceElementType
+from ..common import ElementType
 
 from ..on_event import on_event
 
 
-class Switch(TwoPanelContainer, ToggleButton, ABC):
+class Switch(UpdatingTwoPanelContainer, ToggleButton, ABC):
     animation: Animation = EaseInOut(0.2)
 
     def __init__(
         self,
-        *elements: Optional[SequenceElementType],
+        element: Optional[ElementType] = None,
         active: bool = False,
         disabled: bool = False,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,
@@ -50,7 +49,7 @@ class Switch(TwoPanelContainer, ToggleButton, ABC):
         **kwargs
     ):
         super().__init__(
-            *elements,
+            element,
             active=active,
             disabled=disabled,
             rect=rect,
@@ -61,11 +60,9 @@ class Switch(TwoPanelContainer, ToggleButton, ABC):
             w=w,
             h=h,
             axis=axis,
+            back_panel=Panel(None, y=0, size=FILL),
             **kwargs
         )
-        self._back_panel.material = self._get_back_material()
-        self._front_panel.material = self._get_front_material()
-
         x = RIGHT if self.active else LEFT
         y = TOP if self.active else BOTTOM
         self.cascading.add(Element.x(PivotablePosition(x, 0, watching=self)))
@@ -76,19 +73,6 @@ class Switch(TwoPanelContainer, ToggleButton, ABC):
         
     def __repr__(self) -> str:
         return "<Switch>"
-
-    @on_event()
-    def _update_panel_material(self) -> None:
-        self._back_panel.material = self._get_back_material()
-        self._front_panel.material = self._get_front_material()
-
-    @abstractmethod
-    def _get_front_material(self) -> "Material":
-        ...
-
-    @abstractmethod
-    def _get_back_material(self) -> "Material":
-        ...
 
     @on_event(TOGGLEDON)
     def _move_handle_active(self):
