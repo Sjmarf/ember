@@ -470,7 +470,7 @@ Lets look at our first interactive element - the :py:class:`Button<ember.ui.Butt
 
     with ember.View() as view:
         with ember.Button(size=(200, 50)):
-            with ember.ZStack():
+            with ember.ZStack(size=ember.FILL):
                 ember.Panel("red", size=(200, 50))
                 ember.Text("Click me!", color="white", font=font)
 
@@ -593,7 +593,7 @@ You are of course free to look at any of the example code above whilst designing
             with ember.VStack(spacing=50):
                 text = ember.Text("0", color="white", font=font)
                 with ember.Button(size=(200, 100)) as button:
-                    with ember.ZStack():
+                    with ember.ZStack(size=ember.FILL):
                         ember.Panel("red")
                         ember.Text("Click me!", color="white", font=font)
 
