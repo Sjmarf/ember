@@ -4,21 +4,23 @@ if TYPE_CHECKING:
     from ember.material.material import Material
 
 from .container import Container
-from .bar import Bar
-from ember.ui.interactive_bar import InteractiveBar
+from ember.ui.interactive_slider import InteractiveSlider
+from ember.size import PivotableSize
 from ember.material.stretched_surface import StretchedSurface
 
 from ember.common import package
 from ember._init import init_task
 
-root = package / "style/pixel_dark/assets/bar"
+root = package / "style/pixel_dark/assets/slider"
 
 
-class Slider(InteractiveBar, Bar, Container):
+class Slider(InteractiveSlider, Container):
+    front_material = StretchedSurface(root / "default.png")
+    back_material = StretchedSurface(root / "base.png")
     hover_material = StretchedSurface(root / "hover.png")
     focus_material = StretchedSurface(root / "focus.png")
-    active_material = StretchedSurface(root / "active.png")
-    
+    active_material = StretchedSurface(root / "focus_click.png")
+
     def _get_front_material(self) -> "Material":
         if self.activated:
             return self.active_material
@@ -31,3 +33,8 @@ class Slider(InteractiveBar, Bar, Container):
     def _get_back_material(self) -> "Material":
         return self.back_material
 
+
+size = PivotableSize(70, 14)
+Slider.w.default_value = size
+Slider.h.default_value = ~size
+del size

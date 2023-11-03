@@ -32,5 +32,7 @@ class Switch(_Switch, Container):
         return self.base_material
 
 
-Switch.w.default_value = PivotableSize(26, 14)
-Switch.h.default_value = PivotableSize(14, 26)
+size = PivotableSize(26, 14)
+Switch.w.default_value = size
+Switch.h.default_value = ~size
+del size

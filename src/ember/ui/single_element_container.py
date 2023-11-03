@@ -83,6 +83,6 @@ class SingleElementContainer(Generic[T], Container, ABC):
         """
         with log.ancestry.indent(f"SET {self}, {element}"):
             if element is not self._element:
-                self.removing_element(self._element)
-                with self.adding_element(element, _update) as element:
+                self.removing_element(self._element,update=_update)
+                with self.adding_element(element, update=_update) as element:
                     self._element = element

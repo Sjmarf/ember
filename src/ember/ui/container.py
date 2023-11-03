@@ -133,9 +133,9 @@ class Container(ContextManager, Element, ABC, metaclass=ContainerMeta):
             [i.update_ancestry(child_ancestry) for i in self._elements_to_render if i is not None]
 
     def update_cascading_value(self, value: CascadingTraitValue, depth: int) -> None:
+        super().update_cascading_value(value, depth)
         if value.ref in self.cascading:
             return
-        super().update_cascading_value(value, depth)
         depth -= 1
         if depth == 0:
             return

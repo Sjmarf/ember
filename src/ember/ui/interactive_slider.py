@@ -2,14 +2,21 @@ from abc import ABC, abstractmethod
 from contextlib import nullcontext
 
 from .interactive_linear_gauge import InteractiveLinearGauge
-from .bar import Bar
+from .slider import Slider
 
 
 from ember.animation import Animation, EaseInOut, EaseOut
 
 
-class InteractiveBar(InteractiveLinearGauge, Bar, ABC):
+class InteractiveSlider(InteractiveLinearGauge, Slider, ABC):
     click_animation: Animation | None = EaseInOut(0.1)
+
+    def _move_to_mouse_pos(
+        self, cause: InteractiveLinearGauge.ValueCause.Cause, padding: int = 0
+    ) -> None:
+        super()._move_to_mouse_pos(
+            cause=cause, handle_rect=self.front_panel.rect
+        )
 
     def _set_progress(
         self, value: float, cause: InteractiveLinearGauge.ValueCause.Cause

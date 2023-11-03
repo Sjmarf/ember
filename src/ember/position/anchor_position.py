@@ -6,7 +6,7 @@ from ember.axis import Axis, VERTICAL
 class AnchorPosition(Position):
     __slots__ = ("value", "percent", "size_offset")
 
-    def __init__(self, value: int, percent: float = 0, padding: float = 0) -> None:
+    def __init__(self, value: int = 0, percent: float = 0, padding: float = 0) -> None:
         self.value: int = value
         self.percent: float = percent
         self.padding: float = padding

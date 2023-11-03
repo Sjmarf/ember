@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 from .. import common as _c
 from ..common import ElementType
 from ember.ui.focus_passthrough import FocusPassthrough
+from ember.ui.can_focus import CanHandleFocusChildDependent
 from .. import log
 
 
@@ -62,7 +63,7 @@ class Box(SingleElementContainer[T], FocusPassthrough):
         if self._can_focus != (v := self._element and self._element._can_focus):
             self._can_focus = v
             log.nav.info(f"Changed can_focus to {self._can_focus}.", self)
-            if self.parent is not None:
+            if isinstance(self.parent, CanHandleFocusChildDependent):
                 self.parent.update_can_focus()
         else:
             log.nav.info(f"can_focus remained {self._can_focus}, cutting chain...", self)

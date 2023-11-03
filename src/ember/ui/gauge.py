@@ -56,9 +56,10 @@ class Gauge(Element):
         self._set_progress(value, self.ValueCause.PROPERTY)
 
     def _set_progress(self, value: float, cause: ValueCause.Cause) -> None:
+        value = pygame.math.clamp(value, 0, 1)
         if value != self._progress:
             with log.size.indent(f"Set gauge progress to {value}..."):
-                self._progress = pygame.math.clamp(value, 0, 1)
+                self._progress = value
                 if self._has_built:
                     event = pygame.event.Event(VALUEMODIFIED, element=self)
                     self._post_event(event)
