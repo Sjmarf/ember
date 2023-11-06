@@ -15,7 +15,7 @@ class InteractiveSlider(InteractiveLinearGauge, Slider, ABC):
         self, cause: InteractiveLinearGauge.ValueCause.Cause, padding: int = 0
     ) -> None:
         super()._move_to_mouse_pos(
-            cause=cause, handle_rect=self.front_panel.rect
+            cause=cause, handle_rect=self._handle.rect
         )
 
     def _set_progress(

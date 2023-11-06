@@ -18,7 +18,8 @@ from ember.ui.element import ElementFRect
 class InteractiveLinearGauge(Gauge, CanDisable, CanFocus, ClickActivateHybrid, ABC):
     scroll_to_adjust: bool = True
     center_handle_on_pickup: bool = True
-    steps: int = 10
+    keyboard_adjustment_steps: int = 10
+    scroll_speed: float = 0.1
 
     class ValueCause(Gauge.ValueCause):
         CLICK = Gauge.ValueCause.Cause()
@@ -81,17 +82,17 @@ class InteractiveLinearGauge(Gauge, CanDisable, CanFocus, ClickActivateHybrid, A
             if self._axis == HORIZONTAL:
                 if event.precise_x:
                     self._set_progress(
-                        self.progress - event.precise_x / self.steps,
+                        self.progress - event.precise_x * self.scroll_speed,
                         self.ValueCause.SCROLL,
                     )
                 else:
                     self._set_progress(
-                        self.progress - event.precise_y / self.steps,
+                        self.progress - event.precise_y * self.scroll_speed,
                         self.ValueCause.SCROLL,
                     )
             else:
                 self._set_progress(
-                    self.progress - event.precise_y / self.steps,
+                    self.progress - event.precise_y * self.scroll_speed,
                     self.ValueCause.SCROLL,
                 )
             return True
@@ -99,13 +100,13 @@ class InteractiveLinearGauge(Gauge, CanDisable, CanFocus, ClickActivateHybrid, A
         if event.type == pygame.KEYDOWN and self.activated:
             if event.key == (pygame.K_LEFT, pygame.K_DOWN)[self._axis]:
                 self._set_progress(
-                    self.progress - 1 / self.steps,
+                    self.progress - 1 / (self.keyboard_adjustment_steps - 1),
                     self.ValueCause.KEY,
                 )
                 return True
             elif event.key == (pygame.K_RIGHT, pygame.K_UP)[self._axis]:
                 self._set_progress(
-                    self.progress + 1 / self.steps,
+                    self.progress + 1 / (self.keyboard_adjustment_steps - 1),
                     self.ValueCause.KEY,
                 )
                 return True

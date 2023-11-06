@@ -8,7 +8,7 @@ from ember.ui.panel import Panel
 from ..material import Material
 
 from ember.ui.element import Element
-from .two_panel_container import UpdatingTwoPanelContainer
+from .handled_element import UpdatingHandleElement
 
 from ..event import VALUEMODIFIED
 
@@ -19,20 +19,22 @@ from ember.on_event import on_event
 from ember.axis import Axis, HORIZONTAL
 
 
-class Slider(UpdatingTwoPanelContainer, Gauge, SingleElementContainer, ABC):
+class Slider(UpdatingHandleElement, Gauge, SingleElementContainer, ABC):
     def __init__(self, *args, axis: Axis = HORIZONTAL, **kwargs) -> None:
         super().__init__(
             *args, **kwargs, back_panel=Panel(None, y=0, size=FILL), axis=axis
         )
 
         self._update_panel_sizes()
-
-        size = PivotableSize(RATIO, FILL, watching=self)
-        self.cascading.add(Element.w(size))
-        self.cascading.add(Element.h(~size))
+        self._update_handle_sizes()
 
     def __repr__(self) -> str:
         return "<Slider>"
+
+    def _update_handle_sizes(self) -> None:
+        size = PivotableSize(RATIO, FILL, watching=self)
+        self.cascading.add(Element.w(size))
+        self.cascading.add(Element.h(~size))
 
     @on_event(VALUEMODIFIED)
     def _update_panel_sizes(self):

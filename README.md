@@ -19,3 +19,4 @@ Requires:
 This library is distributed under the MIT license, which can be found in the file `LICENCE.txt`. 
 
 This library is dependent on [Pygame CE](https://github.com/pygame-community/pygame-ce), which uses the [GNU LGPL version 2.1](https://www.gnu.org/copyleft/lesser.html) license at the time of writing.
+s

@@ -4,16 +4,8 @@ from typing import Optional, Sequence, Union, TypeVar, Generic, Iterable
 
 from ember import log
 
-from ember.size import SizeType, SequenceSizeType, OptionalSequenceSizeType
-from ember.position import (
-    PositionType,
-    SequencePositionType,
-    OptionalSequencePositionType,
-)
 from ember.common import ElementType
-from ember.size import FILL, FillSize, FitSize
-from ember.trait.trait import Trait
-from ember.trait.cascading_trait_value import CascadingTraitValue
+from .context_manager import ContextManager
 from .container import Container
 
 
@@ -22,7 +14,7 @@ from .element import Element
 T = TypeVar("T", bound=ElementType, covariant=True)
 
 
-class SingleElementContainer(Generic[T], Container, ABC):
+class SingleElementContainer(Generic[T], ContextManager, Container, ABC):
     def __init__(self, element: Optional[T] = None, **kwargs):
         """
         Base class for Containers that hold one or zero elements. Should not be instantiated directly.

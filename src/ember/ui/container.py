@@ -37,7 +37,7 @@ class ContainerMeta(ElementMeta):
         cont.__exit__(*args)
     
 
-class Container(ContextManager, Element, ABC, metaclass=ContainerMeta):
+class Container(Element, ABC, metaclass=ContainerMeta):
     """
     Base class for Containers. Should not be instantiated directly.
     """

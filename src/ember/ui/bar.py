@@ -8,7 +8,7 @@ from ember.ui.panel import Panel
 from ..material import Material
 
 from ember.ui.element import Element
-from .two_panel_container import UpdatingTwoPanelContainer
+from .handled_element import UpdatingHandleElement
 
 from ..event import VALUEMODIFIED
 
@@ -23,7 +23,7 @@ from ember.on_event import on_event
 from ember.axis import Axis, HORIZONTAL
 
 
-class Bar(UpdatingTwoPanelContainer, Gauge, SingleElementContainer, ABC):
+class Bar(UpdatingHandleElement, Gauge, SingleElementContainer, ABC):
     def __init__(self, *args, axis: Axis = HORIZONTAL, **kwargs) -> None:
         super().__init__(
             *args, **kwargs, back_panel=Panel(None, y=0, size=FILL), axis=axis

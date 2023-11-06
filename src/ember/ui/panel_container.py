@@ -1,32 +1,21 @@
 import pygame
 import itertools
-from abc import ABC, abstractmethod
-from typing import Union, Optional, Sequence, Type, TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ember.material.material import Material
+from abc import ABC
 
 from .container import Container
 
 from .panel import Panel
-
-from ..common import SequenceElementType
-
-from ..size import SizeType, OptionalSequenceSizeType, FILL
-from ember.position import (
-    PositionType,
-    SequencePositionType,
-)
-
-from ..on_event import on_event
+from .box import Box
 
 
 class PanelContainer(Container, ABC):
-    
-    def __init__(self,*args,**kwargs):
-        super().__init__(*args,**kwargs)
+    def __init__(self, *args, panel: Panel | None = None, **kwargs):
+        super().__init__(*args, **kwargs)
 
-        with self.adding_element(Panel(None, y=0, size=FILL), update=False) as panel:
+        if panel is None:
+            panel = Panel(None)
+
+        with self.adding_element(panel, update=False) as panel:
             self._panel: Panel = panel
 
     @property
@@ -44,3 +33,7 @@ class PanelContainer(Container, ABC):
     @property
     def _elements_to_render(self):
         return itertools.chain((self._panel,), super()._elements_to_render)
+
+
+class PanelBox(PanelContainer, Box):
+    ...

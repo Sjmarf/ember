@@ -13,6 +13,7 @@ from ember.ui.element import Element
 from ember.size import FillSize
 
 from .container import Container
+from .context_manager import ContextManager
 
 from ember.trait.trait import Trait
 from ember.trait.cascading_trait_value import CascadingTraitValue
@@ -21,7 +22,7 @@ if TYPE_CHECKING:
     pass
 
 
-class MultiElementContainer(Container, ABC):
+class MultiElementContainer(ContextManager, Container, ABC):
     def __init__(self, *elements: Optional[SequenceElementType], **kwargs):
         """
         Base class for Containers that hold more than one element. Should not be instantiated directly.

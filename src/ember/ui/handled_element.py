@@ -9,30 +9,29 @@ from .container import Container
 
 from .panel import Panel
 
-from ..size import FILL
-
 from ember.on_event import on_event
+from .panel_container import PanelBox
 
-
-class TwoPanelContainer(Container, ABC):
+class HandledElement(Container, ABC):
     def __init__(
         self,
         *args,
         back_panel: Panel | None = None,
-        front_panel: Panel | None = None,
+        handle: PanelBox | None = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
 
         if back_panel is None:
             back_panel = Panel(None)
-        if front_panel is None:
-            front_panel = Panel(None)
+        if handle is None:
+            handle = PanelBox(panel=Panel(None))
 
         with self.adding_element(back_panel, update=False) as panel:
             self._back_panel: Panel = panel
-        with self.adding_element(front_panel, update=False) as panel:
-            self._front_panel: Panel = panel
+
+        with self.adding_element(handle, update=False) as handle:
+            self._handle: PanelBox = handle
 
     @property
     def back_panel(self) -> Panel:
@@ -47,34 +46,34 @@ class TwoPanelContainer(Container, ABC):
             self._back_panel = panel
 
     @property
-    def front_panel(self) -> Panel:
-        return self._front_panel
+    def handle(self) -> Panel:
+        return self._handle
 
-    @front_panel.setter
-    def front_panel(self, value: Panel) -> None:
-        if value is self._front_panel:
+    @handle.setter
+    def handle(self, value: Panel) -> None:
+        if value is self._handle:
             return
-        self.removing_element(self._front_panel)
+        self.removing_element(self._handle)
         with self.adding_element(value) as panel:
-            self._front_panel = panel
+            self._handle = panel
 
     @property
     def _elements_to_render(self):
         return itertools.chain(
-            (self._back_panel, self._front_panel), super()._elements_to_render
+            (self._back_panel, self._handle), super()._elements_to_render
         )
 
 
-class UpdatingTwoPanelContainer(TwoPanelContainer, ABC):
+class UpdatingHandleElement(HandledElement, ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._back_panel.material = self._get_back_material()
-        self._front_panel.material = self._get_front_material()
+        self._handle.panel.material = self._get_front_material()
 
     @on_event()
     def _update_panel_material(self) -> None:
         self._back_panel.material = self._get_back_material()
-        self._front_panel.material = self._get_front_material()
+        self._handle.panel.material = self._get_front_material()
 
     @abstractmethod
     def _get_front_material(self) -> "Material":

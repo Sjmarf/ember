@@ -5,7 +5,7 @@ import pygame
 from ember.axis import Axis, HORIZONTAL
 
 from .toggle_button import ToggleButton
-from .two_panel_container import UpdatingTwoPanelContainer
+from .handled_element import UpdatingHandleElement
 from ..material import Material
 from ember.ui.panel import Panel
 
@@ -30,7 +30,7 @@ from ..common import ElementType
 from ..on_event import on_event
 
 
-class Switch(UpdatingTwoPanelContainer, ToggleButton, ABC):
+class Switch(UpdatingHandleElement, ToggleButton, ABC):
     animation: Animation = EaseInOut(0.2)
 
     def __init__(
