@@ -13,7 +13,6 @@ from ember._init import init_task
 
 root = package / "style/pixel_dark/assets/slider"
 
-
 class Slider(InteractiveSlider, Container):
     back_material = StretchedSurface(root / "base.png")
     front_material = StretchedSurface(root / "default.png")

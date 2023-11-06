@@ -37,6 +37,7 @@ class ScrollBar(_ScrollBar, InteractiveSlider, Container):
 
 size = PivotableSize(100, 8)
 ScrollBar.center_handle_on_pickup = False
+ScrollBar.scroll_to_adjust = False
 ScrollBar.w.default_value = size
 ScrollBar.h.default_value = ~size
 del size

@@ -44,7 +44,7 @@ class Gauge(Element):
     @value.setter
     def value(self, value: float) -> None:
         self.progress = pygame.math.clamp(
-            (value - self._min_value) / (self._max_value - self._min_value), 0, 1
+            (value - self._min_value) / (self._max_value - self._min_value), self._min_value, self._max_value
         )
 
     @property
