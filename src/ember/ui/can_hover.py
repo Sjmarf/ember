@@ -1,3 +1,5 @@
+import pygame
+
 from typing import TYPE_CHECKING
 
 from ember.ui.element import Element
@@ -14,15 +16,19 @@ class CanHover(Element):
         self._hovered: bool = False
         super().__init__(*args, **kwargs)
 
-    def _update(self) -> None:
-        if (hovered := self.rect.collidepoint(_c.mouse_pos)) != self._hovered:
-            self._hovered = hovered
-            if hovered:
-                self._post_event(HOVERED)
+    def _event(self, event: pygame.event.Event) -> bool:
+        if event.type == pygame.MOUSEMOTION:
+            if getattr(event, "is_masked", False):
+                hovered = False
             else:
-                self._post_event(UNHOVERED)
-
-        super()._update()
+                hovered = self.rect.collidepoint(_c.mouse_pos)
+            if hovered != self._hovered:
+                self._hovered = hovered
+                if hovered:
+                    self._post_event(HOVERED)
+                else:
+                    self._post_event(UNHOVERED)
+        return super()._event(event)
 
     @property
     def hovered(self) -> bool:

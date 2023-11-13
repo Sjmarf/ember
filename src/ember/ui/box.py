@@ -54,7 +54,7 @@ class Box(SingleElementContainer[T], FocusPassthrough):
 
     def _event(self, event: pygame.event.Event) -> bool:
         if self._element is not None:
-            return self._element._event(event)
+            return self._element.event(event)
         return False
 
     def update_can_focus(self) -> None:

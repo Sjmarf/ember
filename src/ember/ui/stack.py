@@ -43,7 +43,7 @@ class Stack(FocusPassthrough):
         spacing: Optional[SpacingType] = None,
         **kwargs,
     ):
-        self._first_visible_element: Optional[Element] = None
+        self._first_visible_element: Optional[int] = None
 
         self.spacing = spacing
 
@@ -81,7 +81,9 @@ class Stack(FocusPassthrough):
             - (sum(element_sizes.values()) + spacing * (len(elements) - 1)) / 2
         )
 
-        for element in elements:
+        self._first_visible_element = None
+
+        for element_n, element in enumerate(elements):
             element_rel_size1 = element_sizes[element]
             element_rel_pos2 = element.rel_pos2.get(
                 self.rect.rel_size2,
@@ -100,6 +102,19 @@ class Stack(FocusPassthrough):
                 ),
                 rel_size1=element_rel_size1,
             )
+
+            element.visible = True
+            if (
+                element.rect.rel_pos1 + element.rect.rel_size1
+                < surface.get_abs_offset()[self.axis]
+                or element.rect.rel_pos1
+                > surface.get_abs_offset()[self.axis] + surface.get_size()[self.axis]
+            ):
+                element.visible = False
+
+            if element.visible and self._first_visible_element is None:
+                self._first_visible_element = element_n
+
             element_rel_pos1 += element_rel_size1 + spacing
 
     def _update_min_size(self) -> None:
@@ -138,7 +153,7 @@ class Stack(FocusPassthrough):
         for i in self._elements[self._first_visible_element :]:
             if i is None:
                 continue
-            if i._event(event):
+            if i.event(event):
                 return True
             if not i.visible:
                 break

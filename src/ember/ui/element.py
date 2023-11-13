@@ -488,6 +488,9 @@ class Element(abc.ABC, metaclass=ElementMeta):
         else:
             log.cascade.info(f"Not an instance of {value.ref.owner}, did not set", self)
 
+    def event(self, event: pygame.event.Event) -> bool:
+        return self._event(event)
+
     def _event(self, event: pygame.event.Event) -> bool:
         """
         Called by the parent of the element for each Pygame event,

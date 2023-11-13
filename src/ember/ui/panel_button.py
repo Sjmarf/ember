@@ -37,6 +37,7 @@ class PanelButton(PanelContainer, Button, ABC):
     ):
         super().__init__(
             *elements,
+            panel=Panel(None, y=0),
             disabled=disabled,
             rect=rect,
             pos=pos,

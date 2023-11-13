@@ -134,7 +134,7 @@ class ViewLayer(CanHandleFocus, SingleElementContainer[T]):
                 )
 
     def _event(self, event: pygame.event.Event) -> bool:
-        if self._element is not None and self._element._event(event):
+        if self._element is not None and self._element.event(event):
             return True
 
         if event.type == pygame.MOUSEBUTTONDOWN and self.view._layers[0] is not self:

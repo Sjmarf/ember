@@ -61,7 +61,7 @@ class Gauge(Element):
             with log.size.indent(f"Set gauge progress to {value}..."):
                 self._progress = value
                 if self._has_built:
-                    event = pygame.event.Event(VALUEMODIFIED, element=self)
+                    event = pygame.event.Event(VALUEMODIFIED, element=self, cause=cause)
                     self._post_event(event)
 
     @property

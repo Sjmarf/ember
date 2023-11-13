@@ -106,23 +106,23 @@ class Container(Element, ABC, metaclass=ContainerMeta):
             element.update_rect(surface, element_x, element_y, element_w, element_h)
 
     def _update_min_size(self) -> None:
-        self._min_w = 0
+        self._min_size.w = 0
         for i in self._elements_to_render:
             if i is None or isinstance(i.w, FillSize):
                 continue
-            if (w := i.get_abs_w()) > self._min_w:
-                self._min_w = w
+            if (w := i.get_abs_w()) > self._min_size.w:
+                self._min_size.w = w
 
-        self._min_h = 0
+        self._min_size.h = 0
         for i in self._elements_to_render:
             if i is None or isinstance(i.h, FillSize):
                 continue
-            if (h := i.get_abs_h()) > self._min_h:
-                self._min_h = h
+            if (h := i.get_abs_h()) > self._min_size.h:
+                self._min_size.h = h
 
     def _event(self, event: pygame.event.Event) -> bool:
         for i in self._elements_to_render:
-            if i is not None and i._event(event):
+            if i is not None and i.event(event):
                 return True
         return super()._event(event)
 

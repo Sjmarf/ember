@@ -242,7 +242,7 @@ class View(ContextManager):
                 log.nav.info(f"Removed layer {event.layer}.", self)
 
         for n, layer in enumerate(reversed(self._layers)):
-            if layer._event(event):
+            if layer.event(event):
                 return True
             if event.type in {
                 pygame.MOUSEBUTTONDOWN,
