@@ -21,10 +21,7 @@ class CanHandleFocus(Element):
     def focus_chain(
         self, direction: _c.FocusDirection, previous: Optional["Element"] = None
     ) -> "Element":
-        prev_axis = axis.axis
-        axis.axis = self._axis
         result = self._focus_chain(direction, previous)
-        axis.axis = prev_axis
         return result
 
     @abstractmethod

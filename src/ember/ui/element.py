@@ -5,15 +5,18 @@ import copy
 from weakref import WeakSet
 from typing import Union, TYPE_CHECKING, Optional, Sequence, Callable
 from ember import log
+from .element_min_size import ElementMinSize
 
 if TYPE_CHECKING:
     from ember.ui.view import ViewLayer
     from .container import Container
+    from .can_pivot import CanPivot
 
 from ember.ui.context_manager import ContextManager
 from ember.animation.animation import AnimationContext
 from ember.size import Size, SizeType, OptionalSequenceSizeType, FIT, FitSize
 from ember.position import (
+    Position,
     PositionType,
     SequencePositionType,
     DualPosition,
@@ -27,7 +30,7 @@ from ember.trait.cascading_trait_value import CascadingTraitValue
 
 from ember import common as _c
 from ember import axis as axis_module
-from ember.axis import Axis, VERTICAL, HORIZONTAL
+from ember.axis import Axis, HORIZONTAL
 
 from .element_meta import ElementMeta
 from ember.callback_registry import CallbackRegistry
@@ -37,71 +40,15 @@ EmptyCallable = Callable[[], None]
 MethodCallable = Callable[["Element"], None]
 
 
-class ElementFRect(pygame.FRect):
-    @property
-    def rel_pos1(self) -> float:
-        if axis_module.axis == HORIZONTAL:
-            return self.x
-        return self.y
-
-    @property
-    def rel_pos2(self) -> float:
-        if axis_module.axis == HORIZONTAL:
-            return self.y
-        return self.x
-
-    @property
-    def rel_size1(self) -> float:
-        if axis_module.axis == HORIZONTAL:
-            return self.w
-        return self.h
-
-    @property
-    def rel_size2(self) -> float:
-        if axis_module.axis == HORIZONTAL:
-            return self.h
-        return self.w
-
-
-class ElementMinSize:
-    def __init__(self) -> None:
-        self.w: float = 0
-        self.h: float = 0
-
-    @property
-    def rel_size1(self) -> float:
-        if axis_module.axis == HORIZONTAL:
-            return self.w
-        return self.h
-
-    @rel_size1.setter
-    def rel_size1(self, value: float) -> None:
-        if axis_module.axis == HORIZONTAL:
-            self.w = value
-        else:
-            self.h = value
-
-    @property
-    def rel_size2(self) -> float:
-        if axis_module.axis == HORIZONTAL:
-            return self.h
-        return self.w
-
-    @rel_size2.setter
-    def rel_size2(self, value: float) -> None:
-        if axis_module.axis == HORIZONTAL:
-            self.h = value
-        else:
-            self.w = value
-
-
 class Element(abc.ABC, metaclass=ElementMeta):
     """
     The base element class. All UI elements in the library inherit from this class.
     """
 
+    # This attribute is set inside of can_pivot.py to avoid a circular import
+    _CanPivot: type["CanPivot"]
+
     _traits: tuple[Trait] = ()
-    _material_repositories: tuple["MaterialRepository"] = ()
     _callback_registry: CallbackRegistry = CallbackRegistry()
     _instances = WeakSet()
 
@@ -111,28 +58,28 @@ class Element(abc.ABC, metaclass=ElementMeta):
         with log.size.indent(f"Trait '{trait_name}' modified:"):
             self.update_min_size_next_tick(must_update_parent=True)
 
-    x = Trait(
+    x: Trait[Position] = Trait(
         default_value=CENTER,
         on_update=lambda self: self._geometry_trait_modified("x"),
         default_cascade_depth=1,
         load_value_with=load_position,
     )
 
-    y = Trait(
+    y: Trait[Position] = Trait(
         default_value=CENTER,
         on_update=lambda self: self._geometry_trait_modified("y"),
         default_cascade_depth=1,
         load_value_with=load_position,
     )
 
-    w = Trait(
+    w: Trait[Size] = Trait(
         default_value=FIT,
         on_update=lambda self: self._geometry_trait_modified("w"),
         default_cascade_depth=1,
         load_value_with=load_size,
     )
 
-    h = Trait(
+    h: Trait[Size] = Trait(
         default_value=FIT,
         on_update=lambda self: self._geometry_trait_modified("h"),
         default_cascade_depth=1,
@@ -157,7 +104,6 @@ class Element(abc.ABC, metaclass=ElementMeta):
         h: Optional[SizeType] = None,
         layer: Optional["ViewLayer"] = None,
         can_focus: bool = False,
-        axis: Axis = VERTICAL,
     ):
         self.layer: Optional["ViewLayer"] = layer
         """
@@ -180,7 +126,7 @@ class Element(abc.ABC, metaclass=ElementMeta):
         Is :code:`True` when any part of the element is visible on the screen. Read-only.
         """
 
-        self.rect = ElementFRect(0, 0, 0, 0)
+        self.rect = pygame.FRect(0, 0, 0, 0)
         """
         A :code:`pygame.FRect` object containing the absolute position and size of the element. Read-only.
         """
@@ -220,8 +166,6 @@ class Element(abc.ABC, metaclass=ElementMeta):
         if ContextManager.context_stack[-1] is not None:
             ContextManager.context_stack[-1].context_queue.append(self)
 
-        self._axis = axis
-
     def build(self) -> None:
         if self._has_built:
             return
@@ -248,24 +192,25 @@ class Element(abc.ABC, metaclass=ElementMeta):
         rel_size1: Optional[float] = None,
         rel_size2: Optional[float] = None,
     ) -> None:
-        if axis_module.axis == HORIZONTAL:
-            if rel_pos1 is not None:
-                x = rel_pos1
-            if rel_pos2 is not None:
-                y = rel_pos2
-            if rel_size1 is not None:
-                w = rel_size1
-            if rel_size2 is not None:
-                h = rel_size2
-        else:
-            if rel_pos2 is not None:
-                x = rel_pos2
-            if rel_pos1 is not None:
-                y = rel_pos1
-            if rel_size2 is not None:
-                w = rel_size2
-            if rel_size1 is not None:
-                h = rel_size1
+        if isinstance(self.parent, Element._CanPivot):
+            if self.parent.axis == HORIZONTAL:
+                if rel_pos1 is not None:
+                    x = rel_pos1
+                if rel_pos2 is not None:
+                    y = rel_pos2
+                if rel_size1 is not None:
+                    w = rel_size1
+                if rel_size2 is not None:
+                    h = rel_size2
+            else:
+                if rel_pos2 is not None:
+                    x = rel_pos2
+                if rel_pos1 is not None:
+                    y = rel_pos1
+                if rel_size2 is not None:
+                    w = rel_size2
+                if rel_size1 is not None:
+                    h = rel_size1
 
         if None in (x, y, w, h):
             raise ValueError(
@@ -313,14 +258,11 @@ class Element(abc.ABC, metaclass=ElementMeta):
             int(h),
         )
 
-        prev_axis = axis_module.axis
-        axis_module.axis = self._axis
         with log.size.indent(
-            f"Rect updating with axis {axis_module.axis}: [{self.rect.x:.2f}, {self.rect.y:.2f}, {self.rect.w:.2f}, {self.rect.h:.2f}].",
+            f"Rect updating: [{self.rect.x:.2f}, {self.rect.y:.2f}, {self.rect.w:.2f}, {self.rect.h:.2f}].",
             self,
         ):
             self._update_rect(surface, x, y, w, h)
-            axis_module.axis = prev_axis
 
     def _update_rect(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
@@ -358,10 +300,7 @@ class Element(abc.ABC, metaclass=ElementMeta):
     ) -> None:
         old_w, old_h = self._min_size.w, self._min_size.h
 
-        prev_axis = axis_module.axis
-        axis_module.axis = self._axis
         self._update_min_size()
-        axis_module.axis = prev_axis
 
         # If the container is not empty
         if getattr(self, "_elements_to_render", False):
@@ -504,72 +443,77 @@ class Element(abc.ABC, metaclass=ElementMeta):
         pygame.event.post(event)
         self._callback_registry.process_event(self, event.type)
 
-    def get_abs_w(self, max_width: float = 0, axis: Optional[Axis] = None) -> float:
+    def get_x(
+        self, container_width: float, element_width: Optional[float] = None
+    ) -> float:
+        return self.x.get(
+            container_width, self.rect.w if element_width is None else element_width
+        )
+
+    def get_y(
+        self, container_height: float, element_height: Optional[float] = None
+    ) -> float:
+        return self.y.get(
+            container_height, self.rect.h if element_height is None else element_height
+        )
+
+    def get_w(self, max_width: float = 0) -> float:
         """
         Get the width of the element as a float, given the maximum width to fill.
         """
         return self.w.get(
-            self._min_size.w,
-            max_width,
-            self.rect.h,
-            axis if axis is not None else self._axis,
+            self._min_size.w, max_width, self.rect.h, axis_module.VERTICAL
         )
 
-    def get_abs_h(self, max_height: float = 0, axis: Optional[Axis] = None) -> float:
+    def get_h(self, max_height: float = 0) -> float:
         """
         Get the height of the element as a float, given the maximum height to fill.
         """
         return self.h.get(
-            self._min_size.h,
-            max_height,
-            self.rect.w,
-            axis if axis is not None else self._axis,
+            self._min_size.h, max_height, self.rect.w, axis_module.VERTICAL
+        )
+
+    @property
+    def _pivotable_parent(self) -> "_CanPivot":
+        if isinstance(self.parent, Element._CanPivot):
+            return self.parent
+        raise _c.Error(
+            "Parent is not a subclass of CanPivot - cannot determine parent axis."
         )
 
     def get_abs_rel_size1(self, max_size: float = 0) -> float:
-        if axis_module.axis == HORIZONTAL:
-            return self.get_abs_w(max_size)
-        return self.get_abs_h(max_size)
+        if self._pivotable_parent.axis == HORIZONTAL:
+            return self.get_w(max_size)
+        return self.get_h(max_size)
 
     def get_abs_rel_size2(self, max_size: float = 0) -> float:
-        if axis_module.axis == HORIZONTAL:
-            return self.get_abs_h(max_size)
-        return self.get_abs_w(max_size)
+        if self._pivotable_parent.axis == HORIZONTAL:
+            return self.get_h(max_size)
+        return self.get_w(max_size)
 
     @property
-    def rel_pos1(self) -> Size:
-        if axis_module.axis == HORIZONTAL:
+    def rel_pos1(self) -> Position:
+        if self._pivotable_parent.axis == HORIZONTAL:
             return self.x
         return self.y
 
     @property
-    def rel_pos2(self) -> Size:
-        if axis_module.axis == HORIZONTAL:
+    def rel_pos2(self) -> Position:
+        if self._pivotable_parent.axis == HORIZONTAL:
             return self.y
         return self.x
 
     @property
     def rel_size1(self) -> Size:
-        if axis_module.axis == HORIZONTAL:
+        if self._pivotable_parent.axis == HORIZONTAL:
             return self.w
         return self.h
 
     @property
     def rel_size2(self) -> Size:
-        if axis_module.axis == HORIZONTAL:
+        if self._pivotable_parent.axis == HORIZONTAL:
             return self.h
         return self.w
-
-    @property
-    def axis(self) -> Axis:
-        return self._axis
-
-    @axis.setter
-    def axis(self, value: Axis) -> None:
-        self._axis = value
-        self.update_ancestry(self.ancestry)
-        with log.size.indent("Axis modified:"):
-            self.update_min_size_next_tick(must_update_parent=True)
 
     def is_animating(self, trait: Trait) -> bool:
         return any(i.trait_context.trait == trait for i in self._animation_contexts)

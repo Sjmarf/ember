@@ -2,7 +2,7 @@ import pygame
 from typing import Union, Optional, Sequence
 
 from ember.size.size import PivotableSize
-from ember.ui.element import Element
+from ember.ui.can_pivot import CanPivot
 from ..size import SizeType, OptionalSequenceSizeType, FILL
 from ember.position import PositionType, SequencePositionType
 
@@ -20,7 +20,7 @@ def load_material(material: Union[Material, ColorType, None]) -> Material:
     return Color(material)
 
 
-class Divider(Element):
+class Divider(CanPivot):
     material = Trait(
         default_value=DEFAULT_BLACK_MATERIAL, load_value_with=load_material
     )
@@ -53,7 +53,7 @@ class Divider(Element):
 
     def update_ancestry(self, ancestry: list["Element"]) -> None:
         super().update_ancestry(ancestry)
-        self._axis = 1 - self.parent._axis
+        self.axis = 1 - self.parent.axis
 
 
 Divider.w.default_value = PivotableSize(FILL, 1)

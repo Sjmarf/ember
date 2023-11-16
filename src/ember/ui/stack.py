@@ -15,7 +15,8 @@ from ember.common import (
     FocusDirection,
 )
 from ember.ui.element import Element
-from .focus_passthrough import FocusPassthrough
+from .focus_passthrough import FocusPassthroughContainer
+from .can_pivot import CanPivot
 
 from ember.trait.trait import Trait
 from ember.spacing import SpacingType, FILL_SPACING, load_spacing
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
     pass
 
 
-class Stack(FocusPassthrough):
+class Stack(FocusPassthroughContainer, CanPivot):
     """
     A Stack is a collection of Elements. There are two subclasses of Stack - :py:class:`ember.ui.VStack`
     and :py:class:`ember.ui.HStack`.
@@ -55,7 +56,7 @@ class Stack(FocusPassthrough):
         elements = list(self._elements_to_render)
         spacing = self.spacing.get_min()
 
-        unallocated_space = self.rect.rel_size1 - spacing * (len(elements) - 1)
+        unallocated_space = self.rect[2 + self.axis] - spacing * (len(elements) - 1)
 
         element_sizes: dict[Element, float] = {}
 
@@ -77,7 +78,7 @@ class Stack(FocusPassthrough):
             )
 
         element_rel_pos1 = (
-            self.rect.rel_size1 / 2
+            self.rect[2 + self.axis] / 2
             - (sum(element_sizes.values()) + spacing * (len(elements) - 1)) / 2
         )
 
@@ -86,28 +87,28 @@ class Stack(FocusPassthrough):
         for element_n, element in enumerate(elements):
             element_rel_size1 = element_sizes[element]
             element_rel_pos2 = element.rel_pos2.get(
-                self.rect.rel_size2,
+                self.rect[3 - self.axis],
                 element.get_abs_rel_size2(
-                    self.rect.rel_size2 - abs(element.rel_pos2.value)
+                    self.rect[3 - self.axis] - abs(element.rel_pos2.value)
                 ),
                 self.axis,
             )
 
             element.update_rect(
                 surface,
-                rel_pos1=self.rect.rel_pos1 + element_rel_pos1,
-                rel_pos2=self.rect.rel_pos2 + element_rel_pos2,
-                rel_size2=element.get_abs_rel_size2(
-                    self.rect.rel_size2 - abs(element.rel_pos2.value)
-                ),
+                rel_pos1=self.rect[self.axis] + element_rel_pos1,
+                rel_pos2=self.rect[1 - self.axis] + element_rel_pos2,
                 rel_size1=element_rel_size1,
+                rel_size2=element.get_abs_rel_size2(
+                    self.rect[3 - self.axis] - abs(element.rel_pos2.value)
+                ),
             )
 
             element.visible = True
             if (
-                element.rect.rel_pos1 + element.rect.rel_size1
+                element.rect[self.axis] + element.rect[2 + self.axis]
                 < surface.get_abs_offset()[self.axis]
-                or element.rect.rel_pos1
+                or element.rect[self.axis]
                 > surface.get_abs_offset()[self.axis] + surface.get_size()[self.axis]
             ):
                 element.visible = False
@@ -125,15 +126,15 @@ class Stack(FocusPassthrough):
                     if not isinstance(i.rel_size1, FillSize):
                         size += i.get_abs_rel_size1()
 
-            self._min_size.rel_size1 = size + self.spacing.get_min() * (
+            self._min_size[self.axis] = size + self.spacing.get_min() * (
                 len(self._elements) - 1
             )
-            self._min_size.rel_size2 = max(
+            self._min_size[1-self.axis] = max(
                 [i.get_abs_rel_size2() for i in self._elements if i is not None]
                 or (20,)
             )
         else:
-            self._min_size.rel_size1, self._min_size.rel_size2 = 20, 20
+            self._min_size.x, self._min_size.y = 20, 20
 
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
@@ -175,8 +176,8 @@ class Stack(FocusPassthrough):
             return self._enter_in_first_element(direction)
 
         if direction in {
-            FOCUS_AXIS_BACKWARD[axis.axis],
-            FOCUS_AXIS_FORWARD[axis.axis],
+            FOCUS_AXIS_BACKWARD[self.axis],
+            FOCUS_AXIS_FORWARD[self.axis],
             FocusDirection.FORWARD,
             FocusDirection.BACKWARD,
         }:
@@ -186,12 +187,12 @@ class Stack(FocusPassthrough):
             else:
                 index = (
                     len(self._elements) - 1
-                    if direction == FOCUS_AXIS_FORWARD[axis.axis]
+                    if direction == FOCUS_AXIS_FORWARD[self.axis]
                     else 0
                 )
 
             if direction in {
-                FOCUS_AXIS_FORWARD[axis.axis],
+                FOCUS_AXIS_FORWARD[self.axis],
                 FocusDirection.BACKWARD,
             }:
                 end = 0
@@ -222,12 +223,12 @@ class Stack(FocusPassthrough):
             and direction != _c.FocusDirection.IN_FIRST
         ):
             comparison = (
-                self.layer.element_focused.rect.rel_pos1
-                + self.layer.element_focused.rect.rel_size1 / 2
+                self.layer.element_focused.rect[self.axis]
+                + self.layer.element_focused.rect[2 + self.axis] / 2
             )
             closest_elements = sorted(
                 self._elements,
-                key=lambda x: abs(x.rect.rel_pos1 + x.rect.rel_size1 / 2 - comparison),
+                key=lambda x: abs(x.rect[self.axis] + x.rect[2 + self.axis] / 2 - comparison),
             )
             for element in closest_elements:
                 if element._can_focus:

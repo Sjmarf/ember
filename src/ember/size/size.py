@@ -12,6 +12,7 @@ from ember.trait.trait_dependency import TraitDependency
 
 if TYPE_CHECKING:
     from ember.trait.trait import Trait
+    from ember.ui.can_pivot import CanPivot
 
 
 def load_size(
@@ -86,11 +87,11 @@ class PivotableSize(Size):
         self,
         horizontal_size: SizeType,
         vertical_size: SizeType,
-        watching: Optional["Element"] = None,
+        watching: Optional["CanPivot"] = None,
     ) -> None:
         self.horizontal_size: Size = load_size(horizontal_size)
         self.vertical_size: Size = load_size(vertical_size)
-        self.watching: Optional["Element"] = watching
+        self.watching: Optional["CanPivot"] = watching
         super().__init__()
 
     def get(
@@ -101,7 +102,7 @@ class PivotableSize(Size):
         axis: Axis = VERTICAL,
     ) -> float:
         if self.watching is not None:
-            axis = self.watching._axis
+            axis = self.watching.axis
         if axis == HORIZONTAL:
             return self.horizontal_size.get(min_value, max_value, other_value, axis)
         return self.vertical_size.get(min_value, max_value, other_value, axis)

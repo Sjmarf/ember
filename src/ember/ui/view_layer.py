@@ -12,7 +12,7 @@ from ember.ui.element import Element
 from ember.ui.single_element_container import SingleElementContainer
 from ember.ui.can_focus import CanHandleFocus, CanFocus
 
-from ember.ui.scroll import Scroll
+from ember.ui.old_scroll import Scroll
 
 from ..size import SizeType, OptionalSequenceSizeType, FILL
 from ember.position import (

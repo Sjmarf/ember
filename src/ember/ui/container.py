@@ -1,7 +1,16 @@
 import pygame
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from typing import Optional, TYPE_CHECKING, Generator, Type, Sequence, Union, TypeVar, Iterable
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+    Generator,
+    Type,
+    Sequence,
+    Union,
+    TypeVar,
+    Iterable,
+)
 
 from ember.ui.element import Element
 from ember.ui.context_manager import ContextManager
@@ -35,7 +44,7 @@ class ContainerMeta(ElementMeta):
     def __exit__(cls, *args):
         cont = ContainerMeta._context_stack.pop()
         cont.__exit__(*args)
-    
+
 
 class Container(Element, ABC, metaclass=ContainerMeta):
     """
@@ -55,19 +64,19 @@ class Container(Element, ABC, metaclass=ContainerMeta):
             (cascading,) if isinstance(cascading, CascadingTraitValue) else cascading,
         )
         super().__init__(*args, **kwargs)
-        
+
     def _build(self) -> None:
         with Trait.inspecting(Trait.Layer.PARENT), log.size.indent():
             for element in self._elements_to_render:
                 if element is not None:
                     self._prepare_element(element)
                     element.build()
-        super()._build()    
+        super()._build()
 
     def _prepare_element(self, element: Element) -> None:
         for value in self.cascading:
             self.start_cascade(value)
-            
+
     def start_cascade(self, value: CascadingTraitValue) -> None:
         with log.cascade.indent(f"Starting descent for {value}", self):
             with Trait.inspecting(Trait.Layer.PARENT):
@@ -75,8 +84,8 @@ class Container(Element, ABC, metaclass=ContainerMeta):
                 for element in self._elements_to_render:
                     if element is not None:
                         element.update_cascading_value(value, value.depth)
-        log.cascade.line_break() 
-        
+        log.cascade.line_break()
+
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
@@ -96,12 +105,12 @@ class Container(Element, ABC, metaclass=ContainerMeta):
         for element in self._elements_to_render:
             if element is None:
                 continue
-            
-            element_w = element.get_abs_w(w, element._axis)
-            element_h = element.get_abs_h(h, element._axis)
 
-            element_x = x + element.x.get(w, element_w, element._axis)
-            element_y = y + element.y.get(h, element_h, element._axis)
+            element_w = element.get_w(w)
+            element_h = element.get_h(h)
+            element_x = x + element.get_x(w, element_w)
+            element_y = y + element.get_y(h, element_h)
+
             element.visible = self.visible
             element.update_rect(surface, element_x, element_y, element_w, element_h)
 
@@ -110,14 +119,14 @@ class Container(Element, ABC, metaclass=ContainerMeta):
         for i in self._elements_to_render:
             if i is None or isinstance(i.w, FillSize):
                 continue
-            if (w := i.get_abs_w()) > self._min_size.w:
+            if (w := i.get_w()) > self._min_size.w:
                 self._min_size.w = w
 
         self._min_size.h = 0
         for i in self._elements_to_render:
             if i is None or isinstance(i.h, FillSize):
                 continue
-            if (h := i.get_abs_h()) > self._min_size.h:
+            if (h := i.get_h()) > self._min_size.h:
                 self._min_size.h = h
 
     def _event(self, event: pygame.event.Event) -> bool:
@@ -130,7 +139,11 @@ class Container(Element, ABC, metaclass=ContainerMeta):
         super().update_ancestry(ancestry)
         child_ancestry = self.ancestry + [self]
         with log.ancestry.indent():
-            [i.update_ancestry(child_ancestry) for i in self._elements_to_render if i is not None]
+            [
+                i.update_ancestry(child_ancestry)
+                for i in self._elements_to_render
+                if i is not None
+            ]
 
     def update_cascading_value(self, value: CascadingTraitValue, depth: int) -> None:
         super().update_cascading_value(value, depth)
@@ -142,13 +155,11 @@ class Container(Element, ABC, metaclass=ContainerMeta):
         with log.cascade.indent():
             for element in self._elements_to_render:
                 element.update_cascading_value(value, depth)
-                
 
     @property
     @abstractmethod
     def _elements_to_render(self) -> Iterable[Element]:
-        ...   
-
+        ...
 
     def make_visible(self, element: Element) -> None:
         self.parent.make_visible(element)

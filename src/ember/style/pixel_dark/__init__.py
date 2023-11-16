@@ -9,5 +9,6 @@ from .divider import Divider
 from .bar import Bar
 from .slider import Slider
 from .scrollbar import ScrollBar
+from .scroll import Scroll
 
 background_color = (40, 40, 50)

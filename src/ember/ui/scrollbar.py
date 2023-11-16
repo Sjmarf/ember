@@ -31,7 +31,7 @@ class ScrollBar(Slider, ABC):
     def __repr__(self) -> str:
         return "<ScrollBar>"
 
-    def _update_handle_sizes(self) -> None:
+    def _update_handle_size(self) -> None:
         size = PivotableSize(FILL * self._handle_coverage, FILL, watching=self)
         self.cascading.add(Element.w(size))
         self.cascading.add(Element.h(~size))
@@ -43,4 +43,4 @@ class ScrollBar(Slider, ABC):
     @handle_coverage.setter
     def handle_coverage(self, value: float) -> None:
         self._handle_coverage = value
-        self._update_handle_sizes()
+        self._update_handle_size()

@@ -6,6 +6,7 @@ from ember.axis import Axis, HORIZONTAL
 
 from .toggle_button import ToggleButton
 from .handled_element import UpdatingHandleElement
+from .can_pivot import CanPivot
 from ..material import Material
 from ember.ui.panel import Panel
 
@@ -30,7 +31,7 @@ from ..common import ElementType
 from ..on_event import on_event
 
 
-class Switch(UpdatingHandleElement, ToggleButton, ABC):
+class Switch(CanPivot, UpdatingHandleElement, ToggleButton, ABC):
     animation: Animation = EaseInOut(0.2)
 
     def __init__(
@@ -45,7 +46,7 @@ class Switch(UpdatingHandleElement, ToggleButton, ABC):
         size: OptionalSequenceSizeType = None,
         w: Optional[SizeType] = None,
         h: Optional[SizeType] = None,
-        axis: Axis = HORIZONTAL,
+        axis: Axis | None = None,
         **kwargs
     ):
         super().__init__(
@@ -65,6 +66,7 @@ class Switch(UpdatingHandleElement, ToggleButton, ABC):
         )
         x = RIGHT if self.active else LEFT
         y = TOP if self.active else BOTTOM
+
         self.cascading.add(Element.x(PivotablePosition(x, 0, watching=self)))
         self.cascading.add(Element.y(PivotablePosition(0, y, watching=self)))
 
@@ -86,3 +88,5 @@ class Switch(UpdatingHandleElement, ToggleButton, ABC):
             self.cascading.add(Element.x(PivotablePosition(LEFT, 0, watching=self)))
             self.cascading.add(Element.y(PivotablePosition(0, BOTTOM, watching=self)))
             
+
+Switch.axis.default_value = HORIZONTAL

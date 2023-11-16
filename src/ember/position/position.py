@@ -4,6 +4,7 @@ from typing import Union, TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from ember.trait import Trait
     from ember.ui.element import Element
+    from ember.ui.can_pivot import CanPivot
 
 from ember.axis import Axis, HORIZONTAL, VERTICAL
 
@@ -47,18 +48,21 @@ class AbsolutePosition(Position):
     
 
 class PivotablePosition(Position):
-    def __init__(self, horizontal_pos: Position | int, vertical_pos: Position | int, watching: Optional["Element"] = None) -> None:
+    def __init__(self, horizontal_pos: Position | int, vertical_pos: Position | int, watching: Optional["CanPivot"] = None) -> None:
         self.horizontal_pos: Position = load_position(horizontal_pos)
         self.vertical_pos: Position = load_position(vertical_pos)
-        self.watching: Optional["Element"] = watching
+        self.watching: Optional["CanPivot"] = watching
         
     def get(self, container_size: float = 0, element_size: float = 0, axis: Axis = VERTICAL) -> float:
         if self.watching is not None:
-            axis = self.watching._axis
+            axis = self.watching.axis
         if axis == HORIZONTAL:
             return self.horizontal_pos.get(container_size, element_size, axis)
         return self.vertical_pos.get(container_size, element_size, axis)
-    
+
+    def __invert__(self) -> "PivotablePosition":
+        return PivotablePosition(self.vertical_pos, self.horizontal_pos, self.watching)
+
 
 def load_position(pos: Union["Position", float, "Trait", None]) -> Union["Position", "Trait", None]:
     return AbsolutePosition(pos) if isinstance(pos, (int, float)) else pos

@@ -139,8 +139,8 @@ class View(ContextManager):
 
         for layer in self._layers:
             if update_positions:
-                layer_w = layer.get_abs_w(rect[2])
-                layer_h = layer.get_abs_h(rect[3])
+                layer_w = layer.get_w(rect[2])
+                layer_h = layer.get_h(rect[3])
 
                 layer_x = rect[0] + layer._x.value.get(rect[2], layer_w)
                 layer_y = rect[1] + layer._y.value.get(rect[3], layer_h)

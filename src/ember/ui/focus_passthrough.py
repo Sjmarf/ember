@@ -11,7 +11,7 @@ from ember.ui.can_focus import CanHandleFocusChildDependent
 from ember.trait import Trait
 
 
-class FocusPassthrough(CanHandleFocusChildDependent, MultiElementContainer, ABC):
+class FocusPassthroughContainer(CanHandleFocusChildDependent, MultiElementContainer, ABC):
 
     focus_on_entry: FocusType = Trait(FOCUS_CLOSEST)
     

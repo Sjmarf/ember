@@ -2,6 +2,7 @@ from .view import View
 from .view_layer import ViewLayer
 
 from .container import Container
+from .scroll import Scroll
 from .single_element_container import SingleElementContainer
 from .multi_element_container import MultiElementContainer
 from .masked_container import MaskedContainer
