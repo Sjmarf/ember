@@ -72,7 +72,7 @@ class Stack(FocusPassthroughContainer, CanPivot):
             unallocated_space -= size
             element_sizes[element] = size
 
-        if unallocated_space:
+        if unallocated_space and len(elements) > 1:
             spacing = self.spacing.get(
                 spacing + int(unallocated_space / (len(elements) - 1))
             )

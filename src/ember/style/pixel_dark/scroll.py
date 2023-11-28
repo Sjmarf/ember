@@ -1,5 +1,6 @@
 from ember.ui import Scroll as _Scroll
+from .scrollbar import ScrollBar
 
 
 class Scroll(_Scroll):
-    pass
+    scrollbar_class = ScrollBar

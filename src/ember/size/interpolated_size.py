@@ -44,8 +44,8 @@ class InterpolatedSize(Size):
         other_value: float = 0,
         axis: Axis = VERTICAL,
     ) -> float:
-        old_val = self.old_size.get(min_value, max_value, other_value)
-        new_val = self.new_size.get(min_value, max_value, other_value)
+        old_val = self.old_size.get(min_value, max_value, other_value, axis)
+        new_val = self.new_size.get(min_value, max_value, other_value, axis)
         return round(old_val + (new_val - old_val) * self.progress)
 
     def copy(self) -> "InterpolatedSize":

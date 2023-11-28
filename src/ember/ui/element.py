@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from .can_pivot import CanPivot
 
 from ember.ui.context_manager import ContextManager
-from ember.animation.animation import AnimationContext
+from ember.animation.animation import AnimationContext, Animation
 from ember.size import Size, SizeType, OptionalSequenceSizeType, FIT, FitSize
 from ember.position import (
     Position,
@@ -421,9 +421,11 @@ class Element(abc.ABC, metaclass=ElementMeta):
 
     def update_cascading_value(self, value: CascadingTraitValue, depth: int) -> None:
         if isinstance(self, value.ref.owner):
-            # We have to use setattr here because of CanPivot properties
-            log.cascade.info("Value set", self)
             setattr(self, value.ref.trait.name, value.value)
+            log.cascade.info(
+                f"Value set to {getattr(self, value.ref.trait.name)}, with animation {Animation.animation_stack[-1]}",
+                self,
+            )
         else:
             log.cascade.info(f"Not an instance of {value.ref.owner}, did not set", self)
 

@@ -52,6 +52,9 @@ class PivotablePosition(Position):
         self.horizontal_pos: Position = load_position(horizontal_pos)
         self.vertical_pos: Position = load_position(vertical_pos)
         self.watching: Optional["CanPivot"] = watching
+
+    def __repr__(self):
+        return f"<PivotablePosition({self.horizontal_pos} | {self.vertical_pos})>"
         
     def get(self, container_size: float = 0, element_size: float = 0, axis: Axis = VERTICAL) -> float:
         if self.watching is not None:

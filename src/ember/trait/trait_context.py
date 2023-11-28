@@ -1,11 +1,11 @@
 from typing import TypeVar, Generic, Optional, TYPE_CHECKING, Union
 
+from .. import log
 from ..animation import Animation
 from .trait_layer import TraitLayer
 from . import trait_layer
 
 if TYPE_CHECKING:
-    from .trait_value import TraitValue
     from .trait import Trait
     from ember.ui.element import Element
 
@@ -97,6 +97,7 @@ class TraitContext(Generic[T]):
                     break
 
             if (anim := Animation.animation_stack[-1]) is not None:
+                log.trait.info("Animating value...")
                 context = anim.create_context(self, old_val, self.value)
 
                 self._element._animation_contexts.append(context)

@@ -52,11 +52,6 @@ class Box(SingleElementContainer[T], FocusPassthroughContainer):
             log.nav.info(f"-> child {self._element}.")
             return self._element._focus_chain(direction, previous=self)
 
-    def _event(self, event: pygame.event.Event) -> bool:
-        if self._element is not None:
-            return self._element.event(event)
-        return False
-
     def update_can_focus(self) -> None:
         if self in self.layer.can_focus_update_queue:
             self.layer.can_focus_update_queue.remove(self)

@@ -130,7 +130,7 @@ class Container(Element, ABC, metaclass=ContainerMeta):
                 self._min_size.h = h
 
     def _event(self, event: pygame.event.Event) -> bool:
-        for i in self._elements_to_render:
+        for i in reversed(tuple(self._elements_to_render)):
             if i is not None and i.event(event):
                 return True
         return super()._event(event)

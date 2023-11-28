@@ -94,6 +94,9 @@ class PivotableSize(Size):
         self.watching: Optional["CanPivot"] = watching
         super().__init__()
 
+    def __repr__(self):
+        return f"<PivotableSize({self.horizontal_size} | {self.vertical_size})>"
+
     def get(
         self,
         min_value: float = 0,

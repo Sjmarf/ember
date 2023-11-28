@@ -6,7 +6,7 @@ from typing import (
     Callable,
     Union,
     Type,
-    NamedTuple
+    NamedTuple,
 )
 from weakref import WeakSet
 
@@ -21,6 +21,7 @@ from .. import log
 from .base_trait import BaseTrait
 
 T = TypeVar("T")
+
 
 class TraitReference(NamedTuple):
     trait: "Trait"
@@ -63,7 +64,7 @@ class Trait(BaseTrait[T]):
         context = getattr(instance, self.context_name, None)
         if context is None:
             context = TraitContext(instance, self)
-            setattr(instance, self.context_name, context)            
+            setattr(instance, self.context_name, context)
         return context.value
 
     def __set__(self, instance: "Element", value: T) -> None:
@@ -94,7 +95,9 @@ class Trait(BaseTrait[T]):
 
     def __call__(self, value: T, depth: Optional[int] = None) -> CascadingTraitValue[T]:
         return CascadingTraitValue(
-            self.create_reference(), self.load_value(value), depth=(depth or self.default_cascade_depth)
+            self.create_reference(),
+            self.load_value(value),
+            depth=(depth or self.default_cascade_depth),
         )
 
     def load_value(self, value: T) -> T:
@@ -102,7 +105,7 @@ class Trait(BaseTrait[T]):
             new_value = self.load_value_with(value)
             return new_value
         return value
-    
+
     def create_reference(self) -> TraitReference:
         return TraitReference(trait=self, owner=BaseTrait.inspected_class)
 
@@ -132,14 +135,14 @@ class Trait(BaseTrait[T]):
         Called when a value of the Trait becomes active.
         """
         if isinstance(value, TraitDependency):
-            value.trait_contexts.add(context)        
+            value.trait_contexts.add(context)
 
     def deactivate_value(self, value: T, context: "TraitContext") -> None:
         """
         Called when a value of the Trait becomes deactive.
         """
         if isinstance(value, TraitDependency) and context in value.trait_contexts:
-            value.trait_contexts.remove(context)        
+            value.trait_contexts.remove(context)
 
     def copy(self, default_value: Optional[T]) -> "Trait":
         new = type(self)(
@@ -147,7 +150,7 @@ class Trait(BaseTrait[T]):
             if default_value is not None
             else self.default_value,
             on_update=self.on_update,
-            load_value_with=self.load_value_with
+            load_value_with=self.load_value_with,
         )
         new.owner = self.owner
         new.name = self.name

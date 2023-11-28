@@ -9,6 +9,7 @@ from ..material import Material
 
 from ember.ui.element import Element
 from .handled_element import UpdatingHandleElement
+from .can_pivot import CanPivot
 
 from ..event import VALUEMODIFIED
 
@@ -19,8 +20,8 @@ from ember.on_event import on_event
 from ember.axis import Axis, HORIZONTAL
 
 
-class Slider(UpdatingHandleElement, Gauge, SingleElementContainer, ABC):
-    def __init__(self, *args, axis: Axis = HORIZONTAL, **kwargs) -> None:
+class Slider(UpdatingHandleElement, Gauge, SingleElementContainer, CanPivot, ABC):
+    def __init__(self, *args, axis: Axis | None = None, **kwargs) -> None:
         super().__init__(
             *args, **kwargs, back_panel=Panel(None, y=0, size=FILL), axis=axis
         )
@@ -53,3 +54,5 @@ class Slider(UpdatingHandleElement, Gauge, SingleElementContainer, ABC):
                     )
                 )
             )
+
+Slider.axis.default_value = HORIZONTAL
