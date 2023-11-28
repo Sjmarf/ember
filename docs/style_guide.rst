@@ -60,17 +60,20 @@ Every style has a :code:`background_color` attribute that you may wish to use as
 Text
 --------------------
 
-The :code:`ui.Text` class inherits from `ember.Text`. Unlike `ember.Text`, you don't need to specify a font for this element. The default value for the :code:`font` parameter is a pixel-art font that fits the style. This makes creating many Text objects much more concise!
+The :code:`ui.Text` class inherits from :py:class:`ember.Text<ember.ui.Text>`. Unlike :py:class:`ember.Text<ember.ui.Text>`, you don't need to specify a font for this element. The default value for the :code:`font` parameter is a pixel-art font that fits the style. This makes creating many Text objects much more concise!
 
 .. code-block:: python
 
     with ember.View() as view:
         ui.Text("Hello, world!")
 
+.. image:: _static/style_guide/text.png
+  :width: 40%
+
 Button
 -------------------
 
-Previously, we've created buttons with backgrounds by adding a :py:class:`Panel<ember.ui.Panel>` element followed by a :py:class:`Text<ember.ui.Text>` element:
+Previously, we've created buttons with backgrounds like so:
 
 .. code-block:: python
 
@@ -84,6 +87,17 @@ Previously, we've created buttons with backgrounds by adding a :py:class:`Panel<
 
 
 :py:class:`ui.Button<ember.style.pixel_dark.Button>` makes this syntax much simpler. It creates a :py:class:`Panel<ember.ui.Panel>` internally when you create the button, so that you don't have to specify it yourself.
+
+Here's what our syntax looks like now, by using both the :py:class:`ui.Text<ember.style.pixel_dark.Text>` :py:class:`ui.Button<ember.style.pixel_dark.Button>` elements.
+
+.. code-block:: python
+
+    with ember.View() as view:
+        with ui.Button():
+            ui.Text("Click me!")
+
+.. image:: _static/style_guide/button.png
+  :width: 40%
 
 We've only seen how to apply solid colors to a Panel so far, but there are several other options too. :py:class:`ui.Button<ember.style.pixel_dark.Button>` uses a more advanced type of Panel that renders a :code:`pygame.Surface` texture rather than a solid color. We'll look more at this later.
 
@@ -100,15 +114,7 @@ We've only seen how to apply solid colors to a Panel so far, but there are sever
 
     This works on every other element too.
 
-Here's what our syntax looks like now, by using both the :py:class:`ui.Text<ember.style.pixel_dark.Text>` :py:class:`ui.Button<ember.style.pixel_dark.Button>` elements.
-
-.. code-block:: python
-
-    with ember.View() as view:
-        with ui.Button():
-            ui.Text("Click me!")
-
-This is much cleaner, right? But we can improve this even more! If you pass a string to the :py:class:`ui.Button<ember.style.pixel_dark.Button>` constructor, it'll create an instance of :py:class:`ui.Text<ember.style.pixel_dark.Text>` automatically!
+This is much cleaner, right? But we can improve this even more! If you pass a string to the :py:class:`ui.Button<ember.style.pixel_dark.Button>` constructor, it'll create an instance of :py:class:`ui.Text<ember.style.pixel_dark.Text>` for you!
 
 .. code-block:: python
 
@@ -132,14 +138,17 @@ The :code:`pixel_dark` style currently offers two different subclasses of :py:cl
             ui.Switch()
 
 
-Because these element types are subclasses of :py:class:`ember.Button<ember.ui.Button>`, you can listen for :code:`ember.CLICKEDDOWN` events to detect when they are clicked. In addition, you can listen for :code:`ember.TOGGLEON` and :code:`ember.TOGGLEOFF` to detect specific states.
+.. image:: _static/style_guide/toggle_button.png
+  :width: 40%
+
+Because these element types are subclasses of :py:class:`ember.Button<ember.ui.Button>`, you can listen for :code:`ember.CLICKEDDOWN` events to detect when they are clicked. In addition, you can listen for :code:`ember.TOGGLEDON` and :code:`ember.TOGGLEDOFF` to detect specific states.
 
 Stacks
 -----------
 
 Styles provide subclasses of :py:class:`ember.VStack<ember.ui.VStack>` and :py:class:`ember.HStack<ember.ui.HStack>` too. In the case of :code:`pixel_dark`, the minimum spacing of the Stacks has been increased from 0 to 6.
 
-You can add :py:class:`ui.Divider<ember.style.pixel_dark.Divider>` elements to nicely separate your elements. The orientation of the Divider will change automatically depending on whether it is inside of a :py:class:`ember.VStack<ember.ui.VStack>` or :py:class:`ember.HStack<ember.ui.HStack>`.
+You can add :py:class:`ui.Divider<ember.style.pixel_dark.Divider>` elements to nicely separate elements within stacks. The orientation of the Divider is dependent on whether it is contained within :py:class:`ember.VStack<ember.ui.VStack>` or :py:class:`ember.HStack<ember.ui.HStack>`.
 
 Here's a more complex UI:
 
@@ -157,3 +166,6 @@ Here's a more complex UI:
             with ui.HStack(w=ember.FILL):
                 ui.Button("Cancel", w=ember.FILL)
                 ui.Button("Save", w=ember.FILL)
+
+.. image:: _static/style_guide/divider.png
+  :width: 70%
