@@ -3,7 +3,8 @@ from typing import Callable, TYPE_CHECKING, TypeVar, Type
 if TYPE_CHECKING:
     from ember.ui.element import Element
 
-from .trait import Trait, TraitReference
+from .trait import Trait
+from .bound_trait import TraitReference
 from .cascading_trait_value import CascadingTraitValue
 from ember import log
 

@@ -28,7 +28,7 @@ class TraitContext(Generic[T]):
         self._element: "Element" = element
         self.trait: "Trait" = trait
 
-        self.value: Optional[T] = trait._default_value
+        self.value: Optional[T] = trait.get_default_value(type(element))
         if self.value is not None:
             trait.activate_value(self.value, self._element)
 
@@ -44,7 +44,7 @@ class TraitContext(Generic[T]):
             f"animation={self.animation_value}, "
             f"element={self.element_value}, "
             f"parent={self.parent_value}, "
-            f"default={self.trait._default_value})>"
+            f"default={self.trait.default_value})>"
         )
 
     def __getitem__(self, item: TraitLayer) -> Union[T, "TraitValue", None]:
@@ -112,7 +112,7 @@ class TraitContext(Generic[T]):
         return True
 
     def update(self) -> bool:
-        for i in (self.animation_value, self.element_value, self.parent_value, self.trait._default_value):
+        for i in (self.animation_value, self.element_value, self.parent_value, self.trait.get_default_value(type(self._element))):
             if i is not None:
                 if isinstance(i, TraitContext):
                     i = i.value

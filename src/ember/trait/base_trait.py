@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 class BaseTrait(Generic[T], ABC):
-    inspected_class: Optional[Type["Element"]] = None
 
     @abstractmethod
     def __get__(self, instance: "Element", owner: Type["Element"]) -> T:
@@ -19,10 +18,6 @@ class BaseTrait(Generic[T], ABC):
 
     @abstractmethod
     def __set__(self, instance: "Element", value: T) -> None:
-        ...
-
-    @abstractmethod
-    def __call__(self, value: T, depth: Optional[int] = None) -> CascadingTraitValue[T]:
         ...
 
     @classmethod

@@ -3,7 +3,9 @@ from typing import TYPE_CHECKING, Sequence
 if TYPE_CHECKING:
     from ember.ui.container import Container
 
-from .trait import Trait, TraitReference
+from .trait import Trait
+from .bound_trait import BoundTrait
+from .bound_trait import TraitReference
 from .cascading_trait_value import CascadingTraitValue
 
 from ember import log
@@ -23,16 +25,16 @@ class CascadeRepository:
     def __contains__(self, ref: TraitReference) -> bool:
         return any(i.ref == ref for i in self.values)
         
-    def __getitem__(self, key: Trait) -> CascadingTraitValue:
+    def __getitem__(self, key: BoundTrait) -> CascadingTraitValue:
         ref = key.create_reference()
         for value in self.values:
             if value.ref == ref:
                 return value
-        return CascadingTraitValue(ref=ref, value=key.default_value, depth=key.default_cascade_depth)
+        return CascadingTraitValue(ref=ref, value=key.default_value, depth=key.trait.default_cascade_depth)
     
-    def __setitem__(self, key: Trait, value: CascadingTraitValue) -> None:
+    def __setitem__(self, key: BoundTrait, value: CascadingTraitValue) -> None:
         ref = key.create_reference()
-        if key != value.ref.trait:
+        if key.trait is not value.ref.trait:
             raise ValueError("CascadingTraitValue doesn't match key")
         
         for n,i in enumerate(self.values):
@@ -43,7 +45,7 @@ class CascadeRepository:
         self.values.append(value)
         self.element.start_cascade(value)
         
-    def __delitem__(self, key: Trait) -> None:
+    def __delitem__(self, key: BoundTrait) -> None:
         ref = key.create_reference()
         for n,value in enumerate(self.values):
             if value.ref == ref:
@@ -51,7 +53,7 @@ class CascadeRepository:
                 self.element.start_cascade(
                     CascadingTraitValue(
                         trait=value.trait,
-                        alue=None,
+                        value=None,
                         depth=value.depth
                     )
                 )

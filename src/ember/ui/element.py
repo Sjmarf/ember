@@ -30,7 +30,7 @@ from ember.trait.cascading_trait_value import CascadingTraitValue
 
 from ember import common as _c
 from ember import axis as axis_module
-from ember.axis import Axis, HORIZONTAL
+from ember.axis import HORIZONTAL
 
 from .element_meta import ElementMeta
 from ember.callback_registry import CallbackRegistry
@@ -165,6 +165,9 @@ class Element(abc.ABC, metaclass=ElementMeta):
 
         if ContextManager.context_stack[-1] is not None:
             ContextManager.context_stack[-1].context_queue.append(self)
+
+        if CascadingTraitValue.context_depth > 0:
+            CascadingTraitValue.new_elements.append(self)
 
     def build(self) -> None:
         if self._has_built:

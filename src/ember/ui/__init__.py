@@ -1,3 +1,5 @@
+from .element import Element
+
 from .view import View
 from .view_layer import ViewLayer
 

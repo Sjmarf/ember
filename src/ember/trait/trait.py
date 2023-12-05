@@ -6,26 +6,21 @@ from typing import (
     Callable,
     Union,
     Type,
-    NamedTuple,
 )
-from weakref import WeakSet
 
 if TYPE_CHECKING:
     from ember.ui.element import Element
 
+from . import trait_layer
 from .trait_layer import TraitLayer
 from .trait_context import TraitContext
 from .trait_dependency import TraitDependency
+from .bound_trait import BoundTrait
 from .cascading_trait_value import CascadingTraitValue
 from .. import log
 from .base_trait import BaseTrait
 
 T = TypeVar("T")
-
-
-class TraitReference(NamedTuple):
-    trait: "Trait"
-    owner: Type["Element"]
 
 
 class Trait(BaseTrait[T]):
@@ -43,29 +38,40 @@ class Trait(BaseTrait[T]):
         self.owner: Optional[Type["Element"]] = None
         self.name: Optional[str] = None
         self.context_name: Optional[str] = None
+        self.default_name: Optional[str] = None
 
         self.load_value_with: Optional[Callable] = load_value_with
+
         self._default_value: T = self.load_value(default_value)
+        """
+        Temporary variable to store the default value until __set_name__ is called,
+        at which point the default is set within the attached class and this attribute is
+        deleted.
+        """
+
         self.on_update: tuple[Callable[["Element"], Any], ...] = (
             on_update if isinstance(on_update, tuple) else (on_update,)
         )
         self.default_cascade_depth: int = default_cascade_depth
 
-        self._defaulted_elements: WeakSet["Element"] = WeakSet()
-
     def __repr__(self) -> str:
         return f"<Trait('{self.name}')>"
 
-    def __get__(self, instance: "Element", owner: Type["Element"]) -> T:
+    def __get__(self, instance: "Element", owner: Type["Element"]) -> T | BoundTrait:
         # We can't just use the 'element_type' instance attr for this because of inheritance
-        BaseTrait.inspected_class = owner
         if instance is None:
-            return self
+            return BoundTrait(self, owner)
         context = getattr(instance, self.context_name, None)
         if context is None:
             context = TraitContext(instance, self)
             setattr(instance, self.context_name, context)
         return context.value
+
+    def get_context(self, element: "Element") -> TraitContext[T]:
+        if not isinstance(element, self.owner):
+            raise ValueError(f"Element does not inherit from {self.owner}.")
+
+        return getattr(element, self.context_name)
 
     def __set__(self, instance: "Element", value: T) -> None:
         value = self.load_value(value)
@@ -81,24 +87,14 @@ class Trait(BaseTrait[T]):
 
         context.set_value(value)
 
-        if context.value is self._default_value:
-            self._defaulted_elements.add(instance)
-        else:
-            if instance in self._defaulted_elements:
-                self._defaulted_elements.remove(instance)
-
     def __set_name__(self, owner, name) -> None:
         self.owner = owner
         self.name = name
         self.context_name = f"_{name}"
+        self.default_name = f"_{name}_default"
+        setattr(owner, self.default_name, self._default_value)
+        del self._default_value
         log.trait.info(f"Created {self.owner.__name__}.{self.name}")
-
-    def __call__(self, value: T, depth: Optional[int] = None) -> CascadingTraitValue[T]:
-        return CascadingTraitValue(
-            self.create_reference(),
-            self.load_value(value),
-            depth=(depth or self.default_cascade_depth),
-        )
 
     def load_value(self, value: T) -> T:
         if self.load_value_with is not None:
@@ -106,29 +102,20 @@ class Trait(BaseTrait[T]):
             return new_value
         return value
 
-    def create_reference(self) -> TraitReference:
-        return TraitReference(trait=self, owner=BaseTrait.inspected_class)
+    def get_default_value(self, owner: Type["Element"]) -> T:
+        return getattr(owner, self.default_name)
 
-    @property
-    def default_value(self) -> T:
-        return self._default_value
+    def set_default_value(self, owner: Type["Element"], value: T) -> None:
+        if not issubclass(owner, self.owner):
+            raise ValueError(f"{owner} is not a subclass of {self.owner}.")
 
-    @default_value.setter
-    def default_value(self, value: T) -> None:
         value = self.load_value(value)
-        if value is not self._default_value:
+        if value is not self.get_default_value(owner):
             log.trait.info(
-                f"Updated default value for {Trait.inspected_class.__name__}.{self.name}"
+                f"Updated default value for {owner.__name__}.{self.name}"
             )
 
-            new_trait = self.copy(value)
-            new_trait.name = self.name
-            setattr(Trait.inspected_class, self.name, new_trait)
-
-            for element in self._defaulted_elements:
-                context: "TraitContext" = getattr(element, self.context_name, None)
-                with self.inspecting(TraitLayer.DEFAULT):
-                    context.set_value(new_trait._default_value)
+            setattr(owner, self.default_name, value)
 
     def activate_value(self, value: T, context: "TraitContext") -> None:
         """
@@ -143,18 +130,3 @@ class Trait(BaseTrait[T]):
         """
         if isinstance(value, TraitDependency) and context in value.trait_contexts:
             value.trait_contexts.remove(context)
-
-    def copy(self, default_value: Optional[T]) -> "Trait":
-        new = type(self)(
-            default_value=default_value
-            if default_value is not None
-            else self.default_value,
-            on_update=self.on_update,
-            load_value_with=self.load_value_with,
-        )
-        new.owner = self.owner
-        new.name = self.name
-        new.context_name = self.context_name
-        new._defaulted_elements = self._defaulted_elements
-
-        return new

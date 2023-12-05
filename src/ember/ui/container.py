@@ -20,6 +20,8 @@ from ember.common import ElementType
 from ember.trait.trait import Trait
 from ember.trait.cascade_repository import CascadeRepository
 from ember.trait.cascading_trait_value import CascadingTraitValue
+from ember.trait import trait_layer
+from ember.trait.trait_layer import TraitLayer
 from ember.ui.text import Text
 from ember.size import FillSize
 
