@@ -3,6 +3,7 @@ from ..common import SequenceElementType, FocusType
 from typing import Optional, Union, Sequence
 
 from ember.ui.stack import Stack
+from ember.ui.can_pivot import HorizontalLocked
 from ember.size import SizeType, OptionalSequenceSizeType
 from ember.position import (
     PositionType,
@@ -14,7 +15,7 @@ from ember.axis import HORIZONTAL
 from ember.trait.cascading_trait_value import CascadingTraitValue
 
 
-class HStack(Stack):
+class HStack(HorizontalLocked, Stack):
     def __init__(
         self,
         *elements: Optional[SequenceElementType],
@@ -41,8 +42,7 @@ class HStack(Stack):
             size=size,
             w=w,
             h=h,
-            cascading=cascading,
-            axis=HORIZONTAL
+            cascading=cascading
         )
 
     def __repr__(self) -> str:

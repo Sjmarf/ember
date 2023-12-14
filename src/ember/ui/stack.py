@@ -81,7 +81,7 @@ class Stack(FocusPassthroughContainer, CanPivot):
             self.rect[2 + self.axis] / 2
             - (sum(element_sizes.values()) + spacing * (len(elements) - 1)) / 2
         )
-
+        
         self._first_visible_element = None
 
         for element_n, element in enumerate(elements):

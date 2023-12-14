@@ -97,8 +97,9 @@ class MultiElementContainer(ContextManager, Container, ABC):
         if update:
             self.update_min_size_next_tick()
 
-    def _attribute_element(self, element: "Optional[Element]") -> None:
-        self.append(element, update=False)
+    def _attribute_elements(self, elements: Sequence[Element]) -> None:
+        for element in elements:
+            self.append(element, update=False)
 
     def append(self, element: Optional[ElementType], update: bool = True) -> None:
         """
@@ -132,6 +133,12 @@ class MultiElementContainer(ContextManager, Container, ABC):
         """
         self.removing_element(element, update)
         self._elements.remove(element)
+        
+    def remove_child(self, element: Element) -> None:
+        if element in self._elements:
+            self.remove(element)
+        else:
+           raise ValueError(f"Tried to remove child element {element} from container {self}, but it was not a child.")
 
     def copy(self) -> "Element":
         new = copy.copy(self)

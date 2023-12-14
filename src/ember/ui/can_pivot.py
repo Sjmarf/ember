@@ -1,5 +1,6 @@
 from abc import ABC
-from typing import Optional
+from tkinter import HORIZONTAL
+from typing import Optional, Generic, TypeVar
 from .element import Element
 
 from ember.trait import Trait
@@ -17,8 +18,14 @@ class CanPivot(Element, ABC):
     axis = Trait(default_value=VERTICAL, on_update=_axis_updated)
 
     def __init__(self, *args, axis: Axis | None = None, **kwargs) -> None:
-        self.axis = axis
+        self._set_pivot_axis(axis)
         super().__init__(*args, **kwargs)
+    
+    def _set_pivot_axis(self, axis: Axis | None) -> None:
+        """
+        Exists so that it can be overriden by subclasses
+        """
+        self.axis = axis
 
     def get_x(
         self, container_width: float, element_width: Optional[float] = None
@@ -46,3 +53,25 @@ class CanPivot(Element, ABC):
 
 
 Element._CanPivot = CanPivot
+
+T = TypeVar("T")
+
+class LockedAxis(Generic[T]):
+    def __init__(self, value: T) -> None:
+        self._value: T = value
+    
+    def __get__(self, instance, owner) -> T:
+        return self._value
+        
+
+class HorizontalLocked(CanPivot, ABC):
+    axis = LockedAxis(HORIZONTAL)
+    
+    def _set_pivot_axis(self, axis: Axis | None) -> None:
+        ...
+
+class VerticalLocked(CanPivot, ABC):
+    axis = LockedAxis(VERTICAL)
+
+    def _set_pivot_axis(self, axis: Axis | None) -> None:
+        ...

@@ -7,8 +7,9 @@ from ember.ui.can_disable import CanDisable
 from ember.ui.can_click import CanClick
 from ember.ui.can_focus import CanFocus
 from ember.ui.single_element_container import SingleElementContainer
+from ember.ui.z_stack import ZStack
 
-from ..size import SizeType, OptionalSequenceSizeType, FIT
+from ..size import FILL, SizeType, OptionalSequenceSizeType, FIT
 from ember.position import (
     PositionType,
     SequencePositionType,
@@ -23,6 +24,14 @@ class Button(CanDisable, CanFocus, CanClick, SingleElementContainer):
     A Button is an interactive Element. Buttons can hold exactly one child Element, which is rendered on the button.
     When the button is clicked, it will post the :code:`ember.BUTTONCLICKED` event.
     """
+    
+    class WrapperZStack(ZStack):
+        ...
+        
+    WrapperZStack.w.default_value = FILL
+    WrapperZStack.h.default_value = FILL
+    
+    multi_element_wrapper = WrapperZStack
 
     def __init__(
         self,

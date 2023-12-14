@@ -17,12 +17,12 @@ class TraitDependency(ABC):
         
     @classmethod
     def triggers_trait_update(cls, func: Callable[P, None]) -> None:
-        def wrapper(self, *args: P.args) -> None:
+        def wrapper(self, *args: P.args, **kwargs: P.kwargs) -> None:
             with log.size.indent("Value was updated, triggering trait update...", self):
                 gen = self.trait_update_chain()
                 next(gen)
                 log.size.info("Updating value...", self)
-                func(self, *args)
+                func(self, *args, **kwargs)
                 next(gen)
         return wrapper
     

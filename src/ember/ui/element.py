@@ -230,9 +230,9 @@ class Element(abc.ABC, metaclass=ElementMeta):
             )
 
         if self.w.relies_on_other_value:
-            if h != self.rect.h:
+            if round(h, 5) != round(self.rect.h, 5):
                 log.size.info(
-                    f"Height was changed and width calculation relies on height, queueing...",
+                    f"Height was changed ({self.rect.h} -> {h}) and width calculation relies on height, queueing...",
                     self,
                 )
                 self.rect.update(x, y, w, h)
@@ -240,9 +240,9 @@ class Element(abc.ABC, metaclass=ElementMeta):
                 return
 
         if self.h.relies_on_other_value:
-            if w != self.rect.w:
+            if round(w, 5) != round(self.rect.w, 5):
                 log.size.info(
-                    f"Width was changed and height calculation relies on width, queueing...",
+                    f"Width was changed ({self.rect.w} -> {w}) and height calculation relies on width, queueing...",
                     self,
                 )
                 self.rect.update(x, y, w, h)
@@ -527,3 +527,10 @@ class Element(abc.ABC, metaclass=ElementMeta):
         new = copy.copy(self)
         new.rect = self.rect.copy()
         return new
+
+    def kill(self) -> None:
+        """
+        Remove the element from its parent container. Fails gracefully without raising an exception if the element doesn't have a parent.
+        """
+        if self.parent is not None:
+            self.parent.remove_child(self)

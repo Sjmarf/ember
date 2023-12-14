@@ -5,7 +5,9 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from abc import ABC, abstractmethod
+import inspect
+
+from abc import ABC, ABCMeta, abstractmethod
 
 from ember.axis import Axis, VERTICAL, HORIZONTAL
 from ember.trait.trait_dependency import TraitDependency
@@ -25,24 +27,46 @@ def load_size(
     return value
 
 
+class SizeMeta(ABCMeta):
+    def __init__(cls, name, bases, attrs):
+        super().__init__(name, bases, attrs)
+        
+    def calculate_class_intents(cls: "Size") -> None:
+        
+        if (func := getattr(cls, "_get", None)) is not None:
+            cls.min_value_intent = False
+            cls.max_value_intent = False
+            cls.other_value_intent = False
+            cls.resizable_value_intent = False
+            
+            for param in inspect.signature(func).parameters:
+                if param.kind in {param.VAR_POSITIONAL, param.VAR_KEYWORD}:
+                    cls.min_value_intent = True
+                    cls.max_value_intent = True
+                    cls.other_value_intent = True
+                    cls.resizable_value_intent = True
+                    return
+                
+                if param.name == "min_value":
+                    cls.min_value_intent = True
+                elif param.name == "max_value":
+                    cls.max_value_intent = True
+                elif param.name == "other_value":
+                    cls.other_value_intent = True
+                elif param.name == "resizable_value":
+                    cls.resizable_value_intent = True
+
+        else:
+            raise AttributeError("Class does not implement _get method.")
+    
+    
+
 class Size(TraitDependency, ABC):
-    relies_on_min_value: bool = False
-    """
-    Should be True when the Size takes the min_value into account in any way. This tells the Element to keep
-    the min_value exact - if this value is False, the Element will avoid updating the min_value if possible.
-    """
-
-    relies_on_max_value: bool = False
-    """
-    Should be True when the Size takes the max_value into account in any way. This tells the Element to keep
-    the max_value exact - if this value is False, the Element will avoid updating the max_value if possible.
-    """
-
-    relies_on_other_value: bool = False
-    """
-    Should be True when the Size takes the other_value into account in any way. This tells the Element to keep
-    the other_value exact - if this value is False, the Element will avoid updating the other_value if possible.
-    """
+    
+    min_value_intent: bool = False
+    max_value_intent: bool = False
+    other_value_intent: bool = False
+    resizable_value_intent: bool = False
 
     def get(
         self,

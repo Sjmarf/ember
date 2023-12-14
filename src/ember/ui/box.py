@@ -13,10 +13,7 @@ from ember.ui.focus_passthrough import FocusPassthroughContainer
 from ember.ui.can_focus import CanHandleFocusChildDependent
 from .. import log
 
-
-T = TypeVar("T", bound=ElementType, covariant=True)
-
-class Box(SingleElementContainer[T], FocusPassthroughContainer):
+class Box(SingleElementContainer, FocusPassthroughContainer):
     """
     A Box is a container that can optionally hold one Element.
     """

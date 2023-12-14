@@ -21,10 +21,8 @@ from ember.position import (
     SequencePositionType,
 )
 
-T = TypeVar("T", bound="Element", covariant=True)
 
-
-class ViewLayer(CanHandleFocus, SingleElementContainer[T]):
+class ViewLayer(CanHandleFocus, SingleElementContainer):
     def __init__(
         self,
         element: Optional["Element"],

@@ -18,12 +18,12 @@ class SpringAnimationContext(AnimationContext):
 
 class Spring(Animation):
     def __init__(
-        self, stiffness: float, mass: float, damping: float
+        self, stiffness: float, mass: float, damping: float, weak: bool = False
     ) -> None:
         self.stiffness: float = stiffness
         self.mass: float = mass
         self.damping: float = damping
-        self._duration: float = int(20 * (2 * math.pi * math.sqrt(mass / stiffness)))
+        super().__init__(weak=weak)
 
     def _update(self, context: "SpringAnimationContext") -> bool:
         s = context.position

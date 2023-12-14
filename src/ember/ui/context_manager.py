@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Self, Optional
+from typing import TYPE_CHECKING, Self, Optional, Sequence
 from abc import ABC, abstractmethod
 
 if TYPE_CHECKING:
@@ -31,12 +31,11 @@ class ContextManager(ABC):
         self.context_stack.pop()
         
         # Only attribute elements that aren't already attributed to an element.
-        for element in self.context_queue:
-            if element.parent is None:
-                self._attribute_element(element)
+        if elements := [i for i in self.context_queue if i.parent is None]:
+            self._attribute_elements(elements)
         self.context_queue.clear()
 
     @abstractmethod
-    def _attribute_element(self, element: "Element") -> None:
-        pass
+    def _attribute_elements(self, elements: Sequence["Element"]) -> None:
+        ...
 

@@ -1,5 +1,6 @@
 import pygame
 import time
+from abc import ABCMeta
 from .. import event as ember_event
 from .. import common as _c
 from .. import log
@@ -34,8 +35,21 @@ DPAD_NAMES = {
     14: _c.FocusDirection.RIGHT,
 }
 
+class ViewMeta(ABCMeta):
+    _context_stack: list["View"] = []
 
-class View(ContextManager):
+    def __enter__(cls) -> "View":
+        new = cls()
+        new.__enter__()
+        ViewMeta._context_stack.append(new)
+        return new
+
+    def __exit__(cls, *args):
+        cont = ViewMeta._context_stack.pop()
+        cont.__exit__(*args)
+
+
+class View(ContextManager, metaclass=ViewMeta):
     @overload
     def __init__(
         self,
@@ -299,8 +313,9 @@ class View(ContextManager):
                 elif event.button in DPAD_NAMES:
                     layer.shift_focus(DPAD_NAMES[event.button])
 
-    def _attribute_element(self, element: "Element") -> None:
-        self.append(element)
+    def _attribute_elements(self, elements: Sequence["Element"]) -> None:
+        for element in elements:
+            self.append(element)
 
     @overload
     def append(

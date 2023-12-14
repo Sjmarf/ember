@@ -3,6 +3,8 @@ from ..common import SequenceElementType, FocusType
 from typing import Optional, Union, Sequence
 
 from ember.ui.stack import Stack
+from ember.ui.can_pivot import VerticalLocked
+
 from ember.size import SizeType, OptionalSequenceSizeType
 from ember.position import (
     PositionType,
@@ -12,7 +14,8 @@ from ..spacing import SpacingType
 
 from ember.trait.cascading_trait_value import CascadingTraitValue
 
-class VStack(Stack):
+
+class VStack(VerticalLocked, Stack):
     def __init__(
         self,
         *elements: Optional[SequenceElementType],

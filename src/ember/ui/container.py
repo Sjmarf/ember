@@ -53,7 +53,7 @@ class Container(Element, ABC, metaclass=ContainerMeta):
     Base class for Containers. Should not be instantiated directly.
     """
 
-    text_class: Type["Text"] = Text
+    text_class: Type["Text"] | None = None
 
     def __init__(
         self,
@@ -162,6 +162,10 @@ class Container(Element, ABC, metaclass=ContainerMeta):
     @abstractmethod
     def _elements_to_render(self) -> Iterable[Element]:
         ...
+       
+    @abstractmethod
+    def remove_child(self, element: Element) -> None:
+        ...
 
     def make_visible(self, element: Element) -> None:
         self.parent.make_visible(element)
@@ -171,6 +175,8 @@ class Container(Element, ABC, metaclass=ContainerMeta):
         self, element: ElementType, update: bool = True
     ) -> Generator[Optional["Element"], None, None]:
         if isinstance(element, str):
+            if self.text_class is None:
+                raise ValueError("Cannot convert str to Text element because no Text element is asssigned to the Container. Use a styled container or pass a Text element directly instead.")
             element = self.text_class(element)
 
         if element is not None:
