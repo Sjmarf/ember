@@ -98,7 +98,7 @@ class InteractiveLinearGauge(Gauge, CanDisable, CanFocus, ClickActivateHybrid, C
             return True
 
         if event.type == pygame.KEYDOWN and self.activated:
-            if event.key == (pygame.K_LEFT, pygame.K_DOWN)[self.axis]:
+            if event.key == (pygame.K_RIGHT, pygame.K_DOWN)[self.axis]:
                 progress = - 1 / (self.keyboard_adjustment_steps - 1)
                 if self.axis == VERTICAL and self.invert_y_axis:
                     progress *= -1
@@ -107,7 +107,7 @@ class InteractiveLinearGauge(Gauge, CanDisable, CanFocus, ClickActivateHybrid, C
                     self.ValueCause.KEY,
                 )
                 return True
-            elif event.key == (pygame.K_RIGHT, pygame.K_UP)[self.axis]:
+            elif event.key == (pygame.K_LEFT, pygame.K_UP)[self.axis]:
                 progress = 1 / (self.keyboard_adjustment_steps - 1)
                 if self.axis == VERTICAL and self.invert_y_axis:
                     progress *= -1

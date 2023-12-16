@@ -3,7 +3,7 @@
 Styling Elements
 ===================================================
 
-Ember comes with a number of 'ui styles' built-in. Each style is stored as a submodule of :code:`ember.style`, and must be imported explicitly to be used. Each style contains a number of Element classes similar to those found under :code:`ember.ui`. These classes inherit from :code:`ember.ui` elements, and extend them to provide additional functionality.
+Ember comes with a number of 'UI styles' built-in. Each style is stored as a submodule of :code:`ember.style`, and must be imported explicitly to be used. Each style contains a number of Element classes similar to those found under :code:`ember.ui`. These classes inherit from :code:`ember.ui` elements, and extend them to provide additional functionality.
 
 You can import a UI style as shown below. The only style available right now is :code:`pixel_dark`, which is a pixel-art style. By release, we'll have a wider range of both pixel-art and non-pixel-art styles to choose from.
 
@@ -16,7 +16,7 @@ In this chapter, we'll cover how to use the built-in styles. In later chapters, 
 Generic setup
 ----------------
 
-The :code:`pixel_dark` style is a pixel art style. Because the pixel art is rendered at a small scale, we'll have to create an intermediate surface to draw the UI on, which we will then scale and draw to the display surface. This is standard practise when creating pixel art games in Pygame.
+The :code:`pixel_dark` style is a pixel art style. Because the pixel art is rendered at a small scale, we'll have to create an intermediate surface to draw the UI on, which we will then scale and draw to the display surface. This is standard practice when creating pixel art games in Pygame.
 
 Here's an example showing how you might do this. Note the :code:`ember.set_display_zoom` call, which is highlighted. This tells ember how much it should scale the mouse position readings by. It does not affect how ember renders the UI.
 
@@ -81,9 +81,8 @@ Previously, we've created buttons with backgrounds like so:
 
     with ember.View() as view:
         with ember.Button(size=(200, 50)):
-            with ember.ZStack(size=ember.FILL):
-                ember.Panel("red")
-                ember.Text("Click me!", color="white", font=font)
+            ember.Panel("red")
+            ember.Text("Click me!", color="white", font=font)
 
 
 :py:class:`ui.Button<ember.style.pixel_dark.Button>` makes this syntax much simpler. It creates a :py:class:`Panel<ember.ui.Panel>` internally when you create the button, so that you don't have to specify it yourself.

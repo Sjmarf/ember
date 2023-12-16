@@ -46,7 +46,7 @@ from . import log
 from . import style
 
 from . import size
-from .size import FIT, FILL, Size, ClampedSize, RATIO
+from .size import FIT, FILL, Size, Clamped, RATIO
 
 from .axis import HORIZONTAL, VERTICAL, Axis
 

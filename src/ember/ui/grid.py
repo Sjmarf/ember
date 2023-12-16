@@ -21,7 +21,7 @@ from .can_pivot import CanPivot
 
 from ember.trait.trait import Trait
 from ember.spacing import SpacingType, FILL_SPACING, load_spacing, Spacing
-from ember.size import FillSize, FitSize, AbsoluteSize
+from ember.size import Fill, Fit, Absolute
 from ember.position import CENTER, load_position, PositionType
 
 if TYPE_CHECKING:

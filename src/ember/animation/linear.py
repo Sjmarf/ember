@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Generator
 from .animation import Animation, AnimationContext
 
 from .. import common as _c
@@ -9,6 +9,8 @@ class Linear(Animation):
         self.duration: float = duration
         super().__init__(weak=weak)
 
-    def _update(self, context: "AnimationContext") -> bool:
-        context.value += _c.delta_time / self.duration
-        return context.value >= 1
+    def steps(self) -> Generator[float, None, None]:
+        progress = 0
+        while progress < 1:
+            progress += _c.delta_time / self.duration
+            yield progress

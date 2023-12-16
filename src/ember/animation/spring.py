@@ -1,5 +1,5 @@
 import math
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, Generator
 from .animation import Animation, AnimationContext
 
 if TYPE_CHECKING:
@@ -7,14 +7,7 @@ if TYPE_CHECKING:
 
 from .. import common as _c
 
-class SpringAnimationContext(AnimationContext):
-    def __init__(
-        self, anim: "Spring", trait: "Trait", old_value: Any, new_value: Any
-    ) -> None:
-        super().__init__(anim, trait, old_value, new_value)
-        self.position: float = 1
-        self.velocity: float = 0
-        self.increasing: bool = True
+
 
 class Spring(Animation):
     def __init__(
@@ -25,24 +18,24 @@ class Spring(Animation):
         self.damping: float = damping
         super().__init__(weak=weak)
 
-    def _update(self, context: "SpringAnimationContext") -> bool:
-        s = context.position
-        v = context.velocity
 
-        spring_force = (-self.stiffness) * s
-        damping_force = (-self.damping) * v
+    def steps(self) -> Generator[float, None, None]:
+        s: float = 1.0
+        v: float = 0.0
+        
+        while True:
+            spring_force = (-self.stiffness) * s
+            damping_force = (-self.damping) * v
 
-        a = (spring_force + damping_force) / self.mass
-        v += a * _c.delta_time
-        s += v * _c.delta_time
+            a = (spring_force + damping_force) / self.mass
+            
+            new_v = a * _c.delta_time
 
-        context.velocity = v
-        context.position = s
-
-        context.value = 1 - context.position
-        return False
-
-    def create_context(
-        self, trait: "Trait", old_value: Any, new_value: Any
-    ) -> SpringAnimationContext:
-        return SpringAnimationContext(self, trait, old_value, new_value)
+            if v < 0 and new_v > 0 or v > 0 and new_v < 0:
+                if abs(s) < 0.0001:
+                    return
+                
+            v += a * _c.delta_time
+            s += v * _c.delta_time
+            yield 1-s
+            

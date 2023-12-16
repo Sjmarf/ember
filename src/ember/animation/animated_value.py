@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Any
 from abc import ABC, abstractmethod
-from ..size import Size, InterpolatedSize
+from ..size import Size, Interpolated
 from ember.position import Position, InterpolatedPosition
 from ..spacing import Spacing, InterpolatedSpacing
 
@@ -20,10 +20,10 @@ class AnimatedValue(ABC):
 
 class AnimatedSizeValue(AnimatedValue):
     def __init__(self, old_value: Size, new_value: Size) -> None:
-        self.value: InterpolatedSize = InterpolatedSize(old_value, new_value)
+        self.value: Interpolated = Interpolated(old_value, new_value)
         super().__init__(old_value, new_value)
 
-    def _get_value(self, context: "AnimationContext") -> InterpolatedSize:
+    def _get_value(self, context: "AnimationContext") -> Interpolated:
         self.value.progress = context.value
         return self.value
 

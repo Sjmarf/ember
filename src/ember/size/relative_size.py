@@ -17,7 +17,7 @@ class RelativeSize(Size):
         super().__init__()
 
     def __repr__(self) -> str:
-        return f"<{type(self).__name__}({self._fraction * 100: .2f}% + {self._offset}px)>"
+        return f"<{type(self).__name__}({self._fraction * 100:.2f}% + {self._offset}px)>"
 
     def __eq__(self, other):
         if isinstance(other, RelativeSize):

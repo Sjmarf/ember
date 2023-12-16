@@ -221,17 +221,17 @@ In addition to accepting integers as size values, Elements can accept a number o
 These size types are available from the :code:`ember.size` module, and allow elements to have 'implicit' sizes - this means that
 the integer values represented by these size types aren't absolute; instead, their values are based on some condition.
 
-One of these size types is :py:class:`ember.size.FitSize`. When used as a size value for a Container, it tells the Container to set its width/height
+One of these size types is :py:class:`ember.size.Fit`. When used as a size value for a Container, it tells the Container to set its width/height
 relative to the width/height of its contents. In the example above, we can use this size type inplace of :code:`(200, 100)` as the size of the HStack.
 This means that if we change the contents of the HStack later, we won't need to update the size of the container to match. This is a huge benefeit when
 you have a large element tree with many elements that need to depend on the size of their contents.
 
-Let's create a :py:class:`FitSize<ember.size.FitSize>` object, and use it as the size for our HStack. The same FitSize instance can be used in as many
+Let's create a :py:class:`ember.size.Fit` object, and use it as the size for our HStack. The same size.Fit instance can be used in as many
 places as you like - you don't need to create a new one each time if you don't want to.
 
 .. code-block:: python
 
-    fit_size = ember.size.FitSize()
+    fit_size = ember.size.Fit()
 
     view = ember.View(
         ember.HStack(
@@ -242,9 +242,9 @@ places as you like - you don't need to create a new one each time if you don't w
     )
 
 The HStack will still have a size of :code:`(200, 100)` after this modification, because that is the exact size taken up by the two Panels when placed side-by-side.
-FitSize can optionally accept a couple of keyword arguments that modify its behaviour - we'll look at those later.
+Fit can optionally accept a couple of keyword arguments that modify its behaviour - we'll look at those later.
 
-Because :py:class:`FitSize<ember.size.FitSize>` is used very frequently in ember, an instance of it is available as :code:`ember.FIT` for convenience:
+Because :py:class:`Fit<ember.size.Fit>` is used very frequently in ember, an instance of it is available as :code:`ember.FIT` for convenience:
 
 
 .. code-block:: python
@@ -458,7 +458,8 @@ We can modify the contents of Text after its creation using the :py:meth:`set_te
 Buttons
 ------------------------
 
-Lets look at our first interactive element - the :py:class:`Button<ember.ui.Button>`. Button is a container that can hold one element.
+Lets look at our first interactive element - the :py:class:`Button<ember.ui.Button>`. Button is a container that can hold only one element. This is different from the 
+other containers we have looked at, which can hold many elements.
 
 .. image:: _static/element_guide/button1.png
   :width: 160
@@ -470,9 +471,23 @@ Lets look at our first interactive element - the :py:class:`Button<ember.ui.Butt
 
     with ember.View() as view:
         with ember.Button(size=(200, 50)):
-            with ember.ZStack(size=ember.FILL):
+            with ember.ZStack(size=(200, 50)):
                 ember.Panel("red", size=(200, 50))
                 ember.Text("Click me!", color="white", font=font)
+
+
+If you add more than one element to the Button using `with` syntax, it will wrap them in a :py:class`ember.ui.ZStack` for you. This saves us having to explicitly 
+instantiate the `ZStack` ourselves. Therefore, the above code can be rewritten with the `ZStack` definition omitted to produce identical results:
+
+.. code-block:: python
+
+    font = ember.PygameFont("arial", 40)
+
+    with ember.View() as view:
+        with ember.Button(size=(200, 50)):
+            ember.Panel("red", size=(200, 50))
+            ember.Text("Click me!", color="white", font=font)
+
 
 When the user clicks the Button, an :code:`ember.CLICKDOWN` event is emitted. You can listen for this event in the Pygame event stack just like you would with any Pygame event.
 The :code:`ember.CLICKDOWN` Event object has the :code:`element` attribute, which is a reference to the element that posted the event.
@@ -489,10 +504,10 @@ Example usage:
 'Fill' Sizes
 ------------------------
 
-Previously, we've used :py:class:`ember.size.FitSize` to make an element shrink to fit the size of it's contents.
-Now, we'll look at :py:class:`ember.size.FillSize`. Elements with a FillSize will _expand_ to fill the maximum space available.
+Previously, we've used :py:class:`ember.size.Fit` to make an element shrink to fit the size of it's contents.
+Now, we'll look at :py:class:`ember.size.Fill`. Elements with a Fill will _expand_ to fill the maximum space available.
 
-Just like with FitSize and :code:`ember.FIT`, an instance of FillSize is available as :code:`ember.FILL` for convenience.
+Just like with Fit and :code:`ember.FIT`, an instance of Fill is available as :code:`ember.FILL` for convenience.
 
 Consider this example:
 
@@ -619,32 +634,32 @@ You are of course free to look at any of the example code above whilst designing
 Modifying size type parameters
 ---------------------------------------------
 
-We can specify paramets for :py:class:`ember.size.FitSize` and :py:class:`ember.size.FillSize` to modify their behaviour. Both size types accept two parameters.
+We can specify paramets for :py:class:`ember.size.Fit` and :py:class:`ember.size.Fill` to modify their behaviour. Both size types accept two parameters.
 The first is called :code:`fraction`:
 
 .. code-block:: python
 
     # This represents half of the width/height available to expand into
-    fill_size = ember.size.FillSize(fraction=0.5)
+    fill_size = ember.size.Fill(fraction=0.5)
 
     # This represents double the width/height of the container's contents
-    fit_size = ember.size.FitSize(fraction=2)
+    fit_size = ember.size.Fit(fraction=2)
 
 Additionally, we can specify the :code:`offset` parameter to add or subtract a numerical value from the size.
 
 .. code-block:: python
 
     # This represents 10 pixels less than the width/height available to expand into
-    fill_size = ember.size.FillSize(offset=-10)
+    fill_size = ember.size.Fill(offset=-10)
 
     # This represents 10 pixels more than the width/height of the container's contents
-    fit_size = ember.size.FitSize(offset=10)
+    fit_size = ember.size.Fit(offset=10)
 
 We can use the :code:`+-*/` operators to modify these values, too. When you use these operators on a size type, a new size type will be returned with the adjustments made.
 
 .. code-block:: python
 
-    # This is equivalent to ember.size.FillSize(offset=-10)
+    # This is equivalent to ember.size.Fill(offset=-10)
     fill_size = ember.FILL - 10
 
 Element Positioning

@@ -6,7 +6,7 @@ from .base.surfacable import Surfacable
 if TYPE_CHECKING:
     pass
 
-from ..size import FIT, SizeType, OptionalSequenceSizeType, FitSize
+from ..size import FIT, SizeType, OptionalSequenceSizeType, Fit
 from ember.position import PositionType, SequencePositionType
 
 
@@ -65,7 +65,7 @@ class Surface(Surfacable):
 
     
     def _update_min_size(self) -> None:
-        if isinstance(self.w, FitSize):
+        if isinstance(self.w, Fit):
             if self._surface is not None:
                 self._min_w = (
                     self._surface.get_width() * self.w.fraction
@@ -74,7 +74,7 @@ class Surface(Surfacable):
             else:
                 self._min_w = 20
 
-        if isinstance(self._h, FitSize):
+        if isinstance(self._h, Fit):
             if self._surface is not None:
                 self._min_h = (
                     self._surface.get_height() * self._h.fraction

@@ -3,12 +3,10 @@ from .relative_size import RelativeSize
 
 from ember.axis import Axis, VERTICAL
 
-class FitSize(RelativeSize):
+class Fit(RelativeSize):
     """
     Represents a size relative to the minimum number of pixels available.
     """
-
-    relies_on_min_value = True
-
-    def get(self, min_value: float = 0, max_value: Optional[float] = None, other_value: float = 0, axis: Axis = VERTICAL) -> float:
+    
+    def _get(self, min_value: float) -> float:
         return min_value * self._fraction + self._offset

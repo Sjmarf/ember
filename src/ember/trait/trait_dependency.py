@@ -15,16 +15,24 @@ class TraitDependency(ABC):
         self.trait_contexts: WeakSet[TraitContext] = WeakSet()
         self._parent_dependencies: WeakSet[TraitDependency] = WeakSet()
         
+    def child_updated(self):
+        ...
+        
     @classmethod
     def triggers_trait_update(cls, func: Callable[P, None]) -> None:
         def wrapper(self, *args: P.args, **kwargs: P.kwargs) -> None:
-            with log.size.indent("Value was updated, triggering trait update...", self):
-                gen = self.trait_update_chain()
-                next(gen)
-                log.size.info("Updating value...", self)
+            with self.trait_update():
                 func(self, *args, **kwargs)
-                next(gen)
         return wrapper
+    
+    @contextmanager
+    def trait_update(self):
+        with log.size.indent("Value was updated, triggering trait update...", self):
+            gen = self.trait_update_chain()
+            next(gen)
+            log.size.info("Updating value...", self)
+            yield
+            next(gen)
     
     def trait_update_chain(self) -> Generator[None, None, None]:
         log.size.info("Copy made...", self)
@@ -32,12 +40,14 @@ class TraitDependency(ABC):
         parents = [i.trait_update_chain() for i in self._parent_dependencies]
         [next(i) for i in parents]
         yield
+        self.child_updated()
         for context in self.trait_contexts:
             log.size.info(f"Updating TraitContext for {context._element}...", self)
             context.update_existing_value(old_value, self)
         [next(i) for i in parents]
         yield
-    
+
     @abstractmethod
     def copy(self) -> "TraitDependency":
         ...
+    
