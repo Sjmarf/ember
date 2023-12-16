@@ -46,10 +46,10 @@ class CanPivot(Element, ABC):
         )
 
     def get_w(self, max_width: float = 0) -> float:
-        return self.w.get(self._min_size.w, max_width, self.rect.h, self.axis)
+        return self.w.get(self._min_size.w, max_width, self.rect.h, axis=self.axis)
 
     def get_h(self, max_height: float = 0) -> float:
-        return self.h.get(self._min_size.h, max_height, self.rect.w, self.axis)
+        return self.h.get(self._min_size.h, max_height, self.rect.w, axis=self.axis)
 
 
 Element._CanPivot = CanPivot

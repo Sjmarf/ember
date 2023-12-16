@@ -1,7 +1,7 @@
 from typing import TypeVar, Generic, Optional, TYPE_CHECKING, Union
 
 from .. import log
-from ..animation import Animation
+from ..animation import Animation, AnimationContext
 from .trait_layer import TraitLayer
 from . import trait_layer
 
@@ -32,9 +32,9 @@ class TraitContext(Generic[T]):
         if self.value is not None:
             trait.activate_value(self.value, self._element)
 
-        self.animation_value: Union[T, "TraitValue", None] = None
-        self.element_value: Union[T, "TraitValue", None] = None
-        self.parent_value: Union[T, "TraitValue", None] = None
+        self.animation_value: Union[T, "Trait", None] = None
+        self.element_value: Union[T, "Trait", None] = None
+        self.parent_value: Union[T, "Trait", None] = None
 
         self._children: list["TraitContext"] = []
 
@@ -47,14 +47,14 @@ class TraitContext(Generic[T]):
             f"default={self.trait.default_value})>"
         )
 
-    def __getitem__(self, item: TraitLayer) -> Union[T, "TraitValue", None]:
+    def __getitem__(self, item: TraitLayer) -> Union[T, "Trait", None]:
         if item == TraitLayer.ELEMENT:
             return self.element_value
         if item == TraitLayer.PARENT:
             return self.parent_value
         return self.animation_value
     
-    def __setitem__(self, layer: TraitLayer, value: Union[T, "TraitValue", None]) -> None:
+    def __setitem__(self, layer: TraitLayer, value: Union[T, "Trait", None]) -> None:
         if layer == TraitLayer.ELEMENT:
             self.element_value = value
         elif layer == TraitLayer.PARENT:
@@ -98,7 +98,7 @@ class TraitContext(Generic[T]):
 
             if (anim := Animation.animation_stack[-1]) is not None:
                 log.trait.info("Animating value...")
-                context = anim.create_context(self, old_val, self.value)
+                context = AnimationContext(anim, self, old_val, self.value)
 
                 self._element._animation_contexts.append(context)
                 val = context.target._get_value(context)

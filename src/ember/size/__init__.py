@@ -1,12 +1,12 @@
 from .size import Size, SizeType, SequenceSizeType, OptionalSequenceSizeType, PivotableSize, load_size
-from .absolute_size import AbsoluteSize
-from .fit_size import FitSize
-from .fill_size import FillSize
-from .interpolated_size import InterpolatedSize
-from .clamped_size import ClampedSize
-from .resizable_size import ResizableSize
-from .ratio_size import RatioSize
+from .absolute_size import Absolute
+from .fit_size import Fit
+from .fill_size import Fill
+from .interpolated_size import Interpolated
+from .clamped_size import Clamped
+#from .resizable_size import ResizableSize
+from .ratio_size import Ratio
 
-FIT = FitSize()
-FILL = FillSize()
-RATIO = RatioSize()
+FIT = Fit()
+FILL = Fill()
+RATIO = Ratio()

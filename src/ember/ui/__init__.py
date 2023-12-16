@@ -17,7 +17,7 @@ from .divider import Divider
 
 from .box import Box
 from .masked_container import MaskedBox
-from .resizable import Resizable
+#from .resizable import Resizable
 # from .section import Section
 
 from .button import Button

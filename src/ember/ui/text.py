@@ -8,7 +8,7 @@ from ..font.base_font import Font
 from ..font.line import Line
 from ..font.variant import TextVariant
 
-from ..size import SizeType, OptionalSequenceSizeType, FitSize
+from ..size import SizeType, OptionalSequenceSizeType, Fit
 from ember.position import (
     PositionType,
     SequencePositionType,
@@ -163,7 +163,7 @@ class Text(MultiLayerSurfacable):
         Recreate the text surfaces and apply materials to them.
         """
         max_width = (
-            None if self.rect.w == 0 or isinstance(self.w, FitSize) else self.rect.w
+            None if self.rect.w == 0 or isinstance(self.w, Fit) else self.rect.w
         )
         
         surfaces, self.lines = self.font.render(

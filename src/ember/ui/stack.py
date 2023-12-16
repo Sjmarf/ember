@@ -20,7 +20,7 @@ from .can_pivot import CanPivot
 
 from ember.trait.trait import Trait
 from ember.spacing import SpacingType, FILL_SPACING, load_spacing
-from ember.size import FillSize, FitSize, AbsoluteSize
+from ember.size import Fill, Fit, Absolute
 
 if TYPE_CHECKING:
     pass
@@ -63,7 +63,7 @@ class Stack(FocusPassthroughContainer, CanPivot):
         for n, element in enumerate(
             sorted(
                 elements,
-                key=lambda i: (int(i.rel_size1.relies_on_max_value)),
+                key=lambda i: (int(i.rel_size1.max_value_intent)),
             )
         ):
             element: Element
@@ -86,22 +86,16 @@ class Stack(FocusPassthroughContainer, CanPivot):
 
         for element_n, element in enumerate(elements):
             element_rel_size1 = element_sizes[element]
-            element_rel_pos2 = element.rel_pos2.get(
-                self.rect[3 - self.axis],
-                element.get_abs_rel_size2(
-                    self.rect[3 - self.axis] - abs(element.rel_pos2.value)
-                ),
-                self.axis,
-            )
+            element_rel_size2 = element.get_abs_rel_size2(self.rect[3 - self.axis] - abs(element.rel_pos2.value))
+            
+            element_rel_pos2 = element.rel_pos2.get(self.rect[3 - self.axis], element_rel_size2, self.axis)
 
             element.update_rect(
                 surface,
                 rel_pos1=self.rect[self.axis] + element_rel_pos1,
                 rel_pos2=self.rect[1 - self.axis] + element_rel_pos2,
                 rel_size1=element_rel_size1,
-                rel_size2=element.get_abs_rel_size2(
-                    self.rect[3 - self.axis] - abs(element.rel_pos2.value)
-                ),
+                rel_size2=element_rel_size2
             )
 
             element.visible = True
@@ -123,7 +117,7 @@ class Stack(FocusPassthroughContainer, CanPivot):
             size = 0
             for i in self.elements:
                 if i is not None:
-                    if not isinstance(i.rel_size1, FillSize):
+                    if not isinstance(i.rel_size1, Fill):
                         size += i.get_abs_rel_size1()
 
             self._min_size[self.axis] = size + self.spacing.get_min() * (

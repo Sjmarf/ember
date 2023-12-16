@@ -1,33 +1,38 @@
 from typing import Optional
-from .size import Size
+from .size import Size, SizeType, load_size
 
 from ember.axis import Axis, VERTICAL
 
+from ember.trait.dependency_child import DependencyChild
 
-class InterpolatedSize(Size):
+class Interpolated(Size):
     """
     Used by animations to interpolate between two other Size objects.
     """
-
-    def _relies_on_min_value(self) -> bool:
-        return self.old_size.relies_on_min_value or self.new_size.relies_on_min_value
-
-    relies_on_min_value = property(fget=_relies_on_min_value)
+    
+    old_size: DependencyChild[SizeType | None, Size | None] = DependencyChild(load_value_with=load_size)
+    new_size: DependencyChild[SizeType | None, Size | None] = DependencyChild(load_value_with=load_size)
 
     def __init__(self, old_size: "Size", new_size: "Size", progress: float = 0) -> None:
+        self._progress: float = progress
+        self._old_size = None
+        self._new_size = None
+        super().__init__()
+         
         self.old_size: "Size" = old_size
         self.new_size: "Size" = new_size
-        self.progress: float = progress
-        super().__init__()
 
     def __eq__(self, other):
-        if isinstance(other, InterpolatedSize):
+        if isinstance(other, Interpolated):
             return (
-                self.progress == other.progress
-                and self.old_size == other.old_size
-                and self.new_size == other.new_size
+                self._progress == other._progress
+                and self._old_size == other._old_size
+                and self._new_size == other._new_size
             )
         return False
+    
+    def __hash__(self) -> int:
+        return hash((self._progress, self._old_size, self._new_size))
 
     def __repr__(self) -> str:
         return f"<InterpolatedSize({self.old_size} -> {self.new_size}: {self.progress*100: .0f}%)>"
@@ -37,16 +42,19 @@ class InterpolatedSize(Size):
             value
         ) or self.old_size.update_pair_value(value)
 
-    def get(
-        self,
-        min_value: float = 0,
-        max_value: Optional[float] = None,
-        other_value: float = 0,
-        axis: Axis = VERTICAL,
-    ) -> float:
-        old_val = self.old_size.get(min_value, max_value, other_value, axis)
-        new_val = self.new_size.get(min_value, max_value, other_value, axis)
+    def _get(self, *args, **kwargs) -> float:
+        old_val = self.old_size.get(*args, **kwargs)
+        new_val = self.new_size.get(*args, **kwargs)
         return round(old_val + (new_val - old_val) * self.progress)
 
-    def copy(self) -> "InterpolatedSize":
-        return InterpolatedSize(self.old_size, self.new_size, progress=self.progress)
+    def copy(self) -> "Interpolated":
+        return Interpolated(self.old_size, self.new_size, progress=self.progress)
+
+    @property
+    def progress(self) -> float:
+        return self._progress
+    
+    @progress.setter
+    @Size.triggers_trait_update
+    def progress(self, value: float) -> None:
+        self._progress = value    

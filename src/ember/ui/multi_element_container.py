@@ -10,7 +10,7 @@ from ember.common import (
 from ember import log
 from ember.ui.element import Element
 
-from ember.size import FillSize
+from ember.size import Fill
 
 from .container import Container
 from .context_manager import ContextManager

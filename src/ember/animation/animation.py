@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 import copy
-from typing import Any, TYPE_CHECKING, Optional
+from typing import Any, TYPE_CHECKING, Optional, Generator
 
 if TYPE_CHECKING:
     from ember.trait.trait_context import TraitContext
 
-from .animation_context import AnimationContext, SimpleAnimationContext
+from .animation_context import AnimationContext
 
 
 class Animation(ABC):
@@ -31,24 +31,10 @@ class Animation(ABC):
         new.weak = True
         return new
 
-    def create_context(
-        self, trait_context: "TraitContext", old_value: Any, new_value: Any
-    ) -> AnimationContext:
-        return AnimationContext(self, trait_context, old_value, new_value)
-
     @abstractmethod
-    def _update(self, context: "AnimationContext") -> bool:
+    def steps(self) -> Generator[float, None, None]:
         ...
 
-class SimpleAnimation(Animation, ABC):
-    def __init__(self, duration: float, weak: bool = False) -> None:
-        self.duration: float = duration
-        super().__init__(weak=weak)
-
-    def create_context(
-        self, trait_context: "TraitContext", old_value: Any, new_value: Any
-    ) -> SimpleAnimationContext:
-        return SimpleAnimationContext(self, trait_context, old_value, new_value)
 
 class AnimationEscaping:
     def __enter__(self):

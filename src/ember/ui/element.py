@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 from ember.ui.context_manager import ContextManager
 from ember.animation.animation import AnimationContext, Animation
-from ember.size import Size, SizeType, OptionalSequenceSizeType, FIT, FitSize
+from ember.size import Size, SizeType, OptionalSequenceSizeType, FIT, Fit
 from ember.position import (
     Position,
     PositionType,
@@ -229,8 +229,8 @@ class Element(abc.ABC, metaclass=ElementMeta):
                 filter(lambda a: a is not self, self.layer.rect_update_queue)
             )
 
-        if self.w.relies_on_other_value:
-            if round(h, 5) != round(self.rect.h, 5):
+        if self.w.other_value_intent:
+            if round(h, 3) != round(self.rect.h, 3):
                 log.size.info(
                     f"Height was changed ({self.rect.h} -> {h}) and width calculation relies on height, queueing...",
                     self,
@@ -239,8 +239,8 @@ class Element(abc.ABC, metaclass=ElementMeta):
                 self.update_rect_next_tick()
                 return
 
-        if self.h.relies_on_other_value:
-            if round(w, 5) != round(self.rect.w, 5):
+        if self.h.other_value_intent:
+            if round(w, 3) != round(self.rect.w, 3):
                 log.size.info(
                     f"Width was changed ({self.rect.w} -> {w}) and height calculation relies on width, queueing...",
                     self,
@@ -308,8 +308,8 @@ class Element(abc.ABC, metaclass=ElementMeta):
         # If the container is not empty
         if getattr(self, "_elements_to_render", False):
             match (
-                self._min_size.w == 0 and isinstance(self.w, FitSize),
-                self._min_size.h == 0 and isinstance(self.h, FitSize),
+                self._min_size.w == 0 and isinstance(self.w, Fit),
+                self._min_size.h == 0 and isinstance(self.h, Fit),
             ):
                 case (False, False):
                     pass
@@ -467,7 +467,7 @@ class Element(abc.ABC, metaclass=ElementMeta):
         Get the width of the element as a float, given the maximum width to fill.
         """
         return self.w.get(
-            self._min_size.w, max_width, self.rect.h, axis_module.VERTICAL
+            self._min_size.w, max_width, self.rect.h
         )
 
     def get_h(self, max_height: float = 0) -> float:
@@ -475,7 +475,7 @@ class Element(abc.ABC, metaclass=ElementMeta):
         Get the height of the element as a float, given the maximum height to fill.
         """
         return self.h.get(
-            self._min_size.h, max_height, self.rect.w, axis_module.VERTICAL
+            self._min_size.h, max_height, self.rect.w
         )
 
     @property

@@ -1,34 +1,43 @@
-from typing import Optional
-from .animation import SimpleAnimation, SimpleAnimationContext
+from typing import Optional, Generator
+from .animation import Animation
 
 from .. import common as _c
 
 
-class EaseIn(SimpleAnimation):
+class EaseIn(Animation):
+    def __init__(self, duration: float, weak: bool = False) -> None:
+        self.duration: float = duration
+        super().__init__(weak=weak)
 
-    def _update(self, context: "SimpleAnimationContext") -> True:
-        context.progress += _c.delta_time / self.duration
-        context.value = context.progress**2
-        return context.progress >= 1
-
-
-class EaseOut(SimpleAnimation):
-
-    def _update(self, context: "SimpleAnimationContext") -> bool:
-        context.progress += _c.delta_time / self.duration
-        context.value += _c.delta_time / self.duration
-        context.value = context.progress * (2 - context.progress)
-        return context.progress >= 1
+    def steps(self) -> Generator[float, None, None]:
+        progress = 0
+        while progress < 1:
+            progress += _c.delta_time / self.duration
+            yield progress**2
 
 
-class EaseInOut(SimpleAnimation):
+class EaseOut(Animation):
+    def __init__(self, duration: float, weak: bool = False) -> None:
+        self.duration: float = duration
+        super().__init__(weak=weak)
+    
+    def steps(self) -> Generator[float, None, None]:
+        progress = 0
+        while progress < 1:
+            progress += _c.delta_time / self.duration
+            yield progress * (2 - progress)
 
-    def _update(self, context: "SimpleAnimationContext") -> bool:
-        context.progress += _c.delta_time / self.duration
-        x = context.progress
-        if x < 0.5:
-            context.value = 2 * x**2
-        else:
-            x -= 0.5
-            context.value = 2 * x * (1 - x) + 0.5
-        return context.progress >= 1
+
+class EaseInOut(Animation):
+    def __init__(self, duration: float, weak: bool = False) -> None:
+        self.duration: float = duration
+        super().__init__(weak=weak)
+    
+    def steps(self) -> Generator[float, None, None]:
+        progress = 0
+        while progress < 0.5:
+            progress += _c.delta_time / self.duration
+            yield 2 * progress ** 2
+        while progress < 1:
+            progress += _c.delta_time / self.duration
+            yield 2 * (progress - 0.5) * (1.5 - progress) + 0.5

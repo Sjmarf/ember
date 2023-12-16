@@ -23,7 +23,7 @@ from ember.trait.cascading_trait_value import CascadingTraitValue
 from ember.trait import trait_layer
 from ember.trait.trait_layer import TraitLayer
 from ember.ui.text import Text
-from ember.size import FillSize
+from ember.size import Fill
 
 from .element_meta import ElementMeta
 
@@ -119,14 +119,14 @@ class Container(Element, ABC, metaclass=ContainerMeta):
     def _update_min_size(self) -> None:
         self._min_size.w = 0
         for i in self._elements_to_render:
-            if i is None or isinstance(i.w, FillSize):
+            if i is None or isinstance(i.w, Fill):
                 continue
             if (w := i.get_w()) > self._min_size.w:
                 self._min_size.w = w
 
         self._min_size.h = 0
         for i in self._elements_to_render:
-            if i is None or isinstance(i.h, FillSize):
+            if i is None or isinstance(i.h, Fill):
                 continue
             if (h := i.get_h()) > self._min_size.h:
                 self._min_size.h = h
