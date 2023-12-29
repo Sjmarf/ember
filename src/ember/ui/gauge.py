@@ -1,4 +1,5 @@
 import pygame
+from abc import ABC
 from typing import Optional, TYPE_CHECKING
 
 from ember import log
@@ -10,7 +11,7 @@ if TYPE_CHECKING:
     pass
 
 
-class Gauge(Element):
+class Gauge(Element, ABC):
     class ValueCause:
         class Cause:
             __slots__ = ()

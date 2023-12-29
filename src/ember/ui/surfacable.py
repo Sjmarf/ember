@@ -1,9 +1,9 @@
 import abc
 import pygame
 
-from .element import Element
+from .has_geometry import HasGeometry
 
-class Surfacable(Element):
+class Surfacable(HasGeometry):
     """
     Represents an Element that has a surface directly tied to it. :py:class:`ember.transition.SurfaceFade`
     only works with Surfacable elements.

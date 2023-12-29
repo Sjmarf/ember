@@ -3,14 +3,14 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 import pygame
-from .container import Container
+from .geometric_container import GeometricContainer
 from .box import Box
 
 from ember import common as c
 from ember import log
 
 
-class MaskedContainer(Container, ABC):
+class MaskedContainer(GeometricContainer, ABC):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

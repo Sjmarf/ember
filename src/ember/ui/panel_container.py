@@ -31,8 +31,8 @@ class PanelContainer(Container, ABC):
             self._panel = panel
 
     @property
-    def _elements_to_render(self):
-        return itertools.chain((self._panel,), super()._elements_to_render)
+    def _child_elements(self):
+        return itertools.chain((self._panel,), super()._child_elements)
 
 
 class PanelBox(PanelContainer, Box):

@@ -87,7 +87,7 @@ class Grid(FocusPassthroughContainer, CanPivot):
 
         super().__init__(*elements, **kwargs)
 
-    def _get_row_sizes(
+    def _get_row_candidate(
         self, elements: list["Element"], spacing: float, max_items_in_row: int
     ) -> Row:
         unallocated_space = (self.rect[3 - self.axis]) - spacing * (
@@ -111,11 +111,9 @@ class Grid(FocusPassthroughContainer, CanPivot):
                 break
 
         return Grid.Row(max_items=max_items_in_row, start_index=0, sizes=tuple(sizes))
-
-    def _update_rect(
-        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
-    ) -> None:
-        elements = list(self._elements_to_render)
+    
+    def _calculate_child_positions(self):
+        elements = list(self._child_elements)
         min_spacing1 = self.spacing1.get_min()
         min_spacing2 = self.spacing2.get_min()
 
@@ -130,7 +128,7 @@ class Grid(FocusPassthroughContainer, CanPivot):
             previous_row_candidate = Grid.Row(max_items=0, start_index=0, sizes=())
 
             while True:
-                row_candidate = self._get_row_sizes(
+                row_candidate = self._get_row_candidate(
                     elements[start_index:],
                     spacing=min_spacing2,
                     max_items_in_row=max_items_in_row,
@@ -156,7 +154,7 @@ class Grid(FocusPassthroughContainer, CanPivot):
             max_items = max(i.max_items for i in rows)
             for i in range(len(rows)):
                 if rows[i].max_items != max_items:
-                    rows[i] = self._get_row_sizes(
+                    rows[i] = self._get_row_candidate(
                         elements[
                             rows[i].start_index : rows[i].start_index
                             + len(rows[i].sizes)
@@ -167,11 +165,9 @@ class Grid(FocusPassthroughContainer, CanPivot):
 
         # Find the size2 of each element
 
-        elements_iter = iter(elements)
         element_size1s = [
             element.get_abs_rel_size1(self.rect[2 + self.axis]) for element in elements
         ]
-        element_size1s_iter = iter(element_size1s)
 
         # Find the size2s of each row
 
@@ -182,8 +178,24 @@ class Grid(FocusPassthroughContainer, CanPivot):
                 max(element_size1s[start_index : start_index + len(row.sizes)])
             )
             start_index += len(row.sizes)
-        row_size1s_iter = iter(row_size1s)
+        
+        return rows, element_size1s, row_size1s
+        
+        
+        
 
+    def _update_rect(
+        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
+    ) -> None:
+        
+        rows, element_size1s, row_size1s = self._calculate_child_positions()
+        
+        element_size1s_iter = iter(element_size1s)
+        row_size1s_iter = iter(row_size1s)
+        
+        min_spacing1 = self.spacing1.get_min()
+        min_spacing2 = self.spacing2.get_min()
+        
         unallocated_space = (
             self.rect[2 + self.axis]
             - sum(row_size1s)
@@ -202,10 +214,10 @@ class Grid(FocusPassthroughContainer, CanPivot):
             (sum(row_size1s) + spacing1 * (len(row_size1s) - 1)),
             self.axis
             )
-        
-        del element_size1s, row_size1s
-
+            
         # Apply the calculated geometry to the child elements
+
+        elements_iter = iter(self._child_elements)
 
         for row in rows:
             row_size = next(row_size1s_iter)
@@ -247,21 +259,6 @@ class Grid(FocusPassthroughContainer, CanPivot):
             element_rel_pos1 += row_size + spacing1
 
     def _update_min_size(self) -> None:
-        # if self._elements:
-        #     size = 0
-        #     for i in self.elements:
-        #         if i is not None:
-        #             if not isinstance(i.rel_size1, FillSize):
-        #                 size += i.get_abs_rel_size1()
-
-        #     self._min_size[self.axis] = size + self.spacing.get_min() * (
-        #         len(self._elements) - 1
-        #     )
-        #     self._min_size[1-self.axis] = max(
-        #         [i.get_abs_rel_size2() for i in self._elements if i is not None]
-        #         or (20,)
-        #     )
-        # else:
         self._min_size.x, self._min_size.y = 20, 20
 
     def _render(

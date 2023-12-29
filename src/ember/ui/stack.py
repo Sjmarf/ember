@@ -17,6 +17,7 @@ from ember.common import (
 from ember.ui.element import Element
 from .focus_passthrough import FocusPassthroughContainer
 from .can_pivot import CanPivot
+from .geometric_container import GeometricContainer
 
 from ember.trait.trait import Trait
 from ember.spacing import SpacingType, FILL_SPACING, load_spacing
@@ -26,10 +27,10 @@ if TYPE_CHECKING:
     pass
 
 
-class Stack(FocusPassthroughContainer, CanPivot):
+class Stack(FocusPassthroughContainer, CanPivot, GeometricContainer):
     """
     A Stack is a collection of Elements. There are two subclasses of Stack - :py:class:`ember.ui.VStack`
-    and :py:class:`ember.ui.HStack`.
+    and :py:class:`ember.ui.HStack`. Depsite the name, :py:class:`ember.ui.ZStack` is not a subclass.
     """
 
     spacing = Trait(
@@ -45,15 +46,14 @@ class Stack(FocusPassthroughContainer, CanPivot):
         **kwargs,
     ):
         self._first_visible_element: Optional[int] = None
-
         self.spacing = spacing
-
         super().__init__(*elements, **kwargs)
 
     def _update_rect(
         self, surface: pygame.Surface, x: float, y: float, w: float, h: float
     ) -> None:
-        elements = list(self._elements_to_render)
+        elements = tuple(self._elements_to_render)
+ 
         spacing = self.spacing.get_min()
 
         unallocated_space = self.rect[2 + self.axis] - spacing * (len(elements) - 1)
@@ -113,18 +113,19 @@ class Stack(FocusPassthroughContainer, CanPivot):
             element_rel_pos1 += element_rel_size1 + spacing
 
     def _update_min_size(self) -> None:
-        if self._elements:
+        elements = tuple(self._elements_to_render)
+        if elements:
             size = 0
-            for i in self.elements:
+            for i in elements:
                 if i is not None:
                     if not isinstance(i.rel_size1, Fill):
                         size += i.get_abs_rel_size1()
 
             self._min_size[self.axis] = size + self.spacing.get_min() * (
-                len(self._elements) - 1
+                len(elements) - 1
             )
             self._min_size[1-self.axis] = max(
-                [i.get_abs_rel_size2() for i in self._elements if i is not None]
+                [i.get_abs_rel_size2() for i in elements if i is not None]
                 or (20,)
             )
         else:
@@ -133,19 +134,19 @@ class Stack(FocusPassthroughContainer, CanPivot):
     def _render(
         self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
     ) -> None:
-        for n, i in enumerate(self._elements[self._first_visible_element :]):
+        for n, i in enumerate(tuple(self._elements_to_render)[self._first_visible_element :]):
             if not i.visible:
                 break
             i.render(surface, offset, alpha=alpha)
 
     def _update(self) -> None:
-        for i in self._elements[self._first_visible_element :]:
+        for i in tuple(self._elements_to_render)[self._first_visible_element :]:
             i.update()
             if not i.visible:
                 break
 
     def _event(self, event: pygame.event.Event) -> bool:
-        for i in self._elements[self._first_visible_element :]:
+        for i in tuple(self._elements_to_render)[self._first_visible_element :]:
             if i is None:
                 continue
             if i.event(event):

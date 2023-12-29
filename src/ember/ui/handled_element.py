@@ -58,9 +58,9 @@ class HandledElement(Container, ABC):
             self._handle = panel
 
     @property
-    def _elements_to_render(self):
+    def _child_elements(self):
         return itertools.chain(
-            (self._back_panel, self._handle), super()._elements_to_render
+            (self._back_panel, self._handle), super()._child_elements
         )
 
 

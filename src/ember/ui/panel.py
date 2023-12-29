@@ -2,7 +2,7 @@ import pygame
 import math
 from typing import Union, Optional, Sequence
 
-from ember.ui.element import Element
+from .has_geometry import HasGeometry
 from ..size import SizeType, OptionalSequenceSizeType, FILL
 from ember.position import PositionType, SequencePositionType
 
@@ -12,7 +12,7 @@ from ..material.material import Material
 from ..material.color import Color
 
 
-class Panel(Element):
+class Panel(HasGeometry):
     def __init__(
         self,
         material: Union["Material", ColorType, None] = None,

@@ -12,6 +12,8 @@ from typing import (
     Iterable,
 )
 
+pygame.sprite.Sprite
+
 from ember.ui.element import Element
 from ember.ui.context_manager import ContextManager
 
@@ -32,7 +34,6 @@ if TYPE_CHECKING:
 
 
 T = TypeVar("T")
-
 
 class ContainerMeta(ElementMeta):
     _context_stack: list["Container"] = []
@@ -69,7 +70,7 @@ class Container(Element, ABC, metaclass=ContainerMeta):
 
     def _build(self) -> None:
         with Trait.inspecting(Trait.Layer.PARENT), log.size.indent():
-            for element in self._elements_to_render:
+            for element in self._child_elements:
                 if element is not None:
                     self._prepare_element(element)
                     element.build()
@@ -83,59 +84,10 @@ class Container(Element, ABC, metaclass=ContainerMeta):
         with log.cascade.indent(f"Starting descent for {value}", self):
             with Trait.inspecting(Trait.Layer.PARENT):
                 value.prepare_for_descent(self)
-                for element in self._elements_to_render:
+                for element in self._child_elements:
                     if element is not None:
                         element.update_cascading_value(value, value.depth)
         log.cascade.line_break()
-
-    def _render(
-        self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
-    ) -> None:
-        for i in self._elements_to_render:
-            if i is not None:
-                i.render(surface, offset, alpha=alpha)
-
-    def _update(self) -> None:
-        super()._update()
-        for i in self._elements_to_render:
-            if i is not None:
-                i.update()
-
-    def _update_rect(
-        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
-    ) -> None:
-        for element in self._elements_to_render:
-            if element is None:
-                continue
-
-            element_w = element.get_w(w)
-            element_h = element.get_h(h)
-            element_x = x + element.get_x(w, element_w)
-            element_y = y + element.get_y(h, element_h)
-
-            element.visible = self.visible
-            element.update_rect(surface, element_x, element_y, element_w, element_h)
-
-    def _update_min_size(self) -> None:
-        self._min_size.w = 0
-        for i in self._elements_to_render:
-            if i is None or isinstance(i.w, Fill):
-                continue
-            if (w := i.get_w()) > self._min_size.w:
-                self._min_size.w = w
-
-        self._min_size.h = 0
-        for i in self._elements_to_render:
-            if i is None or isinstance(i.h, Fill):
-                continue
-            if (h := i.get_h()) > self._min_size.h:
-                self._min_size.h = h
-
-    def _event(self, event: pygame.event.Event) -> bool:
-        for i in reversed(tuple(self._elements_to_render)):
-            if i is not None and i.event(event):
-                return True
-        return super()._event(event)
 
     def update_ancestry(self, ancestry: list["Element"]) -> None:
         super().update_ancestry(ancestry)
@@ -143,7 +95,7 @@ class Container(Element, ABC, metaclass=ContainerMeta):
         with log.ancestry.indent():
             [
                 i.update_ancestry(child_ancestry)
-                for i in self._elements_to_render
+                for i in self._child_elements
                 if i is not None
             ]
 
@@ -155,12 +107,12 @@ class Container(Element, ABC, metaclass=ContainerMeta):
         if depth == 0:
             return
         with log.cascade.indent():
-            for element in self._elements_to_render:
+            for element in self._child_elements:
                 element.update_cascading_value(value, depth)
 
     @property
     @abstractmethod
-    def _elements_to_render(self) -> Iterable[Element]:
+    def _child_elements(self) -> Iterable[Element]:
         ...
        
     @abstractmethod

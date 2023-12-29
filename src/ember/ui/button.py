@@ -7,6 +7,7 @@ from ember.ui.can_disable import CanDisable
 from ember.ui.can_click import CanClick
 from ember.ui.can_focus import CanFocus
 from ember.ui.single_element_container import SingleElementContainer
+from .geometric_container import GeometricContainer
 from ember.ui.z_stack import ZStack
 
 from ..size import FILL, SizeType, OptionalSequenceSizeType, FIT
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
     pass
 
 
-class Button(CanDisable, CanFocus, CanClick, SingleElementContainer):
+class Button(CanDisable, CanFocus, CanClick, SingleElementContainer, GeometricContainer):
     """
     A Button is an interactive Element. Buttons can hold exactly one child Element, which is rendered on the button.
     When the button is clicked, it will post the :code:`ember.BUTTONCLICKED` event.

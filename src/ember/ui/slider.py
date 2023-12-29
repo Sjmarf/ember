@@ -7,9 +7,10 @@ from ember.ui.panel import Panel
 
 from ..material import Material
 
-from ember.ui.element import Element
+from ember.ui.has_geometry import HasGeometry
 from .handled_element import UpdatingHandleElement
 from .can_pivot import CanPivot
+from .geometric_container import GeometricContainer
 
 from ..event import VALUEMODIFIED
 
@@ -20,7 +21,7 @@ from ember.on_event import on_event
 from ember.axis import Axis, HORIZONTAL
 
 
-class Slider(UpdatingHandleElement, Gauge, SingleElementContainer, CanPivot, ABC):
+class Slider(UpdatingHandleElement, Gauge, CanPivot, SingleElementContainer, GeometricContainer, ABC):
     def __init__(self, *args, axis: Axis | None = None, **kwargs) -> None:
         super().__init__(
             *args, **kwargs, back_panel=Panel(None, y=0, size=FILL), axis=axis
@@ -34,21 +35,21 @@ class Slider(UpdatingHandleElement, Gauge, SingleElementContainer, CanPivot, ABC
 
     def _update_handle_size(self) -> None:
         size = PivotableSize(RATIO, FILL, watching=self)
-        self.cascading.add(Element.w(size))
-        self.cascading.add(Element.h(~size))
+        self.cascading.add(HasGeometry.w(size))
+        self.cascading.add(HasGeometry.h(~size))
 
     @on_event(VALUEMODIFIED)
     def _update_handle_position(self):
         with log.size.indent("Updating bar cascading sizes..."):
             self.cascading.add(
-                Element.x(
+                HasGeometry.x(
                     PivotablePosition(
                         AnchorPosition(percent=self.progress), 0, watching=self
                     )
                 )
             )
             self.cascading.add(
-                Element.y(
+                HasGeometry.y(
                     PivotablePosition(
                         0, AnchorPosition(percent=1 - self.progress), watching=self
                     )

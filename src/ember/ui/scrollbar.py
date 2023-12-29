@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from .gauge import Gauge
 from ember import log
 
-from ember.ui.element import Element
+from ember.ui.has_geometry import HasGeometry
 
 from ..size import FILL, PivotableSize, RATIO
 from ember.position import LEFT, BOTTOM, PivotablePosition, AnchorPosition
@@ -23,8 +23,8 @@ class ScrollBar(Slider, ABC):
 
     def _update_handle_size(self) -> None:
         size = PivotableSize(FILL * self._handle_coverage, FILL, watching=self)
-        self.cascading.add(Element.w(size))
-        self.cascading.add(Element.h(~size))
+        self.cascading.add(HasGeometry.w(size))
+        self.cascading.add(HasGeometry.h(~size))
 
     @property
     def handle_coverage(self) -> float:
@@ -38,14 +38,14 @@ class ScrollBar(Slider, ABC):
     def _update_handle_position(self):
         with log.size.indent("Updating bar cascading sizes..."):
             self.cascading.add(
-                Element.x(
+                HasGeometry.x(
                     PivotablePosition(
                         AnchorPosition(percent=self.progress), 0, watching=self
                     )
                 )
             )
             self.cascading.add(
-                Element.y(
+                HasGeometry.y(
                     PivotablePosition(
                         0, AnchorPosition(percent=self.progress), watching=self
                     )

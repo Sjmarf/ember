@@ -66,7 +66,7 @@ class SingleElementContainer(ContextManager, Container, ABC):
         self.set_element(element)
 
     @property
-    def _elements_to_render(self) -> Iterable[Element]:
+    def _child_elements(self) -> Iterable[Element]:
         return (self._element,)
 
     def set_element(

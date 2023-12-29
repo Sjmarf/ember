@@ -153,7 +153,7 @@ class MultiElementContainer(ContextManager, Container, ABC):
         return self._elements.index(element)
 
     @property
-    def _elements_to_render(self) -> Sequence[Element]:
+    def _child_elements(self) -> Sequence[Element]:
         return self._elements
 
     @property

@@ -10,6 +10,7 @@ from ..common import (
 from typing import Union, Optional, Sequence
 
 from ember.ui.focus_passthrough import FocusPassthroughContainer
+from .geometric_container import GeometricContainer
 from .. import log
 
 from ember.ui.element import Element
@@ -22,7 +23,7 @@ from ember.position import (
 from ..size import SizeType, OptionalSequenceSizeType
 
 
-class ZStack(FocusPassthroughContainer):
+class ZStack(FocusPassthroughContainer, GeometricContainer):
     def __init__(
         self,
         *elements: Optional[SequenceElementType],

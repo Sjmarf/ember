@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 from ember.ui.element import Element
 from ember.ui.single_element_container import SingleElementContainer
 from ember.ui.can_focus import CanHandleFocus, CanFocus
+from .geometric_container import GeometricContainer
 
 from ember.ui.old_scroll import Scroll
 
@@ -22,7 +23,7 @@ from ember.position import (
 )
 
 
-class ViewLayer(CanHandleFocus, SingleElementContainer):
+class ViewLayer(CanHandleFocus, SingleElementContainer, GeometricContainer):
     def __init__(
         self,
         element: Optional["Element"],

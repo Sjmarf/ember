@@ -15,7 +15,7 @@ from ember.axis import HORIZONTAL
 from ember.trait.cascading_trait_value import CascadingTraitValue
 
 
-class HStack(HorizontalLocked, Stack):
+class HStack(Stack):
     def __init__(
         self,
         *elements: Optional[SequenceElementType],
@@ -42,7 +42,8 @@ class HStack(HorizontalLocked, Stack):
             size=size,
             w=w,
             h=h,
-            cascading=cascading
+            cascading=cascading,
+            axis=HORIZONTAL
         )
 
     def __repr__(self) -> str:

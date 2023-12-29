@@ -7,8 +7,9 @@ from ember.ui.single_element_container import SingleElementContainer
 from ember.ui.panel import Panel
 from .can_pivot import CanPivot
 
-from ember.ui.element import Element
+from ember.ui.has_geometry import HasGeometry
 from .handled_element import UpdatingHandleElement
+from .geometric_container import GeometricContainer
 
 from ..event import VALUEMODIFIED
 
@@ -25,7 +26,7 @@ from ember.on_event import on_event
 from ember.axis import Axis, HORIZONTAL
 
 
-class Bar(UpdatingHandleElement, Gauge, SingleElementContainer, CanPivot, ABC):
+class Bar(UpdatingHandleElement, Gauge, SingleElementContainer, CanPivot, GeometricContainer, ABC):
     def __init__(
         self,
         *args,
@@ -59,16 +60,16 @@ class Bar(UpdatingHandleElement, Gauge, SingleElementContainer, CanPivot, ABC):
             **kwargs,
         )
 
-        self.cascading.add(Element.x(PivotablePosition(LEFT, 0, watching=self)))
-        self.cascading.add(Element.y(PivotablePosition(0, BOTTOM, watching=self)))
+        self.cascading.add(HasGeometry.x(PivotablePosition(LEFT, 0, watching=self)))
+        self.cascading.add(HasGeometry.y(PivotablePosition(0, BOTTOM, watching=self)))
 
         size = PivotableSize(FILL * self._progress, FILL, watching=self)
-        self.cascading.add(Element.w(size))
-        self.cascading.add(Element.h(~size))
+        self.cascading.add(HasGeometry.w(size))
+        self.cascading.add(HasGeometry.h(~size))
 
     @on_event(VALUEMODIFIED)
     def _update_panel_sizes(self):
         with log.size.indent("Updating bar cascading sizes..."):
             size = PivotableSize(FILL * self._progress, FILL, watching=self)
-            self.cascading.add(Element.w(size))
-            self.cascading.add(Element.h(~size))
+            self.cascading.add(HasGeometry.w(size))
+            self.cascading.add(HasGeometry.h(~size))

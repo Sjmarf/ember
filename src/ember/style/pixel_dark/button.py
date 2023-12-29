@@ -11,7 +11,7 @@ from ember.on_event import on_event
 
 root = package / "style/pixel_dark/assets/button"
 
-from ember.ui.element import Element
+from ember.ui.has_geometry import HasGeometry
 from ember.event import CLICKEDDOWN, CLICKEDUP
 
 
@@ -38,11 +38,11 @@ class Button(PanelButton, Container):
 
     @on_event(CLICKEDDOWN)
     def _update_content_y_down(self) -> None:
-        self.cascading[Element.y] += 1
+        self.cascading[HasGeometry.y] += 1
 
     @on_event(CLICKEDUP)
     def _update_content_y_up(self) -> None:
-        self.cascading[Element.y] -= 1
+        self.cascading[HasGeometry.y] -= 1
 
 
 Button.w.default_value = 70

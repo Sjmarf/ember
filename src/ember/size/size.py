@@ -88,7 +88,7 @@ class Size(TraitDependency, ABC, metaclass=SizeMeta):
         
     @abstractmethod
     def _get() -> float:
-        pass
+        ...
 
     @abstractmethod
     def copy(self) -> "Size":

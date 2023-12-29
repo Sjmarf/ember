@@ -25,7 +25,7 @@ from ember.position import (
 
 from ember.animation import Animation, EaseInOut
 
-from ember.ui.element import Element
+from ember.ui.has_geometry import HasGeometry
 from ..common import ElementType
 
 from ..on_event import on_event
@@ -67,11 +67,11 @@ class Switch(CanPivot, UpdatingHandleElement, ToggleButton, ABC):
         x = RIGHT if self.active else LEFT
         y = TOP if self.active else BOTTOM
 
-        self.cascading.add(Element.x(PivotablePosition(x, 0, watching=self)))
-        self.cascading.add(Element.y(PivotablePosition(0, y, watching=self)))
+        self.cascading.add(HasGeometry.x(PivotablePosition(x, 0, watching=self)))
+        self.cascading.add(HasGeometry.y(PivotablePosition(0, y, watching=self)))
 
-        self.cascading.add(Element.w(PivotableSize(RATIO, FILL, watching=self)))
-        self.cascading.add(Element.h(PivotableSize(FILL, RATIO, watching=self)))
+        self.cascading.add(HasGeometry.w(PivotableSize(RATIO, FILL, watching=self)))
+        self.cascading.add(HasGeometry.h(PivotableSize(FILL, RATIO, watching=self)))
         
     def __repr__(self) -> str:
         return "<Switch>"
@@ -79,14 +79,14 @@ class Switch(CanPivot, UpdatingHandleElement, ToggleButton, ABC):
     @on_event(TOGGLEDON)
     def _move_handle_active(self):
         with self.animation:
-            self.cascading.add(Element.x(PivotablePosition(RIGHT, 0, watching=self)))
-            self.cascading.add(Element.y(PivotablePosition(0, TOP, watching=self)))
+            self.cascading.add(HasGeometry.x(PivotablePosition(RIGHT, 0, watching=self)))
+            self.cascading.add(HasGeometry.y(PivotablePosition(0, TOP, watching=self)))
 
     @on_event(TOGGLEDOFF)
     def _move_handle_inactive(self):
         with self.animation:
-            self.cascading.add(Element.x(PivotablePosition(LEFT, 0, watching=self)))
-            self.cascading.add(Element.y(PivotablePosition(0, BOTTOM, watching=self)))
+            self.cascading.add(HasGeometry.x(PivotablePosition(LEFT, 0, watching=self)))
+            self.cascading.add(HasGeometry.y(PivotablePosition(0, BOTTOM, watching=self)))
             
 
 Switch.axis.default_value = HORIZONTAL

@@ -3,6 +3,8 @@ from typing import Union, Optional, Sequence
 
 from ember.size.size import PivotableSize
 from ember.ui.can_pivot import CanPivot
+from .has_geometry import HasGeometry
+from .element import Element
 from ..size import SizeType, OptionalSequenceSizeType, FILL
 from ember.position import PositionType, SequencePositionType
 
@@ -20,7 +22,7 @@ def load_material(material: Union[Material, ColorType, None]) -> Material:
     return Color(material)
 
 
-class Divider(CanPivot):
+class Divider(CanPivot, HasGeometry):
     material = Trait(
         default_value=DEFAULT_BLACK_MATERIAL, load_value_with=load_material
     )

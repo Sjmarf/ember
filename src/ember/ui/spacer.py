@@ -1,7 +1,7 @@
 import pygame
 from typing import Union, Optional, Sequence
 
-from ember.ui.element import Element
+from ember.ui.has_geometry import HasGeometry
 from ..size import Absolute, SizeType, OptionalSequenceSizeType
 from ember.position import PositionType, SequencePositionType
 
@@ -9,7 +9,7 @@ from ember.position import PositionType, SequencePositionType
 ZERO = Absolute(0)
 
 
-class Spacer(Element):
+class Spacer(HasGeometry):
     def __init__(
         self,
         rect: Union[pygame.rect.RectType, Sequence, None] = None,

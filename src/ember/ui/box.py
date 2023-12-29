@@ -11,9 +11,10 @@ from .. import common as _c
 from ..common import ElementType
 from ember.ui.focus_passthrough import FocusPassthroughContainer
 from ember.ui.can_focus import CanHandleFocusChildDependent
+from .geometric_container import GeometricContainer
 from .. import log
 
-class Box(SingleElementContainer, FocusPassthroughContainer):
+class Box(SingleElementContainer, FocusPassthroughContainer, GeometricContainer):
     """
     A Box is a container that can optionally hold one Element.
     """

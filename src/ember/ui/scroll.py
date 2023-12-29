@@ -92,8 +92,8 @@ class Scroll(MaskedContainer, Box, CanPivot):
         self._scrollbar.handle_coverage = self.rect.h / self.element.rect.h
 
     @property
-    def _elements_to_render(self) -> Iterable[Element]:
-        return itertools.chain(super()._elements_to_render, (self._scrollbar,))
+    def _child_elements(self) -> Iterable[Element]:
+        return itertools.chain(super()._child_elements, (self._scrollbar,))
 
     def _event(self, event: pygame.event.Event) -> bool:
         if event.type == VALUEMODIFIED and event.element is self._scrollbar:
