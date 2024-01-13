@@ -11,6 +11,7 @@ from typing import (
     TypeVar,
     Iterable,
 )
+from dataclasses import dataclass
 
 pygame.sprite.Sprite
 
@@ -31,9 +32,6 @@ from .element_meta import ElementMeta
 
 if TYPE_CHECKING:
     pass
-
-
-T = TypeVar("T")
 
 class ContainerMeta(ElementMeta):
     _context_stack: list["Container"] = []

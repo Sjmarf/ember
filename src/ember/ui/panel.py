@@ -2,7 +2,7 @@ import pygame
 import math
 from typing import Union, Optional, Sequence
 
-from .has_geometry import HasGeometry
+from .has_variable_size import HasVariableSize
 from ..size import SizeType, OptionalSequenceSizeType, FILL
 from ember.position import PositionType, SequencePositionType
 
@@ -12,7 +12,7 @@ from ..material.material import Material
 from ..material.color import Color
 
 
-class Panel(HasGeometry):
+class Panel(HasVariableSize):
     def __init__(
         self,
         material: Union["Material", ColorType, None] = None,
@@ -43,7 +43,8 @@ class Panel(HasGeometry):
             y = int(rect.y)
             w = int(rect.right - x)
             h = int(rect.bottom - y)
-            self.material.draw(self, surface, (x,y), (w,h), alpha)
+            self.material.draw(self, surface, (x, y), (w, h), alpha)
+
 
 Panel.w.default_value = FILL
 Panel.h.default_value = FILL

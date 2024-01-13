@@ -1,10 +1,6 @@
-import pygame
-import math
-
 from typing import Optional, TYPE_CHECKING
 
 from ember import log
-from ember import axis
 
 from ember import common as _c
 from ember.common import (
@@ -15,24 +11,21 @@ from ember.common import (
     FocusDirection,
 )
 from ember.ui.element import Element
+from ember.ui.has_geometry import HasGeometry
 from .focus_passthrough import FocusPassthroughContainer
 from .can_pivot import CanPivot
-from .geometric_container import GeometricContainer
+from .geometric_container import GeometricContainer, LayoutBlueprint, LayoutPlacement
 
 from ember.trait.trait import Trait
 from ember.spacing import SpacingType, FILL_SPACING, load_spacing
-from ember.size import Fill, Fit, Absolute
+from ember.utility.geometry_vector import GeometryVector
+from ember.utility.geometry_rect import GeometryRect
 
 if TYPE_CHECKING:
     pass
 
 
 class Stack(FocusPassthroughContainer, CanPivot, GeometricContainer):
-    """
-    A Stack is a collection of Elements. There are two subclasses of Stack - :py:class:`ember.ui.VStack`
-    and :py:class:`ember.ui.HStack`. Depsite the name, :py:class:`ember.ui.ZStack` is not a subclass.
-    """
-
     spacing = Trait(
         FILL_SPACING,
         on_update=lambda self: self.update_min_size_next_tick(self),
@@ -49,111 +42,78 @@ class Stack(FocusPassthroughContainer, CanPivot, GeometricContainer):
         self.spacing = spacing
         super().__init__(*elements, **kwargs)
 
-    def _update_rect(
-        self, surface: pygame.Surface, x: float, y: float, w: float, h: float
-    ) -> None:
-        elements = tuple(self._elements_to_render)
- 
+    def get_layout_blueprint(
+        self, elements: tuple[HasGeometry, ...], proposed_size: GeometryVector
+    ) -> LayoutBlueprint:
+        proposed_size.axis = self.axis
+        space_count = len(elements) - 1
+
+        total_size = GeometryVector(0, 0, axis=self.axis)
         spacing = self.spacing.get_min()
+        unallocated_depth = proposed_size.depth - spacing * space_count
 
-        unallocated_space = self.rect[2 + self.axis] - spacing * (len(elements) - 1)
+        element_sizes: dict[HasGeometry, GeometryVector] = {}
 
-        element_sizes: dict[Element, float] = {}
+        def determine_flexibility(el: HasGeometry) -> float:
+            maximum = el.get_dimensions(
+                GeometryVector(
+                    breadth=proposed_size.breadth,
+                    depth=proposed_size.depth,
+                    axis=self.axis
+                ),
+            ).depth
+            minimum = el.get_dimensions(
+                GeometryVector(
+                    breadth=proposed_size.breadth,
+                    depth=1,
+                    axis=self.axis
+                ),
+            ).depth
+            return maximum-minimum
 
         for n, element in enumerate(
-            sorted(
-                elements,
-                key=lambda i: (int(i.rel_size1.max_value_intent)),
-            )
+            sorted(elements, key=determine_flexibility)
         ):
-            element: Element
-            max_size = unallocated_space / (len(elements) - n)
-            size = element.get_abs_rel_size1(max_size)
-            unallocated_space -= size
-            element_sizes[element] = size
+            proposal = proposed_size.copy()
+            if proposal.depth != 0:
+                proposal.depth = unallocated_depth / (len(elements) - n)
+            element_size = element.get_dimensions(proposal)
 
-        if unallocated_space and len(elements) > 1:
-            spacing = self.spacing.get(
-                spacing + int(unallocated_space / (len(elements) - 1))
-            )
+            element_sizes[element] = element_size
+            total_size.depth += element_size.depth
+            total_size.breadth = max(total_size.breadth, element_size.breadth)
+            unallocated_depth -= element_size.depth
 
-        element_rel_pos1 = (
-            self.rect[2 + self.axis] / 2
-            - (sum(element_sizes.values()) + spacing * (len(elements) - 1)) / 2
+        if unallocated_depth > 0 and len(elements) > 1:
+            spacing = self.spacing.get(spacing + int(unallocated_depth / space_count))
+
+        cursor = (
+            proposed_size.depth / 2 - (total_size.depth + spacing * space_count) / 2
         )
-        
-        self._first_visible_element = None
+        total_size.depth += spacing * space_count
 
-        for element_n, element in enumerate(elements):
-            element_rel_size1 = element_sizes[element]
-            element_rel_size2 = element.get_abs_rel_size2(self.rect[3 - self.axis] - abs(element.rel_pos2.value))
-            
-            element_rel_pos2 = element.rel_pos2.get(self.rect[3 - self.axis], element_rel_size2, self.axis)
+        if proposed_size.w != 0:
+            total_size.w = proposed_size.w
+        if proposed_size.h != 0:
+            total_size.h = proposed_size.h
 
-            element.update_rect(
-                surface,
-                rel_pos1=self.rect[self.axis] + element_rel_pos1,
-                rel_pos2=self.rect[1 - self.axis] + element_rel_pos2,
-                rel_size1=element_rel_size1,
-                rel_size2=element_rel_size2
+        placements: list[LayoutPlacement] = []
+        for element in elements:
+            element_size = element_sizes[element]
+            element_origin = GeometryVector(
+                depth=cursor,
+                breadth=element.rel_pos2.get(
+                    proposed_size.breadth, element_size.breadth
+                ),
+                axis=self.axis,
             )
-
-            element.visible = True
-            if (
-                element.rect[self.axis] + element.rect[2 + self.axis]
-                < surface.get_abs_offset()[self.axis]
-                or element.rect[self.axis]
-                > surface.get_abs_offset()[self.axis] + surface.get_size()[self.axis]
-            ):
-                element.visible = False
-
-            if element.visible and self._first_visible_element is None:
-                self._first_visible_element = element_n
-
-            element_rel_pos1 += element_rel_size1 + spacing
-
-    def _update_min_size(self) -> None:
-        elements = tuple(self._elements_to_render)
-        if elements:
-            size = 0
-            for i in elements:
-                if i is not None:
-                    if not isinstance(i.rel_size1, Fill):
-                        size += i.get_abs_rel_size1()
-
-            self._min_size[self.axis] = size + self.spacing.get_min() * (
-                len(elements) - 1
+            placement = LayoutPlacement(
+                element, GeometryRect(origin=element_origin, size=element_size)
             )
-            self._min_size[1-self.axis] = max(
-                [i.get_abs_rel_size2() for i in elements if i is not None]
-                or (20,)
-            )
-        else:
-            self._min_size.x, self._min_size.y = 20, 20
+            placements.append(placement)
+            cursor += element_size.depth + spacing
 
-    def _render(
-        self, surface: pygame.Surface, offset: tuple[int, int], alpha: int = 255
-    ) -> None:
-        for n, i in enumerate(tuple(self._elements_to_render)[self._first_visible_element :]):
-            if not i.visible:
-                break
-            i.render(surface, offset, alpha=alpha)
-
-    def _update(self) -> None:
-        for i in tuple(self._elements_to_render)[self._first_visible_element :]:
-            i.update()
-            if not i.visible:
-                break
-
-    def _event(self, event: pygame.event.Event) -> bool:
-        for i in tuple(self._elements_to_render)[self._first_visible_element :]:
-            if i is None:
-                continue
-            if i.event(event):
-                return True
-            if not i.visible:
-                break
-        return False
+        return LayoutBlueprint(size=total_size, placements=placements)
 
     def _focus_chain(
         self, direction: _c.FocusDirection, previous: Optional["Element"] = None
@@ -223,7 +183,9 @@ class Stack(FocusPassthroughContainer, CanPivot, GeometricContainer):
             )
             closest_elements = sorted(
                 self._elements,
-                key=lambda x: abs(x.rect[self.axis] + x.rect[2 + self.axis] / 2 - comparison),
+                key=lambda x: abs(
+                    x.rect[self.axis] + x.rect[2 + self.axis] / 2 - comparison
+                ),
             )
             for element in closest_elements:
                 if element._can_focus:

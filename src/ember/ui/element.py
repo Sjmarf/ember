@@ -5,7 +5,6 @@ import copy
 from weakref import WeakSet
 from typing import Union, TYPE_CHECKING, Optional, Sequence, Callable
 from ember import log
-from .element_min_size import ElementMinSize
 
 if TYPE_CHECKING:
     from ember.ui.view import ViewLayer
@@ -15,23 +14,11 @@ if TYPE_CHECKING:
 
 from ember.ui.context_manager import ContextManager
 from ember.animation.animation import AnimationContext, Animation
-from ember.size import Size, SizeType, OptionalSequenceSizeType, FIT, Fit
-from ember.position import (
-    Position,
-    PositionType,
-    SequencePositionType,
-    DualPosition,
-    CENTER,
-)
 
 from ember.trait import Trait
-from ember.size import load_size
-from ember.position import load_position
 from ember.trait.cascading_trait_value import CascadingTraitValue
 
 from ember import common as _c
-from ember import axis as axis_module
-from ember.axis import HORIZONTAL
 
 from .element_meta import ElementMeta
 from ember.callback_registry import CallbackRegistry
@@ -60,13 +47,9 @@ class Element(abc.ABC, metaclass=ElementMeta):
         cls._instances.add(instance)
         return instance
 
-    def __init__(
-        self,
-        layer: Optional["ViewLayer"] = None,
-        can_focus: bool = False,
-    ):
+    def __init__(self, layer: Optional["ViewLayer"] = None):
         self._has_built: bool = False
-        
+
         self.layer: Optional["ViewLayer"] = layer
         """
         The View that the Element is (directly or indirectly) attributed to.
@@ -86,7 +69,6 @@ class Element(abc.ABC, metaclass=ElementMeta):
         if ContextManager.context_stack[-1] is not None:
             ContextManager.context_stack[-1].context_queue.append(self)
 
-
     def build(self) -> None:
         if self._has_built:
             return
@@ -97,9 +79,9 @@ class Element(abc.ABC, metaclass=ElementMeta):
         """
         Used internally by the library.
         """
-        
+
     @abc.abstractmethod
-    def unpack(self) -> tuple["HasGeometry",...]:
+    def unpack(self) -> tuple["HasGeometry", ...]:
         ...
 
     def update_ancestry(self, ancestry: list["Element"]) -> None:

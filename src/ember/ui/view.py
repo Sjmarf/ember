@@ -12,6 +12,7 @@ if TYPE_CHECKING:
 
 from .view_layer import ViewLayer
 from ember.ui.context_manager import ContextManager
+from ember.utility.geometry_vector import GeometryVector
 
 KEY_NAMES = {
     pygame.K_RIGHT: _c.FocusDirection.RIGHT,
@@ -34,6 +35,7 @@ DPAD_NAMES = {
     13: _c.FocusDirection.LEFT,
     14: _c.FocusDirection.RIGHT,
 }
+
 
 class ViewMeta(ABCMeta):
     _context_stack: list["View"] = []
@@ -153,20 +155,6 @@ class View(ContextManager, metaclass=ViewMeta):
 
         for layer in self._layers:
             if update_positions:
-                layer_w = layer.get_w(rect[2])
-                layer_h = layer.get_h(rect[3])
-
-                layer_x = rect[0] + layer._x.value.get(rect[2], layer_w)
-                layer_y = rect[1] + layer._y.value.get(rect[3], layer_h)
-
-                if layer.clamp:
-                    layer_x = pygame.math.clamp(
-                        layer_x, rect[0], rect[0] + rect[2] - layer_w
-                    )
-                    layer_y = pygame.math.clamp(
-                        layer_y, rect[1], rect[1] + rect[3] - layer_h
-                    )
-
                 if self._prev_rect != rect:
                     log.size.line_break()
                     log.size.info(
@@ -184,19 +172,21 @@ class View(ContextManager, metaclass=ViewMeta):
                     i = 0
                     start_time = time.time()
                     if layer.can_focus_update_queue:
-                        layer.can_focus_update_queue.sort(key=lambda x: len(x.ancestry), reverse=True)
+                        layer.can_focus_update_queue.sort(
+                            key=lambda x: len(x.ancestry), reverse=True
+                        )
                         while layer.can_focus_update_queue:
                             element = layer.can_focus_update_queue.pop(0)
                             log.nav.line_break()
-                            with log.nav.indent(f"Starting can_focus update for {element}..."):
+                            with log.nav.indent(
+                                f"Starting can_focus update for {element}..."
+                            ):
                                 element.update_can_focus()
 
                     while layer.rect_update_queue or layer.min_size_update_queue:
                         if i > 0:
                             log.size.line_break()
-                            log.size.info(
-                                "Queues aren't empty, going around again..."
-                            )
+                            log.size.info("Queues aren't empty, going around again...")
                             if i > 300:
                                 raise _c.Error(
                                     "The maximimum number of ViewLayer updates on a single tick (300) was exceeded."
@@ -209,6 +199,11 @@ class View(ContextManager, metaclass=ViewMeta):
                     )
                     log.size.info(
                         "---------------------- TICK END ----------------------"
+                    )
+                    end_time = time.time()
+                    diff = end_time - start_time
+                    log.size.info(
+                        f"Tick took {round((diff)*1000, 2)}ms, 1/{'inf' if diff == 0 else round(1/diff)}s."
                     )
 
             if render:
@@ -274,7 +269,9 @@ class View(ContextManager, metaclass=ViewMeta):
                     else:
                         if layer.element_focused is None:
                             return False
-                        with log.nav.indent("Escape key pressed, moving up one layer.", self):
+                        with log.nav.indent(
+                            "Escape key pressed, moving up one layer.", self
+                        ):
                             layer._focus_element(
                                 layer.element_focused._focus_chain(
                                     _c.FocusDirection.OUT
