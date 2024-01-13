@@ -210,6 +210,11 @@ class View(ContextManager, metaclass=ViewMeta):
                     log.size.info(
                         "---------------------- TICK END ----------------------"
                     )
+                    end_time = time.time()
+                    diff = end_time - start_time
+                    log.size.info(
+                        f"Tick took {round(diff*1000, 2)}ms, 1/{'inf' if diff == 0 else round(1/diff)}s."
+                    )
 
             if render:
                 layer.render(surface, (0, 0), alpha)
